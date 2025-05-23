@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Financial Intelligence Platform</title>
+    
+    <!-- Plotly.js for advanced charting -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
+    <!-- Date-fns for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    
+    <!-- Simple Statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.0/dist/simple-statistics.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #0a0a0a; 
+            color: #e0e0e0; 
+            overflow-x: hidden; 
+        }
+        
+        /* Header */
+        .header { 
+            background: #1a1a1a; 
+            padding: 10px 20px; 
+            border-bottom: 1px solid #333; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .logo { 
+            font-size: 20px; 
+            font-weight: bold; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        
+        /* Layout */
+        .main-container { display: flex; height: calc(100vh - 50px); }
+        .sidebar { 
+            width: 350px; 
+            background: #1a1a1a; 
+            border-right: 1px solid #333; 
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+        }
+        .content { flex: 1; display: flex; flex-direction: column; }
+        
+        /* Tabs for Data Sources */
+        .tabs-container {
+            border-bottom: 1px solid #333;
+            background: #0f0f0f;
+        }
+        .tabs {
+            display: flex;
+            padding: 0 15px;
+            gap: 2px;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-bottom: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .tab:hover { background: #2a2a2a; }
+        .tab.active { 
+            background: #2a2a2a; 
+            color: #00ff88; 
+            border-top: 2px solid #00ff88;
+        }
+        
+        /* Search Section */
+        .search-section { 
+            padding: 15px; 
+            border-bottom: 1px solid #333; 
+            flex-shrink: 0;
+        }
+        .search-container {
+            position: relative;
+        }
+        .search-box { 
+            width: 100%; 
+            padding: 10px 40px 10px 15px; 
+            background: #2a2a2a; 
+            border: 1px solid #444; 
+            color: #fff; 
+            border-radius: 4px; 
+        }
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+        .search-results { 
+            margin-top: 10px; 
+            max-height: 300px; 
+            overflow-y: auto; 
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
+        .search-item { 
+            padding: 10px; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+            border-bottom: 1px solid #222;
+        }
+        .search-item:hover { background: #1a1a1a; }
+        .search-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-item-symbol { 
+            font-weight: bold; 
+            color: #00ff88; 
+            font-size: 14px;
+        }
+        .search-item-source {
+            font-size: 11px;
+            color: #666;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .search-item-name { 
+            font-size: 12px; 
+            color: #ccc; 
+            margin-top: 2px;
+        }
+        
+        /* Watchlists */
+        .watchlist-section { 
+            padding: 15px; 
+            flex: 1;
+            overflow-y: auto;
+        }
+        .watchlist-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px; 
+        }
+        .watchlist-title { 
+            font-size: 14px; 
+            text-transform: uppercase; 
+            color: #888; 
+        }
+        .add-watchlist { 
+            background: #00ff88; 
+            color: #000; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold;
+        }
+        .watchlist-group {
+            margin-bottom: 20px;
+            background: #0f0f0f;
+            border-radius: 6px;
+            padding: 10px;
+        }
+        .watchlist-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .watchlist-group-name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+        .watchlist-group-controls {
+            display: flex;
+            gap: 5px;
+        }
+        .color-picker {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            border: 1px solid #444;
+        }
+        .watchlist-item { 
+            background: #1a1a1a; 
+            padding: 12px; 
+            margin-bottom: 5px; 
+            border-radius: 4px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            position: relative;
+            overflow: hidden;
+        }
+        .watchlist-item:hover { 
+            background: #2a2a2a; 
+            transform: translateX(5px); 
+        }
+        .color-label { 
+            width: 4px; 
+            height: 100%; 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+        }
+        .watchlist-item-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-left: 10px;
+        }
+        .watchlist-item-info {
+            flex: 1;
+        }
+        .watchlist-symbol { 
+            font-weight: bold; 
+            color: #00ff88; 
+            font-size: 14px;
+        }
+        .watchlist-name {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .watchlist-values { 
+            display: flex; 
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 3px;
+        }
+        .value-change {
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .value-positive { color: #00ff88; }
+        .value-negative { color: #ff4444; }
+        .value-neutral { color: #888; }
+        .change-label {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        /* Charts Area */
+        .charts-area { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            background: #0f0f0f; 
+        }
+        .chart-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); 
+            gap: 20px; 
+        }
+        .chart-window { 
+            background: #1a1a1a; 
+            border: 1px solid #333; 
+            border-radius: 8px; 
+            padding: 15px; 
+            position: relative; 
+        }
+        .chart-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 15px; 
+        }
+        .chart-title { 
+            font-size: 16px; 
+            color: #fff; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chart-symbols {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .chart-symbol-tag {
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .remove-symbol {
+            cursor: pointer;
+            color: #ff4444;
+            font-weight: bold;
+        }
+        .chart-controls { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center;
+        }
+        .chart-canvas { 
+            background: #0a0a0a; 
+            border-radius: 4px; 
+            height: 400px; 
+        }
+        
+        /* Timeframe and Change Selectors */
+        .selector-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .timeframe-buttons { 
+            display: flex; 
+            gap: 2px; 
+            background: #0a0a0a;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        .timeframe-btn { 
+            background: transparent; 
+            border: none; 
+            color: #888; 
+            padding: 5px 10px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 12px; 
+        }
+        .timeframe-btn:hover { 
+            background: #2a2a2a; 
+            color: #fff; 
+        }
+        .timeframe-btn.active { 
+            background: #00ff88; 
+            color: #000; 
+            font-weight: bold;
+        }
+        
+        .change-selector {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        /* Controls */
+        .control-btn { 
+            background: #2a2a2a; 
+            border: 1px solid #444; 
+            color: #fff; 
+            padding: 5px 10px; 
+            cursor: pointer; 
+            border-radius: 3px; 
+            font-size: 12px; 
+            transition: all 0.2s; 
+        }
+        .control-btn:hover { 
+            background: #333; 
+            border-color: #666; 
+        }
+        .fullscreen-btn { background: #444; }
+        .close-btn { 
+            background: #ff4444; 
+            border-color: #ff4444; 
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        /* Stats Panel */
+        .stats-panel { 
+            background: #0f0f0f; 
+            padding: 15px; 
+            margin-top: 15px; 
+            border-radius: 4px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
+            gap: 15px; 
+        }
+        .stat-item { 
+            text-align: center; 
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .stat-label { 
+            font-size: 11px; 
+            color: #888; 
+            text-transform: uppercase; 
+        }
+        .stat-value { 
+            font-size: 18px; 
+            font-weight: bold; 
+            margin-top: 5px; 
+        }
+        
+        /* Fullscreen */
+        .fullscreen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            z-index: 1000; 
+            background: #0a0a0a; 
+            padding: 20px; 
+        }
+        .fullscreen .chart-canvas { 
+            height: calc(100vh - 150px); 
+        }
+        
+        /* Loading */
+        .loading { 
+            text-align: center; 
+            padding: 20px; 
+            color: #00ff88; 
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        .loading-pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📊 ADVANCED FINANCIAL INTELLIGENCE</div>
+        <div class="header-controls">
+            <button class="control-btn" onclick="addNewChart()">+ New Chart</button>
+            <button class="control-btn" onclick="saveLayout()">💾 Save Layout</button>
+            <button class="control-btn" onclick="loadLayout()">📂 Load Layout</button>
+            <span id="clock" style="color: #888; font-size: 14px;"></span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="tabs-container">
+                <div class="tabs" id="sourceTabs"></div>
+            </div>
+            
+            <div class="search-section">
+                <div class="search-container">
+                    <input type="text" class="search-box" id="searchBox" placeholder="Search indicators..." onkeyup="searchIndicators(this.value)">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div class="search-results" id="searchResults" style="display: none;"></div>
+            </div>
+            
+            <div class="watchlist-section">
+                <div class="watchlist-header">
+                    <div class="watchlist-title">WATCHLISTS</div>
+                    <button class="add-watchlist" onclick="createNewWatchlist()">+ New</button>
+                </div>
+                <div id="watchlists"></div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="charts-area">
+                <div class="chart-grid" id="chartGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
+        const charts = {};
+        let chartIdCounter = 0;
+        const watchlists = {};
+        let watchlistIdCounter = 0;
+        let activeTab = 'all';
+        let activeChartId = null;
+        
+        // Color palette
+        const colorPalette = [
+            '#00ff88', '#ff4444', '#4488ff', '#ffaa44', '#ff44ff', 
+            '#44ffff', '#88ff44', '#ff8844', '#8844ff', '#44ff88'
+        ];
+        
+        // Comprehensive indicators by source
+        const indicators = {
+            fred: [
+                // Economic Indicators
+                { symbol: 'GDP', name: 'Gross Domestic Product', category: 'Economic' },
+                { symbol: 'GDPC1', name: 'Real GDP', category: 'Economic' },
+                { symbol: 'UNRATE', name: 'Unemployment Rate', category: 'Economic' },
+                { symbol: 'CIVPART', name: 'Labor Force Participation Rate', category: 'Economic' },
+                { symbol: 'EMRATIO', name: 'Employment-Population Ratio', category: 'Economic' },
+                { symbol: 'PAYEMS', name: 'Nonfarm Payrolls', category: 'Economic' },
+                { symbol: 'INDPRO', name: 'Industrial Production Index', category: 'Economic' },
+                { symbol: 'HOUST', name: 'Housing Starts', category: 'Economic' },
+                { symbol: 'PERMIT', name: 'Building Permits', category: 'Economic' },
+                { symbol: 'RSAFS', name: 'Retail Sales', category: 'Economic' },
+                { symbol: 'DSPIC96', name: 'Real Disposable Personal Income', category: 'Economic' },
+                { symbol: 'PCE', name: 'Personal Consumption Expenditures', category: 'Economic' },
+                
+                // Inflation
+                { symbol: 'CPIAUCSL', name: 'CPI All Items', category: 'Inflation' },
+                { symbol: 'CPILFESL', name: 'Core CPI', category: 'Inflation' },
+                { symbol: 'PCEPI', name: 'PCE Price Index', category: 'Inflation' },
+                { symbol: 'DFEDTARU', name: 'Fed Target Rate - Upper', category: 'Inflation' },
+                { symbol: 'T5YIE', name: '5-Year Breakeven Inflation', category: 'Inflation' },
+                { symbol: 'T10YIE', name: '10-Year Breakeven Inflation', category: 'Inflation' },
+                
+                // Monetary Policy
+                { symbol: 'M1SL', name: 'M1 Money Supply', category: 'Monetary' },
+                { symbol: 'M2SL', name: 'M2 Money Supply', category: 'Monetary' },
+                { symbol: 'BOGMBASE', name: 'Monetary Base', category: 'Monetary' },
+                { symbol: 'WALCL', name: 'Fed Balance Sheet Total Assets', category: 'Monetary' },
+                { symbol: 'RRPONTSYD', name: 'Overnight Reverse Repo', category: 'Monetary' },
+                { symbol: 'WRESBAL', name: 'Reserve Balances', category: 'Monetary' },
+                
+                // Interest Rates
+                { symbol: 'DFF', name: 'Federal Funds Rate', category: 'Rates' },
+                { symbol: 'SOFR', name: 'SOFR', category: 'Rates' },
+                { symbol: 'EFFR', name: 'Effective Federal Funds Rate', category: 'Rates' },
+                { symbol: 'DGS1', name: '1-Year Treasury', category: 'Rates' },
+                { symbol: 'DGS2', name: '2-Year Treasury', category: 'Rates' },
+                { symbol: 'DGS5', name: '5-Year Treasury', category: 'Rates' },
+                { symbol: 'DGS10', name: '10-Year Treasury', category: 'Rates' },
+                { symbol: 'DGS30', name: '30-Year Treasury', category: 'Rates' },
+                { symbol: 'T10Y2Y', name: '10Y-2Y Treasury Spread', category: 'Rates' },
+                { symbol: 'T10Y3M', name: '10Y-3M Treasury Spread', category: 'Rates' },
+                { symbol: 'MORTGAGE30US', name: '30-Year Mortgage Rate', category: 'Rates' },
+                { symbol: 'MORTGAGE15US', name: '15-Year Mortgage Rate', category: 'Rates' },
+                
+                // Credit & Risk
+                { symbol: 'BAMLH0A0HYM2', name: 'High Yield Spread', category: 'Credit' },
+                { symbol: 'AAA10Y', name: 'AAA Corporate Spread', category: 'Credit' },
+                { symbol: 'BAA10Y', name: 'BAA Corporate Spread', category: 'Credit' },
+                { symbol: 'TEDRATE', name: 'TED Spread', category: 'Credit' },
+                { symbol: 'STLFSI4', name: 'St. Louis Financial Stress Index', category: 'Credit' },
+                { symbol: 'VIXCLS', name: 'VIX Volatility Index', category: 'Credit' },
+                
+                // Markets
+                { symbol: 'SP500', name: 'S&P 500', category: 'Markets' },
+                { symbol: 'DJIA', name: 'Dow Jones Industrial Average', category: 'Markets' },
+                { symbol: 'NASDAQCOM', name: 'NASDAQ Composite', category: 'Markets' },
+                { symbol: 'WILSHIRE5000PRFC', name: 'Wilshire 5000', category: 'Markets' },
+                { symbol: 'DEXUSEU', name: 'USD/EUR Exchange Rate', category: 'Markets' },
+                { symbol: 'DEXJPUS', name: 'JPY/USD Exchange Rate', category: 'Markets' },
+                { symbol: 'DEXUSUK', name: 'USD/GBP Exchange Rate', category: 'Markets' },
+                { symbol: 'DEXCHUS', name: 'CNY/USD Exchange Rate', category: 'Markets' },
+                { symbol: 'GOLDAMGBD228NLBM', name: 'Gold Price (London)', category: 'Markets' },
+                { symbol: 'DCOILWTICO', name: 'WTI Crude Oil', category: 'Markets' },
+                { symbol: 'DCOILBRENTEU', name: 'Brent Crude Oil', category: 'Markets' },
+                { symbol: 'GASREGW', name: 'US Regular Gasoline Price', category: 'Markets' },
+                
+                // Housing
+                { symbol: 'CSUSHPISA', name: 'Case-Shiller Home Price Index', category: 'Housing' },
+                { symbol: 'MSPUS', name: 'Median Sales Price of Houses', category: 'Housing' },
+                { symbol: 'EXHOSLUSM495S', name: 'Existing Home Sales', category: 'Housing' },
+                { symbol: 'HSN1F', name: 'New Home Sales', category: 'Housing' },
+                { symbol: 'MSACSR', name: 'Monthly Supply of Houses', category: 'Housing' }
+            ],
+            
+            ecb: [
+                { symbol: 'ECBDFR', name: 'ECB Deposit Facility Rate', category: 'Central Banks' },
+                { symbol: 'ECBMRRFR', name: 'ECB Main Refinancing Rate', category: 'Central Banks' },
+                { symbol: 'ECBMLFR', name: 'ECB Marginal Lending Rate', category: 'Central Banks' },
+                { symbol: 'EURUSD', name: 'EUR/USD Exchange Rate', category: 'Central Banks' }
+            ],
+            
+            treasury: [
+                { symbol: 'TREASURY_AVG_1M', name: '1-Month Treasury Average', category: 'Treasury' },
+                { symbol: 'TREASURY_AVG_3M', name: '3-Month Treasury Average', category: 'Treasury' },
+                { symbol: 'TREASURY_AVG_6M', name: '6-Month Treasury Average', category: 'Treasury' },
+                { symbol: 'TREASURY_AVG_1Y', name: '1-Year Treasury Average', category: 'Treasury' },
+                { symbol: 'TREASURY_AUCTION_4W', name: '4-Week Bill Auction', category: 'Treasury' },
+                { symbol: 'TREASURY_AUCTION_8W', name: '8-Week Bill Auction', category: 'Treasury' },
+                { symbol: 'TREASURY_AUCTION_13W', name: '13-Week Bill Auction', category: 'Treasury' },
+                { symbol: 'TREASURY_AUCTION_26W', name: '26-Week Bill Auction', category: 'Treasury' },
+                { symbol: 'TREASURY_BUYBACK', name: 'Treasury Buyback Operations', category: 'Treasury' }
+            ],
+            
+            ofr: [
+                { symbol: 'OFR_FSI', name: 'OFR Financial Stress Index', category: 'Risk' },
+                { symbol: 'OFR_LEVERAGE', name: 'Leverage in Financial System', category: 'Risk' },
+                { symbol: 'OFR_CREDIT_RISK', name: 'Credit Risk Indicators', category: 'Risk' }
+            ],
+            
+            nyfed: [
+                { symbol: 'SOFR_1D', name: 'SOFR 1-Day', category: 'NY Fed' },
+                { symbol: 'SOFR_30D', name: 'SOFR 30-Day Average', category: 'NY Fed' },
+                { symbol: 'SOFR_90D', name: 'SOFR 90-Day Average', category: 'NY Fed' },
+                { symbol: 'SOFR_180D', name: 'SOFR 180-Day Average', category: 'NY Fed' },
+                { symbol: 'PRIMARY_CREDIT', name: 'Primary Credit Rate', category: 'NY Fed' },
+                { symbol: 'REPO_OPERATIONS', name: 'Repo Operations Volume', category: 'NY Fed' }
+            ],
+            
+            bls: [
+                { symbol: 'CES0000000001', name: 'Total Nonfarm Employment', category: 'Labor' },
+                { symbol: 'CES0500000003', name: 'Average Hourly Earnings', category: 'Labor' },
+                { symbol: 'CES0500000002', name: 'Average Weekly Hours', category: 'Labor' },
+                { symbol: 'LNS14000000', name: 'Unemployment Rate', category: 'Labor' },
+                { symbol: 'LNS11300000', name: 'Labor Force Participation Rate', category: 'Labor' },
+                { symbol: 'CES3000000001', name: 'Manufacturing Employment', category: 'Labor' }
+            ],
+            
+            polygon: [
+                { symbol: 'AAPL', name: 'Apple Inc.', category: 'Tech Stocks' },
+                { symbol: 'MSFT', name: 'Microsoft Corp.', category: 'Tech Stocks' },
+                { symbol: 'GOOGL', name: 'Alphabet Inc.', category: 'Tech Stocks' },
+                { symbol: 'AMZN', name: 'Amazon.com Inc.', category: 'Tech Stocks' },
+                { symbol: 'META', name: 'Meta Platforms Inc.', category: 'Tech Stocks' },
+                { symbol: 'NVDA', name: 'NVIDIA Corp.', category: 'Tech Stocks' },
+                { symbol: 'TSLA', name: 'Tesla Inc.', category: 'Tech Stocks' },
+                { symbol: 'JPM', name: 'JPMorgan Chase', category: 'Financial Stocks' },
+                { symbol: 'BAC', name: 'Bank of America', category: 'Financial Stocks' },
+                { symbol: 'GS', name: 'Goldman Sachs', category: 'Financial Stocks' }
+            ]
+        };
+        
+        // Initialize
+        function init() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            createTabs();
+            createDefaultWatchlist();
+            addNewChart();
+            setInterval(updateWatchlistData, 60000); // Update every minute
+        }
+        
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleString();
+        }
+        
+        // Create source tabs
+        function createTabs() {
+            const tabsHtml = `
+                <div class="tab active" onclick="switchTab('all')">All Sources</div>
+                <div class="tab" onclick="switchTab('fred')">FRED</div>
+                <div class="tab" onclick="switchTab('ecb')">ECB</div>
+                <div class="tab" onclick="switchTab('treasury')">Treasury</div>
+                <div class="tab" onclick="switchTab('ofr')">OFR</div>
+                <div class="tab" onclick="switchTab('nyfed')">NY Fed</div>
+                <div class="tab" onclick="switchTab('bls')">BLS</div>
+                <div class="tab" onclick="switchTab('polygon')">Stocks</div>
+            `;
+            document.getElementById('sourceTabs').innerHTML = tabsHtml;
+        }
+        
+        // Switch tabs
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            searchIndicators(document.getElementById('searchBox').value);
+        }
+        
+        // Search indicators
+        function searchIndicators(query) {
+            let searchPool = [];
+            
+            if (activeTab === 'all') {
+                Object.values(indicators).forEach(source => {
+                    searchPool = searchPool.concat(source);
+                });
+            } else {
+                searchPool = indicators[activeTab] || [];
+            }
+            
+            const results = searchPool.filter(ind => 
+                ind.symbol.toLowerCase().includes(query.toLowerCase()) ||
+                ind.name.toLowerCase().includes(query.toLowerCase()) ||
+                ind.category.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (query.length > 0 && results.length > 0) {
+                const html = results.slice(0, 20).map(ind => {
+                    const source = Object.keys(indicators).find(key => 
+                        indicators[key].some(i => i.symbol === ind.symbol)
+                    );
+                    
+                    return `
+                        <div class="search-item" onclick="addToChart('${ind.symbol}', '${source}')">
+                            <div class="search-item-header">
+                                <div class="search-item-symbol">${ind.symbol}</div>
+                                <div class="search-item-source">${source.toUpperCase()}</div>
+                            </div>
+                            <div class="search-item-name">${ind.name}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsDiv.style.display = 'none';
+            }
+        }
+        
+        // Add to chart
+        function addToChart(symbol, source) {
+            if (!activeChartId && Object.keys(charts).length === 0) {
+                addNewChart();
+                activeChartId = `chart_${chartIdCounter - 1}`;
+            } else if (!activeChartId) {
+                activeChartId = Object.keys(charts)[Object.keys(charts).length - 1];
+            }
+            
+            const chart = charts[activeChartId];
+            if (!chart.symbols.find(s => s.symbol === symbol)) {
+                chart.symbols.push({ symbol, source });
+                loadChartData(activeChartId, symbol, source);
+            }
+            
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchBox').value = '';
+        }
+        
+        // Create new chart
+        function addNewChart() {
+            const chartId = `chart_${chartIdCounter++}`;
+            activeChartId = chartId;
+            
+            const chartHtml = `
+                <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <span>Chart ${chartIdCounter}</span>
+                            <div class="chart-symbols" id="${chartId}_symbols"></div>
+                        </div>
+                        <div class="chart-controls">
+                            <div class="selector-group">
+                                <select class="change-selector" id="${chartId}_change" onchange="updateChart('${chartId}')">
+                                    <option value="value">Actual Value</option>
+                                    <option value="dod">Day over Day %</option>
+                                    <option value="wow">Week over Week %</option>
+                                    <option value="mom">Month over Month %</option>
+                                    <option value="qoq">Quarter over Quarter %</option>
+                                    <option value="yoy">Year over Year %</option>
+                                </select>
+                                <div class="timeframe-buttons">
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '1D')">1D</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '1W')">1W</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '1M')">1M</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '3M')">3M</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '6M')">6M</button>
+                                    <button class="timeframe-btn active" onclick="changeTimeframe('${chartId}', '1Y')">1Y</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '2Y')">2Y</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '5Y')">5Y</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', '10Y')">10Y</button>
+                                    <button class="timeframe-btn" onclick="changeTimeframe('${chartId}', 'MAX')">MAX</button>
+                                </div>
+                            </div>
+                            <button class="control-btn fullscreen-btn" onclick="toggleFullscreen('${chartId}')">⛶</button>
+                            <button class="close-btn" onclick="removeChart('${chartId}')">×</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas" id="${chartId}_canvas"></div>
+                    <div class="stats-panel" id="${chartId}_stats"></div>
+                </div>
+            `;
+            
+            document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
+            
+            charts[chartId] = {
+                symbols: [],
+                data: {},
+                timeframe: '1Y',
+                changeType: 'value',
+                chart: null
+            };
+        }
+        
+        // Set active chart
+        function setActiveChart(chartId) {
+            activeChartId = chartId;
+            document.querySelectorAll('.chart-window').forEach(c => {
+                c.style.border = '1px solid #333';
+            });
+            document.getElementById(chartId).style.border = '1px solid #00ff88';
+        }
+        
+        // Remove chart
+        function removeChart(chartId) {
+            delete charts[chartId];
+            document.getElementById(chartId).remove();
+            if (activeChartId === chartId) {
+                activeChartId = null;
+            }
+        }
+        
+        // Load chart data
+        async function loadChartData(chartId, symbol, source) {
+            try {
+                const chart = charts[chartId];
+                const endpoint = getEndpointForSource(source, symbol);
+                
+                const response = await fetch(API_BASE + endpoint);
+                const result = await response.json();
+                
+                if (result.data) {
+                    chart.data[symbol] = processData(result.data, symbol);
+                    updateChart(chartId);
+                    updateChartSymbols(chartId);
+                    calculateStats(chartId, symbol);
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        // Get endpoint for source
+        function getEndpointForSource(source, symbol) {
+            switch (source) {
+                case 'fred':
+                    return `/api/v1/universal/data?symbol=${symbol}&provider=fred`;
+                case 'ecb':
+                    return `/api/v1/economy/european_central_bank_interest_rates?provider=ecb`;
+                case 'treasury':
+                    return `/api/v1/treasury/rates?type=average`;
+                case 'ofr':
+                    return `/api/v1/ofr/financial_stress`;
+                case 'nyfed':
+                    return `/api/v1/nyfed/sofr`;
+                case 'bls':
+                    return `/api/v1/universal/data?symbol=${symbol}&provider=bls`;
+                case 'polygon':
+                    return `/api/v1/equity/price/historical?symbol=${symbol}&provider=polygon`;
+                default:
+                    return `/api/v1/universal/data?symbol=${symbol}&provider=fred`;
+            }
+        }
+        
+        // Process data
+        function processData(data, symbol) {
+            return data.map(d => ({
+                date: d.date,
+                value: d.value || d[symbol] || d.close || 0
+            }));
+        }
+        
+        // Update chart symbols display
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId];
+            const html = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag" style="color: ${colorPalette[i % colorPalette.length]}">
+                    ${s.symbol}
+                    <span class="remove-symbol" onclick="removeSymbol('${chartId}', '${s.symbol}')">×</span>
+                </div>
+            `).join('');
+            
+            document.getElementById(`${chartId}_symbols`).innerHTML = html;
+        }
+        
+        // Remove symbol from chart
+        function removeSymbol(chartId, symbol) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+            delete chart.data[symbol];
+            updateChart(chartId);
+            updateChartSymbols(chartId);
+        }
+        
+        // Change timeframe
+        function changeTimeframe(chartId, timeframe) {
+            charts[chartId].timeframe = timeframe;
+            
+            // Update button states
+            const buttons = document.querySelectorAll(`#${chartId} .timeframe-btn`);
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateChart(chartId);
+        }
+        
+        // Calculate percentage changes
+        function calculatePercentageChange(data, type) {
+            if (!data || data.length < 2) return [];
+            
+            const periods = {
+                'dod': 1,
+                'wow': 5,
+                'mom': 21,
+                'qoq': 63,
+                'yoy': 252
+            };
+            
+            const period = periods[type] || 1;
+            
+            return data.map((point, index) => {
+                if (index < period) {
+                    return { date: point.date, value: null };
+                }
+                
+                const current = point.value;
+                const previous = data[index - period].value;
+                
+                if (previous && previous !== 0) {
+                    const change = ((current - previous) / previous) * 100;
+                    return { date: point.date, value: change };
+                } else {
+                    return { date: point.date, value: null };
+                }
+            });
+        }
+        
+        // Filter data by timeframe
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+            
+            const now = new Date();
+            const cutoffDate = new Date();
+            
+            switch (timeframe) {
+                case '1D': cutoffDate.setDate(now.getDate() - 1); break;
+                case '1W': cutoffDate.setDate(now.getDate() - 7); break;
+                case '1M': cutoffDate.setMonth(now.getMonth() - 1); break;
+                case '3M': cutoffDate.setMonth(now.getMonth() - 3); break;
+                case '6M': cutoffDate.setMonth(now.getMonth() - 6); break;
+                case '1Y': cutoffDate.setFullYear(now.getFullYear() - 1); break;
+                case '2Y': cutoffDate.setFullYear(now.getFullYear() - 2); break;
+                case '5Y': cutoffDate.setFullYear(now.getFullYear() - 5); break;
+                case '10Y': cutoffDate.setFullYear(now.getFullYear() - 10); break;
+                case 'MAX': return data;
+            }
+            
+            return data.filter(d => new Date(d.date) >= cutoffDate);
+        }
+        
+        // Update chart
+        function updateChart(chartId) {
+            const chart = charts[chartId];
+            const changeType = document.getElementById(`${chartId}_change`).value;
+            
+            if (chart.symbols.length === 0) return;
+            
+            const traces = chart.symbols.map((s, index) => {
+                let data = chart.data[s.symbol] || [];
+                
+                // Apply percentage change if needed
+                if (changeType !== 'value') {
+                    data = calculatePercentageChange(data, changeType);
+                }
+                
+                // Filter by timeframe
+                data = filterDataByTimeframe(data, chart.timeframe);
+                
+                return {
+                    x: data.map(d => d.date),
+                    y: data.map(d => d.value),
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: s.symbol,
+                    line: {
+                        color: colorPalette[index % colorPalette.length],
+                        width: 2
+                    },
+                    hovertemplate: '<b>%{fullData.name}</b><br>Date: %{x}<br>Value: %{y:.2f}<extra></extra>'
+                };
+            });
+            
+            const layout = {
+                paper_bgcolor: '#0a0a0a',
+                plot_bgcolor: '#0a0a0a',
+                font: { color: '#888' },
+                margin: { t: 30, r: 30, b: 50, l: 60 },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: '#333',
+                    tickfont: { color: '#888' },
+                    title: { text: 'Date', font: { color: '#888' } }
+                },
+                yaxis: {
+                    gridcolor: '#333',
+                    tickfont: { color: '#888' },
+                    title: { 
+                        text: changeType === 'value' ? 'Value' : 'Change (%)', 
+                        font: { color: '#888' } 
+                    },
+                    tickformat: changeType === 'value' ? ',.2f' : ',.1f'
+                },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1,
+                    bgcolor: 'rgba(0,0,0,0.5)',
+                    bordercolor: '#333',
+                    borderwidth: 1
+                }
+            };
+            
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'resetScale2d']
+            };
+            
+            Plotly.newPlot(`${chartId}_canvas`, traces, layout, config);
+        }
+        
+        // Calculate statistics
+        function calculateStats(chartId, symbol) {
+            const chart = charts[chartId];
+            const data = chart.data[symbol];
+            
+            if (!data || data.length < 2) return;
+            
+            const values = data.map(d => d.value).filter(v => v !== null);
+            const latest = values[values.length - 1];
+            const previous = values[values.length - 2];
+            const weekAgo = values[Math.max(0, values.length - 5)];
+            const monthAgo = values[Math.max(0, values.length - 21)];
+            const quarterAgo = values[Math.max(0, values.length - 63)];
+            const yearAgo = values[Math.max(0, values.length - 252)];
+            
+            const stats = {
+                latest: latest,
+                change1D: ((latest - previous) / previous) * 100,
+                change1W: ((latest - weekAgo) / weekAgo) * 100,
+                change1M: ((latest - monthAgo) / monthAgo) * 100,
+                changeQ: ((latest - quarterAgo) / quarterAgo) * 100,
+                change1Y: ((latest - yearAgo) / yearAgo) * 100,
+                avg7d: values.slice(-5).reduce((a, b) => a + b, 0) / Math.min(5, values.length),
+                avg30d: values.slice(-21).reduce((a, b) => a + b, 0) / Math.min(21, values.length),
+                min52w: Math.min(...values.slice(-252)),
+                max52w: Math.max(...values.slice(-252))
+            };
+            
+            updateStatsPanel(chartId, stats);
+        }
+        
+        // Update stats panel
+        function updateStatsPanel(chartId, stats) {
+            const formatValue = (val) => {
+                if (Math.abs(val) >= 1000000) return (val / 1000000).toFixed(2) + 'M';
+                if (Math.abs(val) >= 1000) return (val / 1000).toFixed(2) + 'K';
+                return val.toFixed(2);
+            };
+            
+            const formatChange = (val) => {
+                const color = val >= 0 ? 'value-positive' : 'value-negative';
+                return `<span class="${color}">${val >= 0 ? '+' : ''}${val.toFixed(2)}%</span>`;
+            };
+            
+            const html = `
+                <div class="stat-item">
+                    <div class="stat-label">Latest</div>
+                    <div class="stat-value">${formatValue(stats.latest)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">1D Change</div>
+                    <div class="stat-value">${formatChange(stats.change1D)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">1W Change</div>
+                    <div class="stat-value">${formatChange(stats.change1W)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">1M Change</div>
+                    <div class="stat-value">${formatChange(stats.change1M)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">QTD Change</div>
+                    <div class="stat-value">${formatChange(stats.changeQ)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">YTD Change</div>
+                    <div class="stat-value">${formatChange(stats.change1Y)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">52W Low</div>
+                    <div class="stat-value">${formatValue(stats.min52w)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">52W High</div>
+                    <div class="stat-value">${formatValue(stats.max52w)}</div>
+                </div>
+            `;
+            
+            document.getElementById(`${chartId}_stats`).innerHTML = html;
+        }
+        
+        // Watchlist functions
+        function createDefaultWatchlist() {
+            createWatchlist('Economic Indicators', ['GDP', 'UNRATE', 'CPIAUCSL', 'DFF'], '#00ff88');
+            createWatchlist('Market Indices', ['SP500', 'DJIA', 'NASDAQCOM', 'VIXCLS'], '#4488ff');
+            createWatchlist('Interest Rates', ['DGS2', 'DGS10', 'DGS30', 'SOFR'], '#ffaa44');
+        }
+        
+        function createWatchlist(name, symbols = [], color = '#00ff88') {
+            const watchlistId = `watchlist_${watchlistIdCounter++}`;
+            watchlists[watchlistId] = {
+                name: name || `Watchlist ${watchlistIdCounter}`,
+                symbols: symbols.map(s => ({
+                    symbol: s,
+                    data: null,
+                    weeklyChange: null,
+                    monthlyChange: null
+                })),
+                color: color
+            };
+            updateWatchlistData();
+            renderWatchlists();
+        }
+        
+        function createNewWatchlist() {
+            const name = prompt('Enter watchlist name:');
+            if (name) {
+                createWatchlist(name);
+            }
+        }
+        
+        async function updateWatchlistData() {
+            for (const [id, watchlist] of Object.entries(watchlists)) {
+                for (const item of watchlist.symbols) {
+                    try {
+                        const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${item.symbol}&provider=fred`);
+                        const result = await response.json();
+                        
+                        if (result.data && result.data.length > 0) {
+                            const data = result.data;
+                            const values = data.map(d => d.value || 0);
+                            const latest = values[values.length - 1];
+                            const weekAgo = values[Math.max(0, values.length - 5)];
+                            const monthAgo = values[Math.max(0, values.length - 21)];
+                            
+                            item.data = latest;
+                            item.weeklyChange = ((latest - weekAgo) / weekAgo) * 100;
+                            item.monthlyChange = ((latest - monthAgo) / monthAgo) * 100;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading data for ${item.symbol}:`, error);
+                    }
+                }
+            }
+            renderWatchlists();
+        }
+        
+        function changeWatchlistColor(watchlistId) {
+            const colors = ['#00ff88', '#ff4444', '#4488ff', '#ffaa44', '#ff44ff', '#44ffff'];
+            const currentColor = watchlists[watchlistId].color;
+            const currentIndex = colors.indexOf(currentColor);
+            const nextIndex = (currentIndex + 1) % colors.length;
+            watchlists[watchlistId].color = colors[nextIndex];
+            renderWatchlists();
+        }
+        
+        function renderWatchlists() {
+            const html = Object.entries(watchlists).map(([id, watchlist]) => `
+                <div class="watchlist-group">
+                    <div class="watchlist-group-header">
+                        <div class="watchlist-group-name">${watchlist.name}</div>
+                        <div class="watchlist-group-controls">
+                            <div class="color-picker" style="background: ${watchlist.color};" 
+                                 onclick="changeWatchlistColor('${id}')"></div>
+                        </div>
+                    </div>
+                    ${watchlist.symbols.map(item => {
+                        const weekClass = item.weeklyChange >= 0 ? 'value-positive' : 'value-negative';
+                        const monthClass = item.monthlyChange >= 0 ? 'value-positive' : 'value-negative';
+                        
+                        return `
+                            <div class="watchlist-item" onclick="addToChart('${item.symbol}', 'fred')">
+                                <div class="color-label" style="background: ${watchlist.color};"></div>
+                                <div class="watchlist-item-content">
+                                    <div class="watchlist-item-info">
+                                        <div class="watchlist-symbol">${item.symbol}</div>
+                                        <div class="watchlist-name">${item.data ? item.data.toFixed(2) : 'Loading...'}</div>
+                                    </div>
+                                    <div class="watchlist-values">
+                                        <div class="value-change ${weekClass}">
+                                            ${item.weeklyChange !== null ? (item.weeklyChange >= 0 ? '+' : '') + item.weeklyChange.toFixed(2) + '%' : '...'}
+                                            <span class="change-label">W</span>
+                                        </div>
+                                        <div class="value-change ${monthClass}">
+                                            ${item.monthlyChange !== null ? (item.monthlyChange >= 0 ? '+' : '') + item.monthlyChange.toFixed(2) + '%' : '...'}
+                                            <span class="change-label">M</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `).join('');
+            
+            document.getElementById('watchlists').innerHTML = html;
+        }
+        
+        // Fullscreen
+        function toggleFullscreen(chartId) {
+            const chartElement = document.getElementById(chartId);
+            chartElement.classList.toggle('fullscreen');
+            
+            // Force Plotly to resize
+            setTimeout(() => {
+                Plotly.Plots.resize(`${chartId}_canvas`);
+            }, 100);
+        }
+        
+        // Save/Load layout
+        function saveLayout() {
+            const layout = {
+                charts: Object.entries(charts).map(([id, chart]) => ({
+                    id,
+                    symbols: chart.symbols,
+                    timeframe: chart.timeframe,
+                    changeType: document.getElementById(`${id}_change`).value
+                })),
+                watchlists: watchlists
+            };
+            
+            localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+            alert('Layout saved!');
+        }
+        
+        function loadLayout() {
+            const saved = localStorage.getItem('dashboardLayout');
+            if (!saved) {
+                alert('No saved layout found');
+                return;
+            }
+            
+            const layout = JSON.parse(saved);
+            
+            // Clear existing charts
+            document.getElementById('chartGrid').innerHTML = '';
+            Object.keys(charts).forEach(id => delete charts[id]);
+            
+            // Restore charts
+            layout.charts.forEach(chartConfig => {
+                addNewChart();
+                const newChartId = `chart_${chartIdCounter - 1}`;
+                
+                chartConfig.symbols.forEach(s => {
+                    addToChart(s.symbol, s.source);
+                });
+                
+                charts[newChartId].timeframe = chartConfig.timeframe;
+                document.getElementById(`${newChartId}_change`).value = chartConfig.changeType;
+            });
+            
+            // Restore watchlists
+            Object.assign(watchlists, layout.watchlists);
+            renderWatchlists();
+            updateWatchlistData();
+        }
+        
+        // Initialize on load
+        window.onload = init;
+    </script>
+</body>
+</html>
