@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Financial Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; }
+        .controls { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .primary { background: #4CAF50; color: white; }
+        .secondary { background: #2196F3; color: white; }
+        .tertiary { background: #FF9800; color: white; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Financial Dashboard</h1>
+        
+        <div class="controls">
+            <input type="text" id="symbols" placeholder="Enter symbols: GDP,UNRATE,DGS10" value="GDP,UNRATE,DGS10">
+            <button class="primary" onclick="fetchData()">Update Chart</button>
+            <br>
+            <button class="secondary" onclick="loadPreset('GDPC1,UNRATE,CPIAUCSL,DGS10')">Economic Indicators</button>
+            <button class="secondary" onclick="loadPreset('DGS2,DGS5,DGS10,DGS30')">Yield Curve</button>
+            <button class="secondary" onclick="loadPreset('DFF,SOFR,EFFR,IORB')">Interest Rates</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
+        let myChart = null;
+
+        async function fetchData() {
+            try {
+                const symbols = document.getElementById('symbols').value;
+                const response = await fetch(`${API_BASE}/api/v1/interactive/multi-search?symbols=${symbols}&periods=50`);
+                const data = await response.json();
+                
+                console.log('Data received:', data);
+                updateChart(data);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading data: ' + error.message);
+            }
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            if (!data.chart_data || data.chart_data.length === 0) {
+                console.error('No chart data available');
+                return;
+            }
+
+            const datasets = data.chart_data.map((series, index) => {
+                const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+                return {
+                    label: series.symbol,
+                    data: series.data.map(point => ({
+                        x: point.date,
+                        y: point[series.symbol] || point.value
+                    })),
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: 'transparent',
+                    tension: 0.1
+                };
+            });
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Financial Data Chart'
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                tooltipFormat: 'MMM dd, yyyy',
+                                displayFormats: {
+                                    day: 'MMM dd',
+                                    month: 'MMM yyyy'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadPreset(symbols) {
+            document.getElementById('symbols').value = symbols;
+            fetchData();
+        }
+
+        // Load initial data
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
