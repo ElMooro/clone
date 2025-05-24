@@ -104,6 +104,25 @@
             box-shadow: 0 4px 12px rgba(0, 153, 255, 0.3);
         }
 
+        .watchlist-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #ff6b00, #ff4500);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .watchlist-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+        }
+
         .provider-toggles {
             display: flex;
             gap: 0.5rem;
@@ -173,6 +192,132 @@
             color: #00d4ff;
         }
 
+        /* Watchlist Section */
+        .watchlist-section {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .watchlist-section.active {
+            display: block;
+        }
+
+        .watchlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .watchlist-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ff6b00;
+        }
+
+        .watchlist-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .watchlist-table th {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            color: #888;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #3d3d5c;
+        }
+
+        .watchlist-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .watchlist-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .symbol-link {
+            color: #00d4ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .symbol-link:hover {
+            color: #00b3ff;
+            text-decoration: underline;
+        }
+
+        .provider-badge {
+            padding: 0.2rem 0.6rem;
+            background: rgba(0, 153, 255, 0.2);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            color: #00d4ff;
+        }
+
+        .change-positive {
+            color: #00ff88;
+        }
+
+        .change-negative {
+            color: #ff6b6b;
+        }
+
+        .change-neutral {
+            color: #888;
+        }
+
+        .remove-btn {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .add-watchlist-btn {
+            background: rgba(255, 107, 0, 0.2);
+            border: 1px solid #ff6b00;
+            color: #ff6b00;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-watchlist-btn:hover {
+            background: rgba(255, 107, 0, 0.3);
+        }
+
+        .add-watchlist-btn.added {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+            color: #00ff88;
+        }
+
         .results-container {
             display: grid;
             gap: 2rem;
@@ -201,14 +346,6 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-
-        .provider-badge {
-            padding: 0.3rem 0.8rem;
-            background: rgba(0, 153, 255, 0.2);
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: #00d4ff;
         }
 
         .results-grid {
@@ -258,6 +395,7 @@
         .result-actions {
             display: flex;
             gap: 0.5rem;
+            flex-direction: column;
         }
 
         .action-btn {
@@ -269,6 +407,7 @@
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         .action-btn:hover {
@@ -395,23 +534,6 @@
             color: #666;
         }
 
-        .watchlist-toggle {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 1rem;
-            background: linear-gradient(135deg, #0099ff, #0066cc);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 153, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        .watchlist-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 153, 255, 0.6);
-        }
-
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -423,6 +545,15 @@
             
             .results-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .watchlist-table {
+                font-size: 0.85rem;
+            }
+            
+            .watchlist-table th,
+            .watchlist-table td {
+                padding: 0.5rem;
             }
         }
     </style>
@@ -447,6 +578,10 @@
                 </div>
             </div>
             
+            <button class="watchlist-btn" onclick="toggleWatchlist()">
+                ⭐ Watchlist (<span id="watchlistCount">0</span>)
+            </button>
+            
             <div class="provider-toggles">
                 <label class="provider-toggle active">
                     <input type="checkbox" id="toggle-fred" checked> FRED
@@ -468,6 +603,33 @@
     </header>
 
     <main class="main-container">
+        <!-- Watchlist Section -->
+        <div class="watchlist-section" id="watchlistSection">
+            <div class="watchlist-header">
+                <h2 class="watchlist-title">⭐ My Watchlist</h2>
+                <button class="action-btn" onclick="updateAllWatchlist()">🔄 Update All</button>
+            </div>
+            <table class="watchlist-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Last Value</th>
+                        <th>1D %</th>
+                        <th>1W %</th>
+                        <th>1M %</th>
+                        <th>1Q %</th>
+                        <th>1Y %</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="watchlistBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #666;">No items in watchlist</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <div class="quick-access">
             <div class="quick-links">
                 <a class="quick-link" onclick="quickSearch('GDP')">📈 GDP</a>
@@ -513,45 +675,243 @@
             fred: {
                 name: 'Federal Reserve (FRED)',
                 color: '#0099ff',
-                icon: '🏦'
+                icon: '🏦',
+                baseUrl: 'https://fred.stlouisfed.org/series/'
             },
             ecb: {
                 name: 'European Central Bank',
                 color: '#ff6b00',
-                icon: '🇪🇺'
+                icon: '🇪🇺',
+                baseUrl: 'https://data.ecb.europa.eu/data/'
             },
             nyfed: {
                 name: 'New York Fed',
                 color: '#00ff88',
-                icon: '🗽'
+                icon: '🗽',
+                baseUrl: 'https://www.newyorkfed.org/markets/'
             },
             treasury: {
                 name: 'US Treasury',
                 color: '#ff00ff',
-                icon: '🏛️'
+                icon: '🏛️',
+                baseUrl: 'https://home.treasury.gov/'
             },
             ofr: {
                 name: 'Office of Financial Research',
                 color: '#ffaa00',
-                icon: '📊'
+                icon: '📊',
+                baseUrl: 'https://www.financialresearch.gov/'
             }
         };
 
         // Global state
         let currentChart = null;
         let searchResults = {};
+        let watchlist = JSON.parse(localStorage.getItem('macroWatchlist')) || [];
 
-        // Initialize provider toggles
-        document.querySelectorAll('.provider-toggle input').forEach(toggle => {
-            toggle.addEventListener('change', function() {
-                const label = this.closest('.provider-toggle');
-                if (this.checked) {
-                    label.classList.add('active');
-                } else {
-                    label.classList.remove('active');
+        // Initialize
+        window.onload = function() {
+            updateWatchlistCount();
+            updateWatchlistDisplay();
+            
+            // Initialize provider toggles
+            document.querySelectorAll('.provider-toggle input').forEach(toggle => {
+                toggle.addEventListener('change', function() {
+                    const label = this.closest('.provider-toggle');
+                    if (this.checked) {
+                        label.classList.add('active');
+                    } else {
+                        label.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Check for search query in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            if (query) {
+                document.getElementById('searchInput').value = query;
+                performUniversalSearch();
+            }
+        };
+
+        // Toggle watchlist visibility
+        function toggleWatchlist() {
+            const watchlistSection = document.getElementById('watchlistSection');
+            watchlistSection.classList.toggle('active');
+        }
+
+        // Update watchlist count
+        function updateWatchlistCount() {
+            document.getElementById('watchlistCount').textContent = watchlist.length;
+        }
+
+        // Add to watchlist
+        function addToWatchlist(symbol, provider, name) {
+            const exists = watchlist.find(item => item.symbol === symbol && item.provider === provider);
+            if (!exists) {
+                watchlist.push({
+                    symbol,
+                    provider,
+                    name,
+                    addedAt: new Date().toISOString()
+                });
+                localStorage.setItem('macroWatchlist', JSON.stringify(watchlist));
+                updateWatchlistCount();
+                updateWatchlistDisplay();
+                
+                // Update button state
+                const btn = document.querySelector(`button[data-symbol="${symbol}"][data-provider="${provider}"]`);
+                if (btn) {
+                    btn.textContent = '✓ Added';
+                    btn.classList.add('added');
+                }
+            }
+        }
+
+        // Remove from watchlist
+        function removeFromWatchlist(symbol, provider) {
+            watchlist = watchlist.filter(item => !(item.symbol === symbol && item.provider === provider));
+            localStorage.setItem('macroWatchlist', JSON.stringify(watchlist));
+            updateWatchlistCount();
+            updateWatchlistDisplay();
+        }
+
+        // Update watchlist display
+        async function updateWatchlistDisplay() {
+            const tbody = document.getElementById('watchlistBody');
+            
+            if (watchlist.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666;">No items in watchlist</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;"><div class="loading">Loading watchlist data...</div></td></tr>';
+
+            // Fetch data for each watchlist item
+            const promises = watchlist.map(item => fetchWatchlistData(item));
+            const results = await Promise.allSettled(promises);
+
+            tbody.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled' && result.value) {
+                    tbody.innerHTML += createWatchlistRow(result.value);
                 }
             });
-        });
+        }
+
+        // Fetch watchlist data
+        async function fetchWatchlistData(item) {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${item.symbol}&provider=${item.provider}`);
+                const result = await response.json();
+                
+                if (result.data && result.data.length > 0) {
+                    const data = result.data;
+                    const changes = calculatePercentageChanges(data, item.symbol);
+                    
+                    return {
+                        ...item,
+                        ...changes
+                    };
+                }
+            } catch (error) {
+                console.error(`Error fetching ${item.symbol}:`, error);
+            }
+            return null;
+        }
+
+        // Calculate percentage changes
+        function calculatePercentageChanges(data, symbol) {
+            const now = new Date();
+            const values = data.map(item => ({
+                date: new Date(item.date),
+                value: parseFloat(item.value || item[symbol] || 0)
+            })).filter(item => !isNaN(item.value) && item.value > 0).sort((a, b) => a.date - b.date);
+
+            if (values.length === 0) return {};
+
+            const latestValue = values[values.length - 1].value;
+            const latestDate = values[values.length - 1].date;
+
+            // Helper function to find value at specific date
+            const findValueAtDate = (targetDate) => {
+                const closest = values.reduce((prev, curr) => {
+                    const prevDiff = Math.abs(prev.date - targetDate);
+                    const currDiff = Math.abs(curr.date - targetDate);
+                    return currDiff < prevDiff ? curr : prev;
+                });
+                return closest.value;
+            };
+
+            // Calculate changes for different periods
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            const oneQuarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+
+            const changes = {};
+            
+            if (values.length > 1) {
+                const dayValue = findValueAtDate(oneDayAgo);
+                const weekValue = findValueAtDate(oneWeekAgo);
+                const monthValue = findValueAtDate(oneMonthAgo);
+                const quarterValue = findValueAtDate(oneQuarterAgo);
+                const yearValue = findValueAtDate(oneYearAgo);
+
+                changes.latestValue = latestValue;
+                changes.change1D = ((latestValue - dayValue) / dayValue * 100).toFixed(2);
+                changes.change1W = ((latestValue - weekValue) / weekValue * 100).toFixed(2);
+                changes.change1M = ((latestValue - monthValue) / monthValue * 100).toFixed(2);
+                changes.change1Q = ((latestValue - quarterValue) / quarterValue * 100).toFixed(2);
+                changes.change1Y = ((latestValue - yearValue) / yearValue * 100).toFixed(2);
+            }
+
+            return changes;
+        }
+
+        // Create watchlist row
+        function createWatchlistRow(item) {
+            const getChangeClass = (change) => {
+                if (!change || isNaN(change)) return 'change-neutral';
+                return parseFloat(change) >= 0 ? 'change-positive' : 'change-negative';
+            };
+
+            const formatChange = (change) => {
+                if (!change || isNaN(change)) return '—';
+                const val = parseFloat(change);
+                return (val >= 0 ? '+' : '') + val + '%';
+            };
+
+            const fredUrl = `${PROVIDERS[item.provider].baseUrl}${item.symbol}`;
+
+            return `
+                <tr>
+                    <td class="symbol-cell">
+                        <a href="${fredUrl}" target="_blank" class="symbol-link">${item.symbol}</a>
+                        <span class="provider-badge">${PROVIDERS[item.provider].name}</span>
+                    </td>
+                    <td>${item.latestValue ? item.latestValue.toFixed(4) : '—'}</td>
+                    <td class="${getChangeClass(item.change1D)}">${formatChange(item.change1D)}</td>
+                    <td class="${getChangeClass(item.change1W)}">${formatChange(item.change1W)}</td>
+                    <td class="${getChangeClass(item.change1M)}">${formatChange(item.change1M)}</td>
+                    <td class="${getChangeClass(item.change1Q)}">${formatChange(item.change1Q)}</td>
+                    <td class="${getChangeClass(item.change1Y)}">${formatChange(item.change1Y)}</td>
+                    <td>
+                        <button class="remove-btn" onclick="removeFromWatchlist('${item.symbol}', '${item.provider}')">
+                            Remove
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Update all watchlist items
+        function updateAllWatchlist() {
+            updateWatchlistDisplay();
+        }
 
         // Quick search function
         function quickSearch(query) {
@@ -591,7 +951,6 @@
         // Search individual provider
         async function searchProvider(provider, query) {
             try {
-                // Special handling for different providers
                 let endpoint = `/api/v1/universal/search?query=${encodeURIComponent(query)}`;
                 
                 if (provider !== 'universal') {
@@ -694,6 +1053,7 @@
         function createResultCard(item, provider) {
             const symbol = item.series_id || item.symbol || item.code || 'N/A';
             const name = item.title || item.name || item.description || 'No description';
+            const isInWatchlist = watchlist.some(w => w.symbol === symbol && w.provider === provider);
             
             return `
                 <div class="result-card" onclick="viewChart('${symbol}', '${provider}')">
@@ -707,6 +1067,12 @@
                         </button>
                         <button class="action-btn" onclick="event.stopPropagation(); getData('${symbol}', '${provider}')">
                             📄 Data
+                        </button>
+                        <button class="add-watchlist-btn ${isInWatchlist ? 'added' : ''}" 
+                                data-symbol="${symbol}" 
+                                data-provider="${provider}"
+                                onclick="event.stopPropagation(); addToWatchlist('${symbol}', '${provider}', '${name.replace(/'/g, "\\'")}')">
+                            ${isInWatchlist ? '✓ Added' : '⭐ Watch'}
                         </button>
                     </div>
                 </div>
@@ -864,9 +1230,11 @@
             `;
         }
 
-        // Get raw data
+        // Get raw data - FIXED VERSION
         async function getData(symbol, provider) {
             try {
+                console.log(`Fetching data for ${symbol} from ${provider}`);
+                
                 const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 
                 if (!response.ok) {
@@ -874,21 +1242,24 @@
                 }
                 
                 const result = await response.json();
+                console.log('Data received:', result);
                 
                 if (result.data && result.data.length > 0) {
                     // Create CSV content
                     const csv = convertToCSV(result.data, symbol);
                     downloadCSV(csv, `${symbol}_${provider}.csv`);
+                } else if (result.error) {
+                    alert(`Error: ${result.error}`);
                 } else {
-                    alert(`No data available for ${symbol}. The data might be loading or unavailable.`);
+                    alert(`No data available for ${symbol}. Try a different symbol or provider.`);
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
-                alert(`Error fetching data for ${symbol}. Please check if the symbol is correct or try again later.`);
+                alert(`Error fetching data: ${error.message}`);
             }
         }
 
-        // Convert data to CSV
+        // Convert data to CSV - IMPROVED VERSION
         function convertToCSV(data, symbol) {
             if (!data || data.length === 0) return '';
             
@@ -905,7 +1276,7 @@
                 headers.map(header => {
                     const value = row[header] !== undefined ? row[header] : '';
                     // Handle values that contain commas or quotes
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
                         return `"${value.replace(/"/g, '""')}"`;
                     }
                     return value;
@@ -917,14 +1288,15 @@
 
         // Download CSV file
         function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv' });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         }
 
@@ -943,16 +1315,6 @@
             const modal = document.getElementById('chartModal');
             if (event.target === modal) {
                 closeModal();
-            }
-        }
-
-        // Initialize with a search if query parameter exists
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const query = urlParams.get('q');
-            if (query) {
-                document.getElementById('searchInput').value = query;
-                performUniversalSearch();
             }
         }
     </script>
