@@ -517,14 +517,17 @@
         </div>
 
         <div class="content">
-            <div class="charts-area">
+            <div class="charts-area" style="display: none;" id="chartsArea">
                 <div class="chart-grid" id="chartGrid"></div>
             </div>
             
-            <div class="watchlist-section">
+            <div class="watchlist-section" style="flex: 1;">
                 <div class="watchlist-header">
                     <div class="watchlist-title">MARKET WATCHLIST</div>
-                    <button class="add-watchlist" onclick="addToWatchlist()">+ Add Symbol</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
+                        <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
+                    </div>
                 </div>
                 <table class="watchlist-table">
                     <thead>
@@ -536,6 +539,7 @@
                             <th class="text-right">1M %</th>
                             <th class="text-right">3M %</th>
                             <th class="text-right">1Y %</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="watchlistBody">
@@ -569,9 +573,12 @@
             setInterval(updateClock, 1000);
             
             await checkAPIConnection();
-            addNewChart();
+            // Don't create chart by default - charts area is hidden
             loadWatchlistData();
             setInterval(loadWatchlistData, 60000); // Update every minute
+            
+            // Focus on search box
+            document.getElementById('searchBox').focus();
         }
         
         // Check API connection
@@ -598,11 +605,11 @@
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
         }
         
-        // Search function using OpenBB backend
+        // Search function using OpenBB backend - case insensitive with suggestions
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
-            if (query.trim().length < 2) {
+            if (query.trim().length < 1) {
                 resultsDiv.style.display = 'none';
                 return;
             }
@@ -613,14 +620,42 @@
                 resultsDiv.style.display = 'block';
                 
                 try {
-                    const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}`);
+                    // Search with both uppercase and lowercase to catch more results
+                    const queries = [query, query.toUpperCase(), query.toLowerCase()];
+                    const searchPromises = queries.map(q => 
+                        fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(q)}`)
+                            .then(res => res.ok ? res.json() : null)
+                            .catch(() => null)
+                    );
                     
-                    if (!response.ok) {
-                        throw new Error('Search failed');
-                    }
+                    const responses = await Promise.all(searchPromises);
                     
-                    const data = await response.json();
-                    displaySearchResults(data, query);
+                    // Combine and deduplicate results
+                    const allResults = new Map();
+                    
+                    responses.forEach(data => {
+                        if (!data) return;
+                        
+                        let results = [];
+                        if (Array.isArray(data)) {
+                            results = data;
+                        } else if (data.results) {
+                            if (data.results.fred) results = results.concat(data.results.fred);
+                            if (data.results.ecb) results = results.concat(data.results.ecb);
+                            if (data.results.treasury) results = results.concat(data.results.treasury);
+                            if (data.results.nyfed) results = results.concat(data.results.nyfed);
+                            if (data.results.ofr) results = results.concat(data.results.ofr);
+                        }
+                        
+                        results.forEach(result => {
+                            const symbol = result.series_id || result.symbol || result.code || result.id;
+                            if (symbol && !allResults.has(symbol)) {
+                                allResults.set(symbol, result);
+                            }
+                        });
+                    });
+                    
+                    displaySearchResults(Array.from(allResults.values()), query);
                     
                 } catch (error) {
                     console.error('Search error:', error);
@@ -630,37 +665,46 @@
                         </div>
                     `;
                 }
-            }, 300); // Debounce delay
+            }, 200); // Faster debounce for suggestions
         }
         
-        // Display search results
-        function displaySearchResults(data, query) {
+        // Display search results with better formatting
+        function displaySearchResults(results, query) {
             const resultsDiv = document.getElementById('searchResults');
             
-            // Handle different response formats from OpenBB
-            let results = [];
-            
-            if (Array.isArray(data)) {
-                results = data;
-            } else if (data.results) {
-                if (data.results.fred) results = results.concat(data.results.fred);
-                if (data.results.ecb) results = results.concat(data.results.ecb);
-                if (data.results.treasury) results = results.concat(data.results.treasury);
-                if (data.results.nyfed) results = results.concat(data.results.nyfed);
-                if (data.results.ofr) results = results.concat(data.results.ofr);
-            }
-            
-            if (results.length === 0) {
+            if (!results || results.length === 0) {
+                // Show suggestions if no results
                 resultsDiv.innerHTML = `
-                    <div class="search-item" style="text-align:center; color:#888;">
+                    <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
                         No results found for "${query}"
+                        <div style="margin-top: 10px; font-size: 12px;">
+                            Try searching for:<br>
+                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, EUR, inflation, unemployment
+                        </div>
                     </div>
                 `;
                 return;
             }
             
-            // Limit to 20 results
-            const displayResults = results.slice(0, 20);
+            // Sort results by relevance (exact matches first)
+            results.sort((a, b) => {
+                const symbolA = (a.series_id || a.symbol || a.code || '').toLowerCase();
+                const symbolB = (b.series_id || b.symbol || b.code || '').toLowerCase();
+                const queryLower = query.toLowerCase();
+                
+                // Exact matches first
+                if (symbolA === queryLower) return -1;
+                if (symbolB === queryLower) return 1;
+                
+                // Then starts with
+                if (symbolA.startsWith(queryLower)) return -1;
+                if (symbolB.startsWith(queryLower)) return 1;
+                
+                return 0;
+            });
+            
+            // Limit to 30 results
+            const displayResults = results.slice(0, 30);
             
             let html = '';
             displayResults.forEach(result => {
@@ -670,11 +714,17 @@
                 const units = result.units || result.units_short || '';
                 const frequency = result.frequency || '';
                 
+                // Highlight matching text
+                const highlightMatch = (text) => {
+                    const regex = new RegExp(`(${query})`, 'gi');
+                    return text.replace(regex, '<span style="color: #00ff88; font-weight: bold;">$1</span>');
+                };
+                
                 html += `
-                    <div class="search-item" onclick="addSearchResultToChart('${symbol}', '${provider}', '${name.replace(/'/g, "\\'")}')">
+                    <div class="search-item" onclick="addToWatchlistFromSearch('${symbol}', '${provider}', '${name.replace(/'/g, "\\'")}')">
                         <div class="search-item-left">
-                            <div class="search-item-symbol">${symbol}</div>
-                            <div class="search-item-name">${name}</div>
+                            <div class="search-item-symbol">${highlightMatch(symbol)}</div>
+                            <div class="search-item-name">${highlightMatch(name)}</div>
                             ${units || frequency ? `<div class="search-item-description">${[units, frequency].filter(Boolean).join(' • ')}</div>` : ''}
                         </div>
                         <div class="search-item-source">${provider}</div>
@@ -686,21 +736,67 @@
             resultsDiv.style.display = 'block';
         }
         
-        // Add search result to active chart
-        function addSearchResultToChart(symbol, provider, name) {
-            let targetChartId = activeChartId;
-            if (!targetChartId) {
-                if (Object.keys(charts).length > 0) {
-                    targetChartId = Object.keys(charts)[Object.keys(charts).length - 1];
-                } else {
-                    addNewChart();
-                    targetChartId = activeChartId;
-                }
+        // Add to watchlist from search results
+        function addToWatchlistFromSearch(symbol, provider, name) {
+            if (!watchlistSymbols.includes(symbol)) {
+                watchlistSymbols.push(symbol);
+                localStorage.setItem('openbbWatchlist', JSON.stringify(watchlistSymbols));
+                
+                // Immediately add to watchlist data
+                watchlistData[symbol] = {
+                    name: name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
+                    hasData: false
+                };
+                
+                renderWatchlist();
+                
+                // Load the actual data
+                loadSingleWatchlistItem(symbol, provider);
+                
+                showTemporaryMessage(`Added ${symbol} to watchlist`, 'info');
+            } else {
+                showTemporaryMessage(`${symbol} is already in watchlist`, 'info');
             }
             
-            addToChart(targetChartId, symbol, provider, name);
+            // Clear search
             document.getElementById('searchResults').style.display = 'none';
             document.getElementById('searchBox').value = '';
+        }
+        
+        // Load single watchlist item data
+        async function loadSingleWatchlistItem(symbol, provider = 'fred') {
+            try {
+                // Get ALL historical data
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.length > 0) {
+                        const data = result.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        const latestValue = parseFloat(data[0].value || data[0][symbol] || 0);
+                        
+                        // Calculate percentage changes
+                        const changes = calculatePercentageChanges(data, symbol);
+                        
+                        watchlistData[symbol] = {
+                            name: result.name || result.title || watchlistData[symbol]?.name || symbol,
+                            provider: provider,
+                            price: latestValue,
+                            changes: changes,
+                            hasData: true,
+                            fullData: data // Store full historical data
+                        };
+                        
+                        renderWatchlist();
+                    }
+                }
+            } catch (error) {
+                console.error(`Error loading ${symbol}:`, error);
+            }
         }
         
         // Create a new chart window
@@ -969,42 +1065,18 @@
         // Load watchlist data
         async function loadWatchlistData() {
             const tbody = document.getElementById('watchlistBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
             
-            for (const symbol of watchlistSymbols) {
-                try {
-                    const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=fred`);
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        
-                        if (result.data && result.data.length > 0) {
-                            const data = result.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-                            const latestValue = parseFloat(data[0].value || data[0][symbol] || 0);
-                            
-                            // Calculate percentage changes
-                            const changes = calculatePercentageChanges(data, symbol);
-                            
-                            watchlistData[symbol] = {
-                                name: symbol,
-                                price: latestValue,
-                                changes: changes,
-                                hasData: true
-                            };
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error loading ${symbol}:`, error);
-                    watchlistData[symbol] = {
-                        name: symbol,
-                        price: 0,
-                        changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
-                        hasData: false
-                    };
-                }
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
+                return;
             }
             
-            renderWatchlist();
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
+            
+            for (const symbol of watchlistSymbols) {
+                const provider = watchlistData[symbol]?.provider || 'fred';
+                await loadSingleWatchlistItem(symbol, provider);
+            }
         }
         
         // Calculate percentage changes
@@ -1059,8 +1131,8 @@
         function renderWatchlist() {
             const tbody = document.getElementById('watchlistBody');
             
-            if (Object.keys(watchlistData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">No data available</td></tr>';
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
                 return;
             }
             
@@ -1069,7 +1141,7 @@
                 if (!data) return '';
                 
                 const formatPrice = (price) => {
-                    if (price === 0) return 'N/A';
+                    if (price === 0) return 'Loading...';
                     if (price >= 1000) return price.toFixed(0);
                     if (price >= 1) return price.toFixed(2);
                     return price.toFixed(4);
@@ -1087,7 +1159,7 @@
                 };
                 
                 return `
-                    <tr onclick="addSymbolToActiveChart('${symbol}')" style="cursor: pointer;">
+                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred'}')" style="cursor: pointer;" title="Double-click to view chart">
                         <td>
                             <div class="symbol-cell">
                                 <div class="symbol-icon">${symbol.charAt(0)}</div>
@@ -1103,30 +1175,59 @@
                         <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
                         <td class="change-cell ${getChangeClass(data.changes['3m'])}">${formatChange(data.changes['3m'])}</td>
                         <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
+                        <td style="padding: 5px;">
+                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px;" onclick="removeFromWatchlist(event, '${symbol}')">×</button>
+                        </td>
                     </tr>
                 `;
             }).join('');
             
-            tbody.innerHTML = html;
+            tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">Loading data...</td></tr>';
         }
         
-        // Add symbol from watchlist to active chart
-        function addSymbolToActiveChart(symbol) {
-            if (activeChartId) {
-                addToChart(activeChartId, symbol, 'fred', symbol);
-            } else {
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol) {
+            event.stopPropagation();
+            watchlistSymbols = watchlistSymbols.filter(s => s !== symbol);
+            delete watchlistData[symbol];
+            localStorage.setItem('openbbWatchlist', JSON.stringify(watchlistSymbols));
+            renderWatchlist();
+        }
+        
+        // Open chart view for a symbol
+        function openChartForSymbol(symbol, provider) {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+            
+            // Show charts area
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+            
+            // Create new chart if none exists
+            if (Object.keys(charts).length === 0) {
                 addNewChart();
-                addToChart(activeChartId, symbol, 'fred', symbol);
+            }
+            
+            // Add symbol to active chart
+            if (activeChartId) {
+                const data = watchlistData[symbol];
+                addToChart(activeChartId, symbol, provider, data?.name || symbol);
             }
         }
         
-        // Add to watchlist
-        function addToWatchlist() {
-            const symbol = prompt('Enter symbol to add to watchlist:');
-            if (symbol && !watchlistSymbols.includes(symbol.toUpperCase())) {
-                watchlistSymbols.push(symbol.toUpperCase());
-                localStorage.setItem('openbbWatchlist', JSON.stringify(watchlistSymbols));
-                loadWatchlistData();
+        // Show chart view
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block';
+                watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
             }
         }
         
