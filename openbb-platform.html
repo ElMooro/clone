@@ -334,6 +334,47 @@
             font-size: 16px;
             font-weight: bold;
             color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .watchlist-selector {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .watchlist-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .sort-button {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sort-button:hover {
+            background: #333;
+            border-color: #555;
+        }
+        
+        .sort-button.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
         }
         
         .add-watchlist { 
@@ -353,17 +394,18 @@
         .watchlist-table {
             width: 100%;
             border-collapse: collapse;
+            background: #fff; /* White background for watchlist */
         }
         
         .watchlist-table th {
-            background: #1a1a1a;
-            color: #888;
+            background: #f5f5f5;
+            color: #333;
             font-size: 11px;
-            font-weight: normal;
+            font-weight: bold;
             text-transform: uppercase;
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #282828;
+            border-bottom: 2px solid #e0e0e0;
             position: sticky;
             top: 57px;
             z-index: 5;
@@ -376,16 +418,19 @@
         .watchlist-table tbody tr {
             transition: background-color 0.2s;
             cursor: pointer;
+            background: #fff;
+            color: #333;
         }
         
         .watchlist-table tbody tr:hover {
-            background: #1a1a1a;
+            background: #f8f8f8;
         }
         
         .watchlist-table td {
             padding: 12px 15px;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid #e0e0e0;
             font-size: 13px;
+            color: #333;
         }
         
         .symbol-cell {
@@ -414,18 +459,18 @@
         
         .symbol-name {
             font-weight: bold;
-            color: #fff;
+            color: #000;
             font-size: 14px;
         }
         
         .symbol-fullname {
-            color: #888;
+            color: #666;
             font-size: 11px;
         }
         
         .price-cell {
             font-weight: bold;
-            color: #fff;
+            color: #000;
             text-align: right;
         }
         
@@ -436,7 +481,26 @@
         
         .positive { color: #00dd77; }
         .negative { color: #ff4444; }
-        .neutral { color: #888; }
+        .neutral { color: #666; }
+        
+        /* Flashing animations for significant changes */
+        @keyframes flashGreen {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #00ff8830; }
+        }
+        
+        @keyframes flashRed {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #ff444430; }
+        }
+        
+        .flash-green {
+            animation: flashGreen 1s infinite;
+        }
+        
+        .flash-red {
+            animation: flashRed 1s infinite;
+        }
         
         /* Loading */
         .loading-pulse { animation: pulse 1.5s infinite ease-in-out; }
@@ -545,8 +609,18 @@
             
             <div class="watchlist-section" style="flex: 1;">
                 <div class="watchlist-header">
-                    <div class="watchlist-title">MARKET WATCHLIST</div>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="watchlist-title">
+                        <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
+                            <option value="MAIN">MAIN</option>
+                            <option value="TOP">TOP</option>
+                            <option value="GLOBAL LIQUIDITY TREND REVERSAL">GLOBAL LIQUIDITY TREND REVERSAL</option>
+                            <option value="BLACK SWAN">BLACK SWAN</option>
+                        </select>
+                    </div>
+                    <div class="watchlist-controls">
+                        <button class="sort-button" onclick="changeSortOrder('default')" id="sortDefault">Default</button>
+                        <button class="sort-button" onclick="changeSortOrder('increase')" id="sortIncrease">↑ Largest Increase</button>
+                        <button class="sort-button" onclick="changeSortOrder('decrease')" id="sortDecrease">↓ Largest Decrease</button>
                         <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
                         <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
                     </div>
@@ -580,8 +654,34 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
-        let watchlistSymbols = JSON.parse(localStorage.getItem('openbbWatchlist')) || ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS'];
+        
+        // Multiple watchlists configuration
+        const watchlists = {
+            'MAIN': {
+                symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR'],
+                active: true
+            },
+            'TOP': {
+                symbols: ['DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DTWEXM', 'DXY', 'M2SL', 'ISRATIO', 'MNFCTRIRSA'],
+                active: false
+            },
+            'GLOBAL LIQUIDITY TREND REVERSAL': {
+                symbols: ['RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690', 'SUBLPDCISTQNQ', 'DRISCFLM', 
+                         'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S', 'DRISCFS', 'MABMM301JPM189S', 'TREAS911Y', 'RREP15', 'OTHL15', 
+                         'RESH4MFNWW', 'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES'],
+                active: false
+            },
+            'BLACK SWAN': {
+                symbols: ['NFCINONFINLEVERAGE', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 
+                         'BAMLEMPUPUBSLCRPIUSSYTW', 'BAMLEMIBHGCRPIOAS', 'BAMLEMHYHYLCRPIUSSYTW'],
+                active: false
+            }
+        };
+        
+        let currentWatchlist = 'MAIN';
+        let watchlistSymbols = [];
         let watchlistData = {};
+        let sortOrder = 'default'; // 'default', 'increase', 'decrease'
         
         // Color palette for charts
         const colorPalette = [
@@ -589,14 +689,47 @@
             '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
         ];
         
+        // Load saved watchlists
+        function loadWatchlists() {
+            const saved = localStorage.getItem('openbbWatchlists');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    Object.keys(savedData).forEach(name => {
+                        if (watchlists[name]) {
+                            watchlists[name].symbols = savedData[name].symbols || watchlists[name].symbols;
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading saved watchlists:', e);
+                }
+            }
+            
+            // Set current watchlist symbols
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+        }
+        
+        // Save watchlists
+        function saveWatchlists() {
+            const toSave = {};
+            Object.keys(watchlists).forEach(name => {
+                toSave[name] = { symbols: watchlists[name].symbols };
+            });
+            localStorage.setItem('openbbWatchlists', JSON.stringify(toSave));
+        }
+        
         // Initialize the dashboard
         async function init() {
             updateClock();
             setInterval(updateClock, 1000);
             
+            loadWatchlists();
             await checkAPIConnection();
             loadWatchlistData();
             setInterval(loadWatchlistData, 60000); // Update every minute
+            
+            // Set initial sort button state
+            updateSortButtons();
             
             // Focus on search box
             document.getElementById('searchBox').focus();
@@ -823,9 +956,12 @@
         
         // Add to watchlist from search results
         function addToWatchlistFromSearch(symbol, provider, name) {
-            if (!watchlistSymbols.includes(symbol)) {
-                watchlistSymbols.push(symbol);
-                localStorage.setItem('openbbWatchlist', JSON.stringify(watchlistSymbols));
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            
+            if (!currentSymbols.includes(symbol)) {
+                currentSymbols.push(symbol);
+                watchlistSymbols = [...currentSymbols];
+                saveWatchlists();
                 
                 // Immediately add to watchlist data
                 watchlistData[symbol] = {
@@ -841,9 +977,9 @@
                 // Load the actual data
                 loadSingleWatchlistItem(symbol, provider);
                 
-                showTemporaryMessage(`Added ${symbol} to watchlist`, 'info');
+                showTemporaryMessage(`Added ${symbol} to ${currentWatchlist} watchlist`, 'info');
             } else {
-                showTemporaryMessage(`${symbol} is already in watchlist`, 'info');
+                showTemporaryMessage(`${symbol} is already in ${currentWatchlist} watchlist`, 'info');
             }
             
             // Clear search
@@ -1597,34 +1733,81 @@
             const tbody = document.getElementById('watchlistBody');
             
             if (watchlistSymbols.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No symbols in this watchlist. Use search to add symbols.</td></tr>';
                 return;
             }
             
-            const html = watchlistSymbols.map(symbol => {
+            // Create array with symbol data for sorting
+            let symbolsToRender = watchlistSymbols.map(symbol => {
                 const data = watchlistData[symbol];
-                if (!data) return '';
+                if (!data) return null;
                 
-                const formatPrice = (price) => {
-                    if (price === 0) return 'Loading...';
-                    if (price >= 1000) return price.toFixed(0);
-                    if (price >= 1) return price.toFixed(2);
-                    return price.toFixed(4);
-                };
+                // Calculate max absolute change for sorting
+                let maxChange = 0;
+                if (data.changes) {
+                    const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v));
+                    if (changes.length > 0) {
+                        maxChange = changes.reduce((max, change) => {
+                            return Math.abs(change) > Math.abs(max) ? change : max;
+                        }, 0);
+                    }
+                }
                 
-                const formatChange = (change) => {
-                    if (change === null || change === undefined || isNaN(change)) return '—';
-                    const val = parseFloat(change);
-                    return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
-                };
+                // Check if any change is over 15%
+                let hasSignificantChange = false;
+                let changeDirection = 'none';
+                if (data.changes) {
+                    Object.values(data.changes).forEach(change => {
+                        if (change !== null && Math.abs(change) >= 15) {
+                            hasSignificantChange = true;
+                            changeDirection = change > 0 ? 'up' : 'down';
+                        }
+                    });
+                }
                 
-                const getChangeClass = (change) => {
-                    if (change === null || change === undefined || isNaN(change)) return 'neutral';
-                    return parseFloat(change) >= 0 ? 'positive' : 'negative';
+                return {
+                    symbol,
+                    data,
+                    maxChange,
+                    hasSignificantChange,
+                    changeDirection
                 };
+            }).filter(item => item !== null);
+            
+            // Sort based on current sort order
+            if (sortOrder === 'increase') {
+                symbolsToRender.sort((a, b) => b.maxChange - a.maxChange);
+            } else if (sortOrder === 'decrease') {
+                symbolsToRender.sort((a, b) => a.maxChange - b.maxChange);
+            }
+            
+            const formatPrice = (price) => {
+                if (price === 0) return 'Loading...';
+                if (price >= 1000) return price.toFixed(0);
+                if (price >= 1) return price.toFixed(2);
+                return price.toFixed(4);
+            };
+            
+            const formatChange = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return '—';
+                const val = parseFloat(change);
+                return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+            };
+            
+            const getChangeClass = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return 'neutral';
+                return parseFloat(change) >= 0 ? 'positive' : 'negative';
+            };
+            
+            const html = symbolsToRender.map(({ symbol, data, hasSignificantChange, changeDirection }) => {
+                const flashClass = hasSignificantChange ? 
+                    (changeDirection === 'up' ? 'flash-green' : 'flash-red') : '';
                 
                 return `
-                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred'}')" style="cursor: pointer;" title="Double-click to view chart">
+                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred'}')" 
+                        class="${flashClass}"
+                        style="cursor: pointer;" 
+                        title="Double-click to view chart">
                         <td>
                             <div class="symbol-cell">
                                 <div class="symbol-icon">${symbol.charAt(0)}</div>
@@ -1641,22 +1824,50 @@
                         <td class="change-cell ${getChangeClass(data.changes['3m'])}">${formatChange(data.changes['3m'])}</td>
                         <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
                         <td style="padding: 5px;">
-                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px;" onclick="removeFromWatchlist(event, '${symbol}')">×</button>
+                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px; background: #f5f5f5; color: #333; border: 1px solid #ddd;" 
+                                    onclick="removeFromWatchlist(event, '${symbol}')">×</button>
                         </td>
                     </tr>
                 `;
             }).join('');
             
-            tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">Loading data...</td></tr>';
+            tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
         }
         
         // Remove from watchlist
         function removeFromWatchlist(event, symbol) {
             event.stopPropagation();
-            watchlistSymbols = watchlistSymbols.filter(s => s !== symbol);
+            watchlists[currentWatchlist].symbols = watchlists[currentWatchlist].symbols.filter(s => s !== symbol);
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
             delete watchlistData[symbol];
-            localStorage.setItem('openbbWatchlist', JSON.stringify(watchlistSymbols));
+            saveWatchlists();
             renderWatchlist();
+        }
+        
+        // Switch watchlist
+        function switchWatchlist(name) {
+            currentWatchlist = name;
+            watchlistSymbols = [...watchlists[name].symbols];
+            
+            // Update selector
+            document.getElementById('watchlistSelector').value = name;
+            
+            // Load data for new watchlist
+            loadWatchlistData();
+        }
+        
+        // Change sort order
+        function changeSortOrder(order) {
+            sortOrder = order;
+            updateSortButtons();
+            renderWatchlist();
+        }
+        
+        // Update sort button states
+        function updateSortButtons() {
+            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default');
+            document.getElementById('sortIncrease').classList.toggle('active', sortOrder === 'increase');
+            document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
         }
         
         // Open chart view for a symbol
