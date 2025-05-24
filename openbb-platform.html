@@ -630,8 +630,7 @@
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
-            // Don't search for empty queries
-            if (!query || query.trim().length < 1) {
+            if (query.trim().length < 1) {
                 resultsDiv.style.display = 'none';
                 return;
             }
@@ -1116,10 +1115,13 @@
             try {
                 console.log(`Loading chart data for ${symbol} from ${provider}`);
                 
-                // First try to get more recent data with limit
-                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&limit=5000`);
+                // Try to get full historical data
+                const endDate = new Date().toISOString().split('T')[0];
+                const startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 30)).toISOString().split('T')[0];
                 
-                // If that fails, try without parameters
+                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&start_date=${startDate}&end_date=${endDate}`);
+                
+                // If that fails, try without date parameters
                 if (!response.ok) {
                     response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 }
@@ -1288,24 +1290,6 @@
             let yAxisCounter = 1;
             const yAxes = {};
             const periodChanges = [];
-            let hasMultipleScales = false;
-            
-            // First pass: determine scale ranges
-            const scaleRanges = [];
-            chart.symbols.forEach((s, index) => {
-                const symbolData = chart.data[s.symbol];
-                if (!symbolData || symbolData.length === 0) return;
-                
-                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
-                if (filteredData.length === 0) return;
-                
-                const values = filteredData.map(d => d.value);
-                scaleRanges.push({
-                    min: Math.min(...values),
-                    max: Math.max(...values),
-                    symbol: s.symbol
-                });
-            });
             
             // Create traces for each symbol
             chart.symbols.forEach((s, index) => {
@@ -1340,36 +1324,21 @@
                 const minValue = Math.min(...values);
                 
                 let yaxis = 'y';
-                if (index > 0 && scaleRanges.length > 1) {
-                    const firstRange = scaleRanges[0];
-                    const currentRange = scaleRanges[index];
+                if (index > 0 && traces.length > 0) {
+                    const firstTraceMax = Math.max(...traces[0].y);
+                    const ratio = maxValue / firstTraceMax;
                     
-                    // Check if scales are very different
-                    const scaleRatio = currentRange.max / firstRange.max;
-                    const rangeRatio = (currentRange.max - currentRange.min) / (firstRange.max - firstRange.min);
-                    
-                    if (scaleRatio > 10 || scaleRatio < 0.1 || rangeRatio > 10 || rangeRatio < 0.1) {
-                        hasMultipleScales = true;
-                        yaxis = `y${index + 1}`;
-                        
-                        const axisConfig = {
-                            overlaying: index === 1 ? 'y' : undefined,
+                    if (ratio > 10 || ratio < 0.1) {
+                        yaxis = `y${++yAxisCounter}`;
+                        yAxes[yaxis] = {
+                            overlaying: 'y',
                             side: index % 2 === 0 ? 'left' : 'right',
-                            showgrid: index === 0,
+                            position: index % 2 === 0 ? 0.0 : 1.0,
                             gridcolor: '#22222250',
-                            tickfont: { color: lineColor, size: 10 },
-                            titlefont: { color: lineColor, size: 12 },
-                            tickformat: maxValue < 1 ? '.4f' : (maxValue < 100 ? '.2f' : '.0f'),
-                            zeroline: false
+                            tickfont: { color: lineColor },
+                            title: s.symbol,
+                            titlefont: { color: lineColor }
                         };
-                        
-                        // Position axes properly
-                        if (index > 1) {
-                            const offset = index % 2 === 0 ? -(index * 0.08) : 1 + ((index - 1) * 0.08);
-                            axisConfig.position = Math.max(0, Math.min(1, offset));
-                        }
-                        
-                        yAxes[yaxis] = axisConfig;
                     }
                 }
                 
@@ -1417,35 +1386,22 @@
                 }).join('');
             }
             
-            // Calculate margins based on number of axes
-            const leftMargin = hasMultipleScales ? 80 + (Math.floor(traces.length / 2) * 60) : 80;
-            const rightMargin = hasMultipleScales ? 80 + (Math.floor((traces.length - 1) / 2) * 60) : 80;
-            
             const layout = {
                 paper_bgcolor: '#0a0a0a',
                 plot_bgcolor: '#0a0a0a',
                 font: { color: '#aaa', size: 12 },
-                margin: { 
-                    t: 40, 
-                    r: rightMargin, 
-                    b: 60, 
-                    l: leftMargin 
-                },
+                margin: { t: 40, r: 80, b: 60, l: 80 },
                 xaxis: {
                     type: 'date',
                     gridcolor: '#22222250',
                     tickfont: { color: '#888' },
-                    rangeslider: { visible: false },
-                    tickformat: '%Y-%m-%d'
+                    rangeslider: { visible: false }
                 },
                 yaxis: {
                     gridcolor: '#22222250',
-                    tickfont: { color: traces.length === 1 ? '#888' : colorPalette[0], size: 10 },
-                    title: traces.length === 1 ? '' : traces[0].name.split(' ')[0],
-                    titlefont: { color: colorPalette[0], size: 12 },
-                    side: 'left',
-                    tickformat: scaleRanges[0]?.max < 1 ? '.4f' : (scaleRanges[0]?.max < 100 ? '.2f' : '.0f'),
-                    zeroline: false
+                    tickfont: { color: '#888' },
+                    title: traces.length === 1 ? traces[0].name.split(' ')[0] : '',
+                    side: 'left'
                 },
                 ...yAxes,
                 hovermode: 'x unified',
@@ -1456,30 +1412,15 @@
                     y: 1.02,
                     xanchor: 'right',
                     x: 1,
-                    bgcolor: 'rgba(10,10,10,0.8)',
-                    bordercolor: '#333',
-                    borderwidth: 1,
+                    bgcolor: 'rgba(10,10,10,0.0)',
                     font: { size: 11 }
-                },
-                height: 500,
-                autosize: true
+                }
             };
             
             const config = {
                 responsive: true,
                 displaylogo: false,
-                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
-                displayModeBar: true,
-                modeBarButtonsToAdd: [{
-                    name: 'Reset axes',
-                    icon: Plotly.Icons.home,
-                    click: function(gd) {
-                        Plotly.relayout(gd, {
-                            'xaxis.autorange': true,
-                            'yaxis.autorange': true
-                        });
-                    }
-                }]
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage']
             };
             
             if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
