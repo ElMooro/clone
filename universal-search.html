@@ -637,8 +637,10 @@
                 <a class="quick-link" onclick="quickSearch('UNRATE')">👥 Unemployment</a>
                 <a class="quick-link" onclick="quickSearch('CPI')">📊 CPI</a>
                 <a class="quick-link" onclick="quickSearch('DGS10')">📉 10Y Treasury</a>
+                <a class="quick-link" onclick="quickSearch('DXY')">💱 Dollar Index</a>
                 <a class="quick-link" onclick="quickSearch('STLFSI4')">⚠️ Financial Stress</a>
                 <a class="quick-link" onclick="quickSearch('ECBDFR')">🏦 ECB Rates</a>
+                <a class="quick-link" onclick="quickSearch('VIX')">📊 VIX</a>
                 <a class="quick-link" onclick="quickSearch('treasury auction')">🏛️ Treasury Auctions</a>
             </div>
         </div>
@@ -973,15 +975,28 @@
                 
                 if (data) {
                     // Handle different response formats
+                    let results = [];
+                    
                     if (provider === 'fred' && data.results && data.results.fred) {
-                        searchResults[provider] = data.results.fred;
+                        results = data.results.fred;
                     } else if (Array.isArray(data)) {
-                        searchResults[provider] = data;
+                        results = data;
                     } else if (data.results) {
-                        searchResults[provider] = data.results;
+                        if (typeof data.results === 'object' && !Array.isArray(data.results)) {
+                            // If results is an object with provider keys
+                            results = data.results[provider] || [];
+                        } else {
+                            results = data.results;
+                        }
+                    } else if (data.seriess) {
+                        // FRED sometimes returns data in 'seriess' field
+                        results = data.seriess;
                     } else {
-                        searchResults[provider] = [data];
+                        results = [data];
                     }
+                    
+                    // Filter out empty results
+                    searchResults[provider] = results.filter(item => item && (item.series_id || item.symbol || item.code || item.id));
                 }
             } catch (error) {
                 console.error(`Error searching ${provider}:`, error);
@@ -1051,22 +1066,29 @@
 
         // Create result card HTML
         function createResultCard(item, provider) {
-            const symbol = item.series_id || item.symbol || item.code || 'N/A';
-            const name = item.title || item.name || item.description || 'No description';
+            const symbol = item.series_id || item.symbol || item.code || item.id || 'N/A';
+            const name = item.title || item.name || item.description || item.notes || symbol;
             const isInWatchlist = watchlist.some(w => w.symbol === symbol && w.provider === provider);
             
+            // Extract additional info
+            const units = item.units || item.units_short || '';
+            const frequency = item.frequency || item.frequency_short || '';
+            const lastUpdated = item.last_updated || '';
+            
             return `
-                <div class="result-card" onclick="viewChart('${symbol}', '${provider}')">
-                    <div class="result-info">
+                <div class="result-card">
+                    <div class="result-info" style="flex: 1;">
                         <div class="result-symbol">${symbol}</div>
                         <div class="result-name">${name}</div>
+                        ${units ? `<div style="font-size: 0.8rem; color: #666;">Units: ${units}</div>` : ''}
+                        ${frequency ? `<div style="font-size: 0.8rem; color: #666;">Frequency: ${frequency}</div>` : ''}
                     </div>
                     <div class="result-actions">
                         <button class="action-btn" onclick="event.stopPropagation(); viewChart('${symbol}', '${provider}')">
                             📊 Chart
                         </button>
-                        <button class="action-btn" onclick="event.stopPropagation(); getData('${symbol}', '${provider}')">
-                            📄 Data
+                        <button class="action-btn" onclick="event.stopPropagation(); viewData('${symbol}', '${provider}')">
+                            📄 View Data
                         </button>
                         <button class="add-watchlist-btn ${isInWatchlist ? 'added' : ''}" 
                                 data-symbol="${symbol}" 
@@ -1230,11 +1252,9 @@
             `;
         }
 
-        // Get raw data - FIXED VERSION
-        async function getData(symbol, provider) {
+        // View data inline (not download)
+        async function viewData(symbol, provider) {
             try {
-                console.log(`Fetching data for ${symbol} from ${provider}`);
-                
                 const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 
                 if (!response.ok) {
@@ -1242,16 +1262,36 @@
                 }
                 
                 const result = await response.json();
-                console.log('Data received:', result);
                 
                 if (result.data && result.data.length > 0) {
-                    // Create CSV content
-                    const csv = convertToCSV(result.data, symbol);
-                    downloadCSV(csv, `${symbol}_${provider}.csv`);
-                } else if (result.error) {
-                    alert(`Error: ${result.error}`);
+                    // Get latest values
+                    const latest = result.data[result.data.length - 1];
+                    const value = latest.value || latest[symbol] || latest.close || 'N/A';
+                    const date = latest.date || 'N/A';
+                    
+                    // Calculate some basic stats
+                    const values = result.data.map(item => parseFloat(item.value || item[symbol] || item.close || 0)).filter(v => !isNaN(v));
+                    const min = Math.min(...values);
+                    const max = Math.max(...values);
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                    
+                    // Show in a nice alert or modal
+                    const dataDisplay = `
+📊 ${symbol} - Latest Data
+━━━━━━━━━━━━━━━━━━━━━
+📅 Date: ${date}
+💵 Value: ${typeof value === 'number' ? value.toFixed(4) : value}
+📈 High: ${max.toFixed(4)}
+📉 Low: ${min.toFixed(4)}
+📊 Average: ${avg.toFixed(4)}
+📋 Total Points: ${result.data.length}
+
+Provider: ${PROVIDERS[provider].name}
+                    `;
+                    
+                    alert(dataDisplay);
                 } else {
-                    alert(`No data available for ${symbol}. Try a different symbol or provider.`);
+                    alert(`No data available for ${symbol}`);
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
