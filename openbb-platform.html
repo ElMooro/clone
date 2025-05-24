@@ -851,7 +851,7 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Enhanced load single watchlist item with better data handling
+        // Enhanced load single watchlist item with pagination for all data
         async function loadSingleWatchlistItem(symbol, provider = 'fred') {
             try {
                 console.log(`Loading ${symbol} from ${provider}`);
@@ -863,52 +863,79 @@
                     console.log('Using DTWEXM as proxy for DXY');
                 }
                 
-                // Build URL to get ALL available data
+                // First, try to get recent data to check total available
                 let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
                 
-                // Add parameters to get maximum data
-                const params = new URLSearchParams();
-                params.append('start_date', '1900-01-01'); // Request from 1900
-                params.append('end_date', new Date().toISOString().split('T')[0]);
-                params.append('limit', '1000000'); // Request up to 1 million points
-                
-                url += '&' + params.toString();
-                
-                console.log(`Requesting data from: ${url}`);
+                console.log(`Initial request for ${symbol}`);
                 let response = await fetch(url);
-                let result = null;
-                
-                if (!response.ok) {
-                    // Try without parameters
-                    console.log('First request failed, trying without parameters');
-                    response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`);
-                }
                 
                 if (!response.ok && (symbol === 'DXY' || symbol.includes('DOLLAR'))) {
                     // Try alternative symbols for dollar index
                     console.log('Trying alternative dollar symbols');
                     const alternativeSymbols = ['DTWEXBGS', 'DTWEXM', 'DEXUSEU'];
                     for (const altSymbol of alternativeSymbols) {
-                        const altUrl = `${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred&start_date=1900-01-01&limit=1000000`;
-                        response = await fetch(altUrl);
+                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred`);
                         if (response.ok) {
-                            result = await response.json();
+                            actualSymbol = altSymbol;
                             console.log(`Success with alternative symbol ${altSymbol}`);
                             break;
                         }
                     }
-                } else if (response.ok) {
-                    result = await response.json();
                 }
                 
-                if (result && result.data && result.data.length > 0) {
-                    console.log(`Received ${result.data.length} data points for ${symbol}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+                
+                const initialResult = await response.json();
+                
+                // Collect all data
+                let allData = [];
+                
+                if (initialResult.data && initialResult.data.length > 0) {
+                    allData = [...initialResult.data];
                     
-                    // Sort data by date
-                    const data = result.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    // If we got 100 points, there might be more data available
+                    // Try to get historical data by using offset or pagination
+                    if (initialResult.data.length === 100) {
+                        console.log(`Got 100 points for ${symbol}, trying to get more historical data...`);
+                        
+                        // Get the oldest date from current data
+                        const oldestDate = initialResult.data.reduce((oldest, item) => {
+                            const itemDate = new Date(item.date || item.time || item.period);
+                            return itemDate < oldest ? itemDate : oldest;
+                        }, new Date());
+                        
+                        // Try to get data before the oldest date
+                        const endDate = new Date(oldestDate);
+                        endDate.setDate(endDate.getDate() - 1);
+                        const startDate = new Date(endDate);
+                        startDate.setFullYear(startDate.getFullYear() - 10); // Try 10 years at a time
+                        
+                        try {
+                            const historicalUrl = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`;
+                            console.log(`Requesting historical data from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
+                            
+                            const histResponse = await fetch(historicalUrl);
+                            if (histResponse.ok) {
+                                const histResult = await histResponse.json();
+                                if (histResult.data && histResult.data.length > 0) {
+                                    console.log(`Got ${histResult.data.length} additional historical points`);
+                                    allData = [...histResult.data, ...allData];
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Could not fetch additional historical data:', err);
+                        }
+                    }
+                    
+                    // Sort all data by date
+                    allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    console.log(`Total ${allData.length} data points for ${symbol}`);
                     
                     // Get the latest value - handle different data structures
-                    const latestItem = data[data.length - 1];
+                    const latestItem = allData[allData.length - 1];
                     let latestValue = parseFloat(
                         latestItem.value || 
                         latestItem[actualSymbol] || 
@@ -932,18 +959,18 @@
                         }
                     }
                     
-                    // Calculate real percentage changes
-                    const changes = calculateRealPercentageChanges(data, actualSymbol);
+                    // Calculate real percentage changes with all available data
+                    const changes = calculateRealPercentageChanges(allData, actualSymbol);
                     
                     watchlistData[symbol] = {
-                        name: result.name || result.title || watchlistData[symbol]?.name || symbol,
+                        name: initialResult.name || initialResult.title || watchlistData[symbol]?.name || symbol,
                         provider: provider,
                         price: latestValue,
                         changes: changes,
                         hasData: true,
-                        fullData: data,
+                        fullData: allData,
                         latestDate: latestItem.date,
-                        actualSymbol: actualSymbol // Store the actual symbol used
+                        actualSymbol: actualSymbol
                     };
                     
                     renderWatchlist();
@@ -971,7 +998,10 @@
             
             const now = new Date();
             const latestItem = data[data.length - 1];
-            const latestValue = parseFloat(
+            const latestDate = new Date(latestItem.date || latestItem.time || latestItem.period);
+            
+            // Extract value from latest item
+            let latestValue = parseFloat(
                 latestItem.value || 
                 latestItem[symbol] || 
                 latestItem.close || 
@@ -980,13 +1010,24 @@
                 0
             );
             
+            // If no value found, try any numeric field
+            if (latestValue === 0 || isNaN(latestValue)) {
+                const numericFields = Object.keys(latestItem).filter(key => 
+                    key !== 'date' && key !== 'time' && key !== 'period' &&
+                    (typeof latestItem[key] === 'number' || !isNaN(parseFloat(latestItem[key])))
+                );
+                if (numericFields.length > 0) {
+                    latestValue = parseFloat(latestItem[numericFields[0]]);
+                }
+            }
+            
             if (latestValue === 0) {
                 return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
             }
             
             const changes = {};
             
-            // Define periods
+            // Define periods based on latest data date
             const periods = {
                 '1d': 1,
                 '1w': 7,
@@ -997,7 +1038,7 @@
             
             // Calculate change for each period
             for (const [period, days] of Object.entries(periods)) {
-                const targetDate = new Date(now);
+                const targetDate = new Date(latestDate);
                 targetDate.setDate(targetDate.getDate() - days);
                 
                 // Find the closest data point to target date
@@ -1005,17 +1046,18 @@
                 let minDiff = Infinity;
                 
                 for (const item of data) {
-                    const itemDate = new Date(item.date);
+                    const itemDate = new Date(item.date || item.time || item.period);
                     const diff = Math.abs(itemDate - targetDate);
                     
-                    if (diff < minDiff && itemDate <= now) {
+                    // Only consider dates that are before or equal to the target
+                    if (diff < minDiff && itemDate <= targetDate) {
                         minDiff = diff;
                         closestItem = item;
                     }
                 }
                 
-                if (closestItem) {
-                    const historicalValue = parseFloat(
+                if (closestItem && minDiff <= days * 24 * 60 * 60 * 1000) { // Within reasonable range
+                    let historicalValue = parseFloat(
                         closestItem.value || 
                         closestItem[symbol] || 
                         closestItem.close || 
@@ -1023,6 +1065,17 @@
                         closestItem.rate ||
                         0
                     );
+                    
+                    // If no value found, try any numeric field
+                    if (historicalValue === 0 || isNaN(historicalValue)) {
+                        const numericFields = Object.keys(closestItem).filter(key => 
+                            key !== 'date' && key !== 'time' && key !== 'period' &&
+                            (typeof closestItem[key] === 'number' || !isNaN(parseFloat(closestItem[key])))
+                        );
+                        if (numericFields.length > 0) {
+                            historicalValue = parseFloat(closestItem[numericFields[0]]);
+                        }
+                    }
                     
                     if (historicalValue !== 0) {
                         changes[period] = ((latestValue - historicalValue) / historicalValue * 100);
