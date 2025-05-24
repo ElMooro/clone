@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Search - Macro Intelligence Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1b;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #b3c5ff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .providers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .provider-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .search-section {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            background: #2a3142;
+            color: #fff;
+            border: 2px solid #3949ab;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #5c6bc0;
+            box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5c6bc0;
+            font-size: 20px;
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: #3949ab;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            background: #5c6bc0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(57, 73, 171, 0.3);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .provider-filter {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .provider-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            background: #2a3142;
+            border: 1px solid #444;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+
+        .provider-checkbox:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .provider-checkbox input {
+            cursor: pointer;
+        }
+
+        .provider-checkbox.active {
+            background: #3949ab;
+            border-color: #5c6bc0;
+        }
+
+        .results-info {
+            background: #2a3142;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 18px;
+            color: #5c6bc0;
+            font-weight: 600;
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: #2a3142;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #1a1f2e;
+            border: 1px solid #2a3142;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3949ab, #5c6bc0);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .result-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border-color: #3949ab;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5c6bc0;
+            margin-bottom: 5px;
+            flex: 1;
+        }
+
+        .provider-tag {
+            padding: 4px 10px;
+            background: #2a3142;
+            border-radius: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .provider-fred { background: #4caf50; color: white; }
+        .provider-ecb { background: #2196f3; color: white; }
+        .provider-treasury { background: #ff9800; color: white; }
+        .provider-nyfed { background: #9c27b0; color: white; }
+        .provider-ofr { background: #f44336; color: white; }
+        .provider-bls { background: #795548; color: white; }
+        .provider-fmp { background: #607d8b; color: white; }
+        .provider-polygon { background: #00bcd4; color: white; }
+        .provider-nasdaq { background: #3f51b5; color: white; }
+        .provider-eia { background: #009688; color: white; }
+        .provider-imf { background: #673ab7; color: white; }
+        .provider-benzinga { background: #ff5722; color: white; }
+
+        .result-id {
+            font-family: monospace;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .result-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .meta-icon {
+            font-size: 16px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .result-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: #2a3142;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .result-btn:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+            transform: translateY(-1px);
+        }
+
+        .result-btn.primary {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .result-btn.primary:hover {
+            background: #5c6bc0;
+            border-color: #5c6bc0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top-color: #5c6bc0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-section {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #2a3142;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #5c6bc0;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .chart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 40px;
+        }
+
+        .chart-content {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1200px;
+            max-height: 90vh;
+            margin: auto;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .provider-filter {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Universal Search</h1>
+            <p>Search across all economic data providers in one place</p>
+            <div class="providers-list">
+                <span class="provider-badge">FRED</span>
+                <span class="provider-badge">ECB</span>
+                <span class="provider-badge">NY Fed</span>
+                <span class="provider-badge">Treasury</span>
+                <span class="provider-badge">OFR</span>
+                <span class="provider-badge">BLS</span>
+                <span class="provider-badge">FMP</span>
+                <span class="provider-badge">Polygon</span>
+                <span class="provider-badge">NASDAQ</span>
+                <span class="provider-badge">Benzinga</span>
+                <span class="provider-badge">Tiingo</span>
+                <span class="provider-badge">EIA</span>
+                <span class="provider-badge">IMF</span>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Search for any economic indicator, symbol, or keyword..."
+                        autocomplete="off"
+                    >
+                    <span class="search-icon">🔍</span>
+                </div>
+                <button id="searchBtn" class="search-btn" onclick="performUniversalSearch()">
+                    <span>Search All</span>
+                    <span id="searchSpinner" style="display: none;">⏳</span>
+                </button>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <span class="filter-label">Filter by Provider:</span>
+                    <div class="provider-filter" id="providerFilters">
+                        <label class="provider-checkbox active" data-provider="all">
+                            <input type="checkbox" checked onchange="toggleAllProviders(this)">
+                            <span>All Providers</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="fred">
+                            <input type="checkbox" checked onchange="toggleProvider('fred')">
+                            <span>FRED</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="ecb">
+                            <input type="checkbox" checked onchange="toggleProvider('ecb')">
+                            <span>ECB</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="treasury">
+                            <input type="checkbox" checked onchange="toggleProvider('treasury')">
+                            <span>Treasury</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="nyfed">
+                            <input type="checkbox" checked onchange="toggleProvider('nyfed')">
+                            <span>NY Fed</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="ofr">
+                            <input type="checkbox" checked onchange="toggleProvider('ofr')">
+                            <span>OFR</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="bls">
+                            <input type="checkbox" checked onchange="toggleProvider('bls')">
+                            <span>BLS</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="statsSection" class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalResults">0</div>
+                    <div class="stat-label">Total Results</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="providersCount">0</div>
+                    <div class="stat-label">Providers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="searchTime">0s</div>
+                    <div class="stat-label">Search Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uniqueSeries">0</div>
+                    <div class="stat-label">Unique Series</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsSection" style="display: none;">
+            <div class="results-info">
+                <div class="results-count" id="resultsCount"></div>
+                <div class="results-actions">
+                    <button class="action-btn" onclick="exportResults()">📥 Export CSV</button>
+                    <button class="action-btn" onclick="clearSearch()">🔄 Clear</button>
+                </div>
+            </div>
+            <div id="resultsGrid" class="results-grid"></div>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div>Searching across all data providers...</div>
+            <div id="searchProgress" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+        </div>
+    </div>
+
+    <div id="chartModal" class="chart-modal">
+        <div class="chart-content">
+            <button class="close-btn" onclick="closeChart()">×</button>
+            <h2 id="chartTitle" style="margin-bottom: 20px; color: #5c6bc0;"></h2>
+            <canvas id="chartCanvas" style="max-height: 400px;"></canvas>
+            <div id="chartInfo" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
+        
+        let allResults = [];
+        let filteredResults = [];
+        let activeProviders = new Set(['fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls']);
+        let searchStartTime = 0;
+        let currentChart = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Enter key triggers search
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performUniversalSearch();
+                }
+            });
+            
+            // Load last search from session
+            const lastSearch = sessionStorage.getItem('lastUniversalSearch');
+            if (lastSearch) {
+                document.getElementById('searchInput').value = lastSearch;
+            }
+        });
+
+        async function performUniversalSearch() {
+            const searchText = document.getElementById('searchInput').value.trim();
+            if (!searchText) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            searchStartTime = Date.now();
+            sessionStorage.setItem('lastUniversalSearch', searchText);
+            
+            showLoading(true);
+            updateSearchProgress('Initializing search...');
+            
+            allResults = [];
+            const searchPromises = [];
+            
+            // Search all providers in parallel
+            const providers = [
+                { name: 'fred', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=fred` },
+                { name: 'ecb', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=ecb` },
+                { name: 'treasury', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=treasury` },
+                { name: 'nyfed', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=nyfed` },
+                { name: 'ofr', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=ofr` },
+                { name: 'bls', endpoint: `/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=bls` }
+            ];
+            
+            // Also try the universal search endpoint
+            searchPromises.push(searchProvider('universal', `/api/v1/universal/search?query=${encodeURIComponent(searchText)}`));
+            
+            // Try search suggestions
+            searchPromises.push(searchProvider('suggestions', `/api/v1/interactive/search-suggestions?query=${encodeURIComponent(searchText)}`));
+            
+            // Search each provider
+            providers.forEach(provider => {
+                searchPromises.push(searchProvider(provider.name, provider.endpoint));
+            });
+            
+            // Wait for all searches to complete
+            await Promise.allSettled(searchPromises);
+            
+            // If no results from API, add common series based on search term
+            if (allResults.length === 0) {
+                addCommonSeries(searchText);
+            }
+            
+            // Update stats and display
+            const searchTime = ((Date.now() - searchStartTime) / 1000).toFixed(1);
+            updateStats(searchTime);
+            filterAndDisplayResults();
+            
+            showLoading(false);
+        }
+
+        async function searchProvider(provider, endpoint) {
+            try {
+                updateSearchProgress(`Searching ${provider}...`);
+                
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                let results = [];
+                
+                // Handle different response formats
+                if (Array.isArray(data)) {
+                    results = data;
+                } else if (data.results && Array.isArray(data.results)) {
+                    results = data.results;
+                } else if (data.data && Array.isArray(data.data)) {
+                    results = data.data;
+                } else if (data.series && Array.isArray(data.series)) {
+                    results = data.series;
+                } else if (typeof data === 'object' && Object.keys(data).length > 0) {
+                    // Convert object to array
+                    results = Object.entries(data).map(([key, value]) => ({
+                        symbol: key,
+                        name: value.name || value.title || value.description || key,
+                        provider: value.provider || provider,
+                        ...value
+                    }));
+                }
+                
+                // Process and add to results
+                results.forEach(item => {
+                    if (typeof item === 'string') {
+                        allResults.push({
+                            symbol: item,
+                            name: item,
+                            provider: provider
+                        });
+                    } else {
+                        allResults.push({
+                            symbol: item.symbol || item.id || item.code || 'N/A',
+                            name: item.name || item.title || item.description || item.symbol || 'Unnamed Series',
+                            provider: item.provider || provider,
+                            units: item.units || item.unit || '',
+                            frequency: item.frequency || '',
+                            lastUpdated: item.last_updated || item.lastUpdated || '',
+                            source: item.source || provider.toUpperCase()
+                        });
+                    }
+                });
+                
+                updateSearchProgress(`Found ${results.length} results from ${provider}`);
+                
+            } catch (error) {
+                console.error(`Error searching ${provider}:`, error);
+            }
+        }
+
+        function addCommonSeries(searchText) {
+            const searchLower = searchText.toLowerCase();
+            const commonSeries = [];
+            
+            if (searchLower.includes('gdp')) {
+                commonSeries.push(
+                    { symbol: 'GDP', name: 'Gross Domestic Product', provider: 'fred' },
+                    { symbol: 'GDPC1', name: 'Real Gross Domestic Product', provider: 'fred' },
+                    { symbol: 'GDPPOT', name: 'Real Potential GDP', provider: 'fred' }
+                );
+            }
+            
+            if (searchLower.includes('inflation') || searchLower.includes('cpi')) {
+                commonSeries.push(
+                    { symbol: 'CPIAUCSL', name: 'Consumer Price Index for All Urban Consumers', provider: 'fred' },
+                    { symbol: 'CPILFESL', name: 'Core CPI', provider: 'fred' },
+                    { symbol: 'T5YIE', name: '5-Year Breakeven Inflation Rate', provider: 'fred' }
+                );
+            }
+            
+            if (searchLower.includes('unemployment')) {
+                commonSeries.push(
+                    { symbol: 'UNRATE', name: 'Unemployment Rate', provider: 'fred' },
+                    { symbol: 'CIVPART', name: 'Labor Force Participation Rate', provider: 'fred' }
+                );
+            }
+            
+            if (searchLower.includes('interest') || searchLower.includes('rate')) {
+                commonSeries.push(
+                    { symbol: 'DFF', name: 'Federal Funds Effective Rate', provider: 'fred' },
+                    { symbol: 'DGS10', name: '10-Year Treasury Rate', provider: 'fred' },
+                    { symbol: 'MORTGAGE30US', name: '30-Year Fixed Rate Mortgage Average', provider: 'fred' }
+                );
+            }
+            
+            allResults.push(...commonSeries);
+        }
+
+        function updateSearchProgress(message) {
+            document.getElementById('searchProgress').textContent = message;
+        }
+
+        function updateStats(searchTime) {
+            const statsSection = document.getElementById('statsSection');
+            statsSection.style.display = 'block';
+            
+            // Count unique providers
+            const providers = new Set(allResults.map(r => r.provider));
+            
+            // Count unique symbols
+            const uniqueSymbols = new Set(allResults.map(r => r.symbol));
+            
+            document.getElementById('totalResults').textContent = allResults.length;
+            document.getElementById('providersCount').textContent = providers.size;
+            document.getElementById('searchTime').textContent = searchTime + 's';
+            document.getElementById('uniqueSeries').textContent = uniqueSymbols.size;
+        }
+
+        function filterAndDisplayResults() {
+            // Filter by active providers
+            filteredResults = allResults.filter(result => 
+                activeProviders.has('all') || activeProviders.has(result.provider)
+            );
+            
+            // Remove duplicates based on symbol
+            const seen = new Set();
+            filteredResults = filteredResults.filter(result => {
+                const key = `${result.symbol}-${result.provider}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            
+            displayResults();
+        }
+
+        function displayResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (filteredResults.length === 0) {
+                resultsGrid.innerHTML = '<div class="loading">No results found. Try different search terms or check provider filters.</div>';
+                resultsCount.textContent = 'No results';
+                resultsSection.style.display = 'block';
+                return;
+            }
+            
+            resultsCount.textContent = `Found ${filteredResults.length} series`;
+            resultsSection.style.display = 'block';
+            
+            // Sort by provider for better organization
+            filteredResults.sort((a, b) => {
+                if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
+                return a.name.localeCompare(b.name);
+            });
+            
+            resultsGrid.innerHTML = filteredResults.map(result => `
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">${result.name}</div>
+                        <span class="provider-tag provider-${result.provider}">${result.provider.toUpperCase()}</span>
+                    </div>
+                    <div class="result-id">${result.symbol}</div>
+                    <div class="result-meta">
+                        ${result.units ? `<div class="meta-item"><span class="meta-icon">📊</span> ${result.units}</div>` : ''}
+                        ${result.frequency ? `<div class="meta-item"><span class="meta-icon">📅</span> ${result.frequency}</div>` : ''}
+                        ${result.source ? `<div class="meta-item"><span class="meta-icon">🏢</span> ${result.source}</div>` : ''}
+                        ${result.lastUpdated ? `<div class="meta-item"><span class="meta-icon">🔄</span> ${result.lastUpdated}</div>` : ''}
+                    </div>
+                    <div class="result-actions">
+                        <button class="result-btn primary" onclick="viewChart('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
+                            📈 View Chart
+                        </button>
+                        <button class="result-btn" onclick="getData('${result.symbol}', '${result.provider}')">
+                            📊 Get Data
+                        </button>
+                        <button class="result-btn" onclick="addToWatchlist('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
+                            ⭐ Add to List
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleProvider(provider) {
+            const checkbox = document.querySelector(`[data-provider="${provider}"] input`);
+            const label = document.querySelector(`[data-provider="${provider}"]`);
+            
+            if (checkbox.checked) {
+                activeProviders.add(provider);
+                label.classList.add('active');
+            } else {
+                activeProviders.delete(provider);
+                label.classList.remove('active');
+            }
+            
+            filterAndDisplayResults();
+        }
+
+        function toggleAllProviders(checkbox) {
+            const allCheckboxes = document.querySelectorAll('.provider-checkbox input');
+            const allLabels = document.querySelectorAll('.provider-checkbox');
+            
+            allCheckboxes.forEach((cb, index) => {
+                cb.checked = checkbox.checked;
+                if (checkbox.checked) {
+                    allLabels[index].classList.add('active');
+                } else {
+                    allLabels[index].classList.remove('active');
+                }
+            });
+            
+            if (checkbox.checked) {
+                activeProviders = new Set(['all', 'fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls']);
+            } else {
+                activeProviders = new Set();
+            }
+            
+            filterAndDisplayResults();
+        }
+
+        async function viewChart(symbol, provider, name) {
+            const modal = document.getElementById('chartModal');
+            const chartTitle = document.getElementById('chartTitle');
+            const chartInfo = document.getElementById('chartInfo');
+            
+            chartTitle.textContent = `${name} (${symbol})`;
+            chartInfo.innerHTML = '<div class="loading">Loading chart data...</div>';
+            modal.style.display = 'flex';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const result = await response.json();
+                let data = result.data || result.results || result;
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Invalid data format');
+                }
+                
+                // Prepare chart data
+                const chartData = data.map(point => ({
+                    x: new Date(point.date || point.Date || point.timestamp),
+                    y: point.value || point.close || point.price || point[symbol]
+                })).filter(point => !isNaN(point.y));
+                
+                // Create chart
+                const ctx = document.getElementById('chartCanvas').getContext('2d');
+                
+                if (currentChart) {
+                    currentChart.destroy();
+                }
+                
+                currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: symbol,
+                            data: chartData,
+                            borderColor: '#5c6bc0',
+                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${name} - ${provider.toUpperCase()}`
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'month'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update info
+                const latest = chartData[chartData.length - 1];
+                const first = chartData[0];
+                const change = latest.y - first.y;
+                const changePercent = ((change / first.y) * 100).toFixed(2);
+                
+                chartInfo.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Latest Value</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${latest.y.toFixed(2)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Date</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${latest.x.toLocaleDateString()}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Change</div>
+                            <div class="stat-value ${change >= 0 ? 'positive' : 'negative'}" style="font-size: 1.5em;">
+                                ${change >= 0 ? '+' : ''}${changePercent}%
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Data Points</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${chartData.length}</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                chartInfo.innerHTML = `<div style="color: #f44336;">Error loading chart: ${error.message}</div>`;
+                console.error('Chart error:', error);
+            }
+        }
+
+        async function getData(symbol, provider) {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const result = await response.json();
+                let data = result.data || result.results || result;
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    const latest = data[data.length - 1];
+                    const value = latest.value || latest.close || latest.price || latest[symbol];
+                    const date = latest.date || latest.Date || latest.timestamp;
+                    
+                    alert(`Latest data for ${symbol}:\n\nDate: ${date}\nValue: ${value}\nProvider: ${provider.toUpperCase()}`);
+                } else {
+                    alert('No data available for this series');
+                }
+            } catch (error) {
+                alert(`Error fetching data: ${error.message}`);
+            }
+        }
+
+        function addToWatchlist(symbol, provider, name) {
+            // Get existing watchlist
+            let watchlist = JSON.parse(localStorage.getItem('universalWatchlist') || '[]');
+            
+            // Check if already exists
+            const exists = watchlist.find(item => item.symbol === symbol && item.provider === provider);
+            
+            if (exists) {
+                alert('Already in watchlist');
+                return;
+            }
+            
+            // Add to watchlist
+            watchlist.push({
+                symbol,
+                provider,
+                name,
+                addedAt: new Date().toISOString()
+            });
+            
+            localStorage.setItem('universalWatchlist', JSON.stringify(watchlist));
+            alert(`Added ${symbol} to watchlist`);
+        }
+
+        function exportResults() {
+            if (filteredResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            let csv = 'Symbol,Name,Provider,Units,Frequency,Source,Last Updated\n';
+            
+            filteredResults.forEach(result => {
+                csv += `"${result.symbol}","${result.name}","${result.provider}","${result.units || ''}","${result.frequency || ''}","${result.source || ''}","${result.lastUpdated || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `universal_search_results_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            allResults = [];
+            filteredResults = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('statsSection').style.display = 'none';
+            sessionStorage.removeItem('lastUniversalSearch');
+        }
+
+        function closeChart() {
+            document.getElementById('chartModal').style.display = 'none';
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+            document.getElementById('searchBtn').disabled = show;
+            document.getElementById('searchSpinner').style.display = show ? 'inline' : 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central Banks & Treasury Search</title>
+    
+    <!-- Chart.js with Date Adapter -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f23 100%);
+            padding: 1.5rem;
+            border-bottom: 2px solid #2d2d44;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .search-section {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-wrapper {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 1rem;
+            background: rgba(30, 30, 45, 0.8);
+            border: 2px solid #3d3d5c;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0099ff;
+            box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.1);
+        }
+
+        .search-button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #0099ff, #0066cc);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 153, 255, 0.4);
+        }
+
+        .bank-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .bank-card {
+            background: rgba(30, 30, 45, 0.5);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bank-card:hover::before {
+            opacity: 1;
+        }
+
+        .bank-card.active {
+            border-color: #0099ff;
+            background: rgba(0, 153, 255, 0.1);
+        }
+
+        .bank-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .bank-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .bank-description {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-link {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 153, 255, 0.2);
+            border: 1px solid #0099ff;
+            border-radius: 20px;
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .quick-link:hover {
+            background: rgba(0, 153, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .results-section {
+            margin-top: 2rem;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        }
+
+        .result-card {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid #2d2d44;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            border-color: #0099ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 153, 255, 0.2);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-symbol {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .result-provider {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .result-name {
+            color: #ccc;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 0.5rem;
+            background: rgba(0, 153, 255, 0.2);
+            border: 1px solid #0099ff;
+            border-radius: 6px;
+            color: #00d4ff;
+            text-align: center;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: rgba(0, 153, 255, 0.3);
+        }
+
+        .financial-stress-section {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .stress-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffaa00;
+        }
+
+        .stress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .stress-indicator {
+            background: rgba(30, 30, 45, 0.5);
+            border: 1px solid #3d3d5c;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stress-label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stress-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stress-change {
+            font-size: 0.85rem;
+        }
+
+        .stress-low { color: #00ff88; }
+        .stress-medium { color: #ffaa00; }
+        .stress-high { color: #ff6b6b; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-radius: 50%;
+            border-top-color: #0099ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .treasury-auctions {
+            background: rgba(20, 20, 35, 0.6);
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .auction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .auction-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ff00ff;
+        }
+
+        .auction-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .auction-table th,
+        .auction-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #2d2d44;
+        }
+
+        .auction-table th {
+            background: rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .auction-table tr:hover {
+            background: rgba(0, 153, 255, 0.05);
+        }
+
+        .chart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: rgba(20, 20, 35, 0.95);
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: #e0e0e0;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #ff6b6b;
+            transform: rotate(90deg);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .bank-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .search-wrapper {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <div class="logo">
+                    🏦 Central Banks, Treasury & Financial Research
+                </div>
+                <div class="subtitle">Real-time monetary policy and financial stability data</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search for rates, auctions, or financial indicators..."
+                       onkeypress="if(event.key === 'Enter') performSearch()">
+                <button class="search-button" onclick="performSearch()">
+                    <span>🔍</span>
+                    <span>Search</span>
+                </button>
+            </div>
+
+            <!-- Bank Selector -->
+            <div class="bank-selector">
+                <div class="bank-card active" data-provider="ecb" onclick="toggleBank(this)">
+                    <div class="bank-icon">🇪🇺</div>
+                    <div class="bank-name">ECB</div>
+                    <div class="bank-description">European Central Bank</div>
+                </div>
+                <div class="bank-card active" data-provider="nyfed" onclick="toggleBank(this)">
+                    <div class="bank-icon">🗽</div>
+                    <div class="bank-name">NY Fed</div>
+                    <div class="bank-description">Federal Reserve Bank of NY</div>
+                </div>
+                <div class="bank-card active" data-provider="treasury" onclick="toggleBank(this)">
+                    <div class="bank-icon">🏛️</div>
+                    <div class="bank-name">Treasury</div>
+                    <div class="bank-description">US Treasury Department</div>
+                </div>
+                <div class="bank-card active" data-provider="fred" onclick="toggleBank(this)">
+                    <div class="bank-icon">📊</div>
+                    <div class="bank-name">Federal Reserve</div>
+                    <div class="bank-description">FRED Database</div>
+                </div>
+                <div class="bank-card active" data-provider="ofr" onclick="toggleBank(this)">
+                    <div class="bank-icon">📈</div>
+                    <div class="bank-name">OFR</div>
+                    <div class="bank-description">Financial Research</div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <a class="quick-link" onclick="quickSearch('ECB deposit facility rate')">ECB Deposit Rate</a>
+                <a class="quick-link" onclick="quickSearch('NY Fed repo')">NY Fed Repo</a>
+                <a class="quick-link" onclick="quickSearch('treasury auction')">Treasury Auctions</a>
+                <a class="quick-link" onclick="quickSearch('federal funds rate')">Fed Funds Rate</a>
+                <a class="quick-link" onclick="quickSearch('STLFSI4')">Financial Stress Index</a>
+                <a class="quick-link" onclick="quickSearch('systemic risk')">Systemic Risk</a>
+            </div>
+        </section>
+
+        <!-- Financial Stress Indicators -->
+        <section class="financial-stress-section">
+            <div class="stress-header">
+                <h2 class="stress-title">📊 Financial Stress Indicators</h2>
+                <button class="action-button" onclick="refreshStressIndicators()">Refresh</button>
+            </div>
+            <div class="stress-grid" id="stressIndicators">
+                <div class="stress-indicator">
+                    <div class="stress-label">Financial Stress Index</div>
+                    <div class="stress-value stress-low">-0.52</div>
+                    <div class="stress-change stress-low">▼ 0.03</div>
+                </div>
+                <div class="stress-indicator">
+                    <div class="stress-label">VIX Volatility</div>
+                    <div class="stress-value stress-medium">18.45</div>
+                    <div class="stress-change stress-medium">▲ 1.2</div>
+                </div>
+                <div class="stress-indicator">
+                    <div class="stress-label">TED Spread</div>
+                    <div class="stress-value stress-low">0.25</div>
+                    <div class="stress-change stress-low">— 0.00</div>
+                </div>
+                <div class="stress-indicator">
+                    <div class="stress-label">Credit Spread</div>
+                    <div class="stress-value stress-low">1.85</div>
+                    <div class="stress-change stress-low">▼ 0.05</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Results -->
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <h2 style="margin-bottom: 1rem; color: #00d4ff;">Search Results</h2>
+            <div class="results-grid" id="resultsGrid">
+                <!-- Results will be populated here -->
+            </div>
+        </section>
+
+        <!-- Treasury Auctions -->
+        <section class="treasury-auctions" id="treasuryAuctions">
+            <div class="auction-header">
+                <h2 class="auction-title">🏛️ Latest Treasury Auctions</h2>
+                <button class="action-button" onclick="loadTreasuryAuctions()">Refresh</button>
+            </div>
+            <table class="auction-table">
+                <thead>
+                    <tr>
+                        <th>Security</th>
+                        <th>Auction Date</th>
+                        <th>Yield</th>
+                        <th>Bid-to-Cover</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="auctionTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #666;">Loading auction data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <!-- Chart Modal -->
+    <div class="chart-modal" id="chartModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Chart View</h2>
+                <button class="close-button" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="modalChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
+        
+        // Bank configurations
+        const BANK_CONFIGS = {
+            ecb: { name: 'ECB', color: '#ff6b00' },
+            nyfed: { name: 'NY Fed', color: '#00ff88' },
+            treasury: { name: 'Treasury', color: '#ff00ff' },
+            fred: { name: 'Federal Reserve', color: '#0099ff' },
+            ofr: { name: 'OFR', color: '#ffaa00' }
+        };
+
+        // State
+        let currentChart = null;
+        let activeProviders = ['ecb', 'nyfed', 'treasury', 'fred', 'ofr'];
+
+        // Toggle bank selection
+        function toggleBank(element) {
+            element.classList.toggle('active');
+            const provider = element.dataset.provider;
+            
+            if (element.classList.contains('active')) {
+                if (!activeProviders.includes(provider)) {
+                    activeProviders.push(provider);
+                }
+            } else {
+                activeProviders = activeProviders.filter(p => p !== provider);
+            }
+        }
+
+        // Quick search
+        function quickSearch(query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        // Perform search
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsGrid = document.getElementById('resultsGrid');
+            
+            resultsSection.style.display = 'block';
+            resultsGrid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Searching...</p></div>';
+
+            try {
+                // Search each active provider
+                const searchPromises = activeProviders.map(provider => 
+                    searchProvider(provider, query)
+                );
+
+                const results = await Promise.allSettled(searchPromises);
+                displayResults(results, query);
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsGrid.innerHTML = '<div class="error-message">Error performing search. Please try again.</div>';
+            }
+        }
+
+        // Search individual provider
+        async function searchProvider(provider, query) {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}&provider=${provider}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                return { provider, data, success: true };
+            } catch (error) {
+                console.error(`Error searching ${provider}:`, error);
+                return { provider, error: error.message, success: false };
+            }
+        }
+
+        // Display search results
+        function displayResults(results, query) {
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = '';
+
+            let hasResults = false;
+
+            results.forEach(result => {
+                if (result.status === 'fulfilled' && result.value.success && result.value.data) {
+                    const { provider, data } = result.value;
+                    const items = Array.isArray(data) ? data : (data.results ? data.results[provider] || [] : []);
+                    
+                    if (items.length > 0) {
+                        hasResults = true;
+                        items.forEach(item => {
+                            resultsGrid.innerHTML += createResultCard(item, provider);
+                        });
+                    }
+                }
+            });
+
+            if (!hasResults) {
+                resultsGrid.innerHTML = '<div class="error-message">No results found. Try different search terms.</div>';
+            }
+        }
+
+        // Create result card
+        function createResultCard(item, provider) {
+            const symbol = item.series_id || item.symbol || item.code || 'N/A';
+            const name = item.title || item.name || item.description || 'No description';
+            
+            return `
+                <div class="result-card" onclick="viewChart('${symbol}', '${provider}')">
+                    <div class="result-header">
+                        <span class="result-symbol">${symbol}</span>
+                        <span class="result-provider" style="background: ${BANK_CONFIGS[provider].color}22; color: ${BANK_CONFIGS[provider].color}">
+                            ${BANK_CONFIGS[provider].name}
+                        </span>
+                    </div>
+                    <div class="result-name">${name}</div>
+                    <div class="result-actions">
+                        <div class="action-button" onclick="event.stopPropagation(); viewChart('${symbol}', '${provider}')">
+                            📊 View Chart
+                        </div>
+                        <div class="action-button" onclick="event.stopPropagation(); getData('${symbol}', '${provider}')">
+                            📄 Get Data
+                        </div>
+                        <div class="action-button" onclick="event.stopPropagation(); analyze('${symbol}', '${provider}')">
+                            🔍 Analyze
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // View chart
+        async function viewChart(symbol, provider) {
+            const modal = document.getElementById('chartModal');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            modal.style.display = 'block';
+            modalTitle.textContent = `Loading ${symbol}...`;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                const result = await response.json();
+
+                if (result.data && result.data.length > 0) {
+                    modalTitle.textContent = `${symbol} - ${BANK_CONFIGS[provider].name}`;
+                    displayChart(result.data, symbol, provider);
+                }
+            } catch (error) {
+                console.error('Chart error:', error);
+                modalTitle.textContent = `Error loading ${symbol}`;
+            }
+        }
+
+        // Display chart
+        function displayChart(data, symbol, provider) {
+            const ctx = document.getElementById('modalChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const chartData = data.map(item => ({
+                x: item.date,
+                y: parseFloat(item.value || item[symbol] || 0)
+            }));
+
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: symbol,
+                        data: chartData,
+                        borderColor: BANK_CONFIGS[provider].color,
+                        backgroundColor: BANK_CONFIGS[provider].color + '20',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#e0e0e0' }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            titleColor: '#e0e0e0',
+                            bodyColor: '#e0e0e0',
+                            borderColor: BANK_CONFIGS[provider].color,
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'month'
+                            },
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Get data
+        async function getData(symbol, provider) {
+            // Implementation similar to universal search
+            alert(`Downloading data for ${symbol}`);
+        }
+
+        // Analyze
+        function analyze(symbol, provider) {
+            window.open(`advanced-dashboard.html?symbol=${symbol}&provider=${provider}`, '_blank');
+        }
+
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('chartModal');
+            modal.style.display = 'none';
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+        }
+
+        // Refresh stress indicators
+        async function refreshStressIndicators() {
+            const indicators = document.getElementById('stressIndicators');
+            indicators.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/ofr/financial_stress`);
+                const data = await response.json();
+                
+                // Update indicators with real data
+                updateStressIndicators(data);
+            } catch (error) {
+                console.error('Error loading stress indicators:', error);
+                indicators.innerHTML = '<div class="error-message">Error loading stress indicators</div>';
+            }
+        }
+
+        // Update stress indicators
+        function updateStressIndicators(data) {
+            // Implementation to update stress indicators
+            console.log('Stress data:', data);
+        }
+
+        // Load treasury auctions
+        async function loadTreasuryAuctions() {
+            const tbody = document.getElementById('auctionTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner"></div></td></tr>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/treasury/latest_auctions`);
+                const data = await response.json();
+                
+                displayAuctions(data);
+            } catch (error) {
+                console.error('Error loading auctions:', error);
+                tbody.innerHTML = '<tr><td colspan="5" class="error-message">Error loading auction data</td></tr>';
+            }
+        }
+
+        // Display auctions
+        function displayAuctions(data) {
+            const tbody = document.getElementById('auctionTableBody');
+            tbody.innerHTML = '';
+
+            // Mock data for now
+            const mockAuctions = [
+                { security: '4-Week Bill', date: '2024-05-21', yield: '5.28%', btc: '2.89', status: 'Completed' },
+                { security: '10-Year Note', date: '2024-05-22', yield: '4.48%', btc: '2.58', status: 'Announced' },
+                { security: '30-Year Bond', date: '2024-05-23', yield: '4.64%', btc: '2.41', status: 'Upcoming' }
+            ];
+
+            mockAuctions.forEach(auction => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${auction.security}</td>
+                        <td>${auction.date}</td>
+                        <td>${auction.yield}</td>
+                        <td>${auction.btc}</td>
+                        <td><span class="quick-link">${auction.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Initialize
+        window.onload = function() {
+            loadTreasuryAuctions();
+            refreshStressIndicators();
+        };
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('chartModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
+</body>
+</html>

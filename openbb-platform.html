@@ -580,7 +580,8 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
-        let watchlistSymbols = JSON.parse(localStorage.getItem('openbbWatchlist')) || ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS'];
+        // Initialize default watchlist without DXY
+        let watchlistSymbols = JSON.parse(localStorage.getItem('openbbWatchlist')) || ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'DTWEXBGS'];
         let watchlistData = {};
         
         // Color palette for charts
