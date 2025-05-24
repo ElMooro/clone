@@ -411,8 +411,24 @@
             z-index: 5;
         }
         
-        .watchlist-table th.text-right {
-            text-align: right;
+        .watchlist-table th.sortable:hover {
+            background: #e8e8e8;
+        }
+        
+        .sort-indicator {
+            font-size: 10px;
+            margin-left: 4px;
+            color: #999;
+        }
+        
+        .sort-indicator.asc::after {
+            content: "▲";
+            color: #00dd77;
+        }
+        
+        .sort-indicator.desc::after {
+            content: "▼";
+            color: #ff4444;
         }
         
         .watchlist-table tbody tr {
@@ -761,11 +777,21 @@
                         <tr>
                             <th>Name</th>
                             <th class="text-right">Price</th>
-                            <th class="text-right">1D %</th>
-                            <th class="text-right">1W %</th>
-                            <th class="text-right">1M %</th>
-                            <th class="text-right">3M %</th>
-                            <th class="text-right">1Y %</th>
+                            <th class="text-right sortable" onclick="sortByColumn('1d')" style="cursor: pointer;">
+                                1D % <span class="sort-indicator" id="sort-1d"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1w')" style="cursor: pointer;">
+                                1W % <span class="sort-indicator" id="sort-1w"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1m')" style="cursor: pointer;">
+                                1M % <span class="sort-indicator" id="sort-1m"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('3m')" style="cursor: pointer;">
+                                3M % <span class="sort-indicator" id="sort-3m"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1y')" style="cursor: pointer;">
+                                1Y % <span class="sort-indicator" id="sort-1y"></span>
+                            </th>
                             <th></th>
                         </tr>
                     </thead>
@@ -813,6 +839,7 @@
         let watchlistSymbols = [];
         let watchlistData = {};
         let sortOrder = 'default'; // 'default', 'increase', 'decrease'
+        let columnSort = { column: null, direction: null }; // For column-specific sorting
         
         // Color palette for charts
         const colorPalette = [
@@ -1918,8 +1945,23 @@
                 };
             }).filter(item => item !== null);
             
-            // Sort based on current sort order
-            if (sortOrder === 'increase') {
+            // Sort based on current sort order or column sort
+            if (columnSort.column && columnSort.direction) {
+                symbolsToRender.sort((a, b) => {
+                    const aValue = a.data.changes[columnSort.column];
+                    const bValue = b.data.changes[columnSort.column];
+                    
+                    // Handle null values
+                    if (aValue === null || aValue === undefined) return 1;
+                    if (bValue === null || bValue === undefined) return -1;
+                    
+                    if (columnSort.direction === 'asc') {
+                        return aValue - bValue;
+                    } else {
+                        return bValue - aValue;
+                    }
+                });
+            } else if (sortOrder === 'increase') {
                 symbolsToRender.sort((a, b) => b.maxChange - a.maxChange);
             } else if (sortOrder === 'decrease') {
                 symbolsToRender.sort((a, b) => a.maxChange - b.maxChange);
@@ -1983,148 +2025,51 @@
             }).join('');
             
             tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
+            
+            // Update sort indicators
+            updateSortIndicators();
         }
         
-        // Edit symbol (rename and color)
-        function editSymbol(event, symbol) {
-            event.stopPropagation();
-            
-            const data = watchlistData[symbol];
-            if (!data) return;
-            
-            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
-            const customData = savedCustomData[symbol] || {};
-            
-            const colors = [
-                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', 
-                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1F2',
-                '#F8B500', '#6C5CE7', '#A29BFE', '#FD79A8', '#636E72'
-            ];
-            
-            const modal = document.createElement('div');
-            modal.className = 'edit-modal';
-            modal.innerHTML = `
-                <div class="edit-modal-content">
-                    <div class="edit-modal-header">Customize ${symbol}</div>
-                    
-                    <div class="edit-modal-row">
-                        <label class="edit-modal-label">Display Name</label>
-                        <input type="text" class="edit-modal-input" id="customName" 
-                               value="${customData.customName || symbol}" 
-                               placeholder="${symbol}">
-                    </div>
-                    
-                    <div class="edit-modal-row">
-                        <label class="edit-modal-label">Color Tag</label>
-                        <div class="color-picker">
-                            <div class="color-option ${!customData.color ? 'selected' : ''}" 
-                                 data-color="" 
-                                 style="background: #f0f0f0; position: relative;"
-                                 title="No color">
-                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999;">×</span>
-                            </div>
-                            ${colors.map(color => `
-                                <div class="color-option ${customData.color === color ? 'selected' : ''}" 
-                                     data-color="${color}" 
-                                     style="background-color: ${color};"
-                                     title="${color}"></div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="edit-modal-buttons">
-                        <button class="edit-modal-button secondary" onclick="closeEditModal()">Cancel</button>
-                        <button class="edit-modal-button primary" onclick="saveSymbolCustomization('${symbol}')">Save</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // Add click handlers to color options
-            modal.querySelectorAll('.color-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    modal.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-                    this.classList.add('selected');
-                });
-            });
-            
-            // Close modal on background click
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    closeEditModal();
-                }
-            });
-        }
-        
-        // Save symbol customization
-        function saveSymbolCustomization(symbol) {
-            const customName = document.getElementById('customName').value.trim();
-            const selectedColor = document.querySelector('.color-option.selected');
-            const color = selectedColor ? selectedColor.getAttribute('data-color') : '';
-            
-            // Load existing custom data
-            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
-            
-            // Update custom data
-            if (customName !== symbol || color) {
-                savedCustomData[symbol] = {
-                    customName: customName !== symbol ? customName : null,
-                    color: color || null
-                };
+        // Sort by specific column
+        function sortByColumn(period) {
+            // If clicking the same column, toggle direction
+            if (columnSort.column === period) {
+                columnSort.direction = columnSort.direction === 'desc' ? 'asc' : 'desc';
             } else {
-                delete savedCustomData[symbol];
+                // New column, default to descending (highest first)
+                columnSort.column = period;
+                columnSort.direction = 'desc';
             }
             
-            // Save to localStorage
-            localStorage.setItem('watchlistCustomData', JSON.stringify(savedCustomData));
+            // Clear the general sort buttons
+            sortOrder = 'default';
+            updateSortButtons();
             
-            // Update watchlist data
-            if (watchlistData[symbol]) {
-                watchlistData[symbol].customName = customName !== symbol ? customName : null;
-                watchlistData[symbol].color = color || null;
-            }
-            
-            // Re-render watchlist
-            renderWatchlist();
-            
-            // Close modal
-            closeEditModal();
-        }
-        
-        // Close edit modal
-        function closeEditModal() {
-            const modal = document.querySelector('.edit-modal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-        
-        // Remove from watchlist
-        function removeFromWatchlist(event, symbol) {
-            event.stopPropagation();
-            watchlists[currentWatchlist].symbols = watchlists[currentWatchlist].symbols.filter(s => s !== symbol);
-            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
-            delete watchlistData[symbol];
-            saveWatchlists();
+            // Re-render with new sort
             renderWatchlist();
         }
         
-        // Switch watchlist
-        function switchWatchlist(name) {
-            currentWatchlist = name;
-            watchlistSymbols = [...watchlists[name].symbols];
+        // Update sort indicators on column headers
+        function updateSortIndicators() {
+            // Clear all indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.className = 'sort-indicator';
+            });
             
-            // Update selector
-            document.getElementById('watchlistSelector').value = name;
-            
-            // Load data for new watchlist
-            loadWatchlistData();
+            // Set active indicator
+            if (columnSort.column && columnSort.direction) {
+                const indicator = document.getElementById(`sort-${columnSort.column}`);
+                if (indicator) {
+                    indicator.className = `sort-indicator ${columnSort.direction}`;
+                }
+            }
         }
         
-        // Change sort order
+        // Change sort order (general sorting)
         function changeSortOrder(order) {
             sortOrder = order;
+            // Clear column sort when using general sort
+            columnSort = { column: null, direction: null };
             updateSortButtons();
             renderWatchlist();
         }
