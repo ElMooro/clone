@@ -455,17 +455,148 @@
         .symbol-info {
             display: flex;
             flex-direction: column;
+            flex: 1;
         }
         
         .symbol-name {
             font-weight: bold;
             color: #000;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .symbol-fullname {
             color: #666;
             font-size: 11px;
+        }
+        
+        .edit-icon {
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .symbol-cell:hover .edit-icon {
+            opacity: 1;
+        }
+        
+        .color-tag {
+            width: 8px;
+            height: 24px;
+            border-radius: 2px;
+            margin-right: 4px;
+            cursor: pointer;
+        }
+        
+        /* Edit Modal */
+        .edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .edit-modal-content {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .edit-modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .edit-modal-row {
+            margin-bottom: 16px;
+        }
+        
+        .edit-modal-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .edit-modal-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.selected {
+            border-color: #333;
+        }
+        
+        .edit-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        
+        .edit-modal-button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .edit-modal-button.primary {
+            background: #00dd77;
+            color: #000;
+        }
+        
+        .edit-modal-button.primary:hover {
+            background: #00ff88;
+        }
+        
+        .edit-modal-button.secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .edit-modal-button.secondary:hover {
+            background: #e8e8e8;
         }
         
         .price-cell {
@@ -1098,8 +1229,14 @@
                     // Calculate real percentage changes with all available data
                     const changes = calculateRealPercentageChanges(allData, actualSymbol);
                     
+                    // Check if we have custom data saved
+                    const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+                    const customData = savedCustomData[symbol] || {};
+                    
                     watchlistData[symbol] = {
-                        name: initialResult.name || initialResult.title || watchlistData[symbol]?.name || symbol,
+                        name: customData.customName || initialResult.name || initialResult.title || watchlistData[symbol]?.name || symbol,
+                        customName: customData.customName,
+                        color: customData.color || null,
                         provider: provider,
                         price: latestValue,
                         changes: changes,
@@ -1115,8 +1252,15 @@
                 }
             } catch (error) {
                 console.error(`Error loading ${symbol}:`, error);
+                
+                // Check if we have custom data saved even on error
+                const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+                const customData = savedCustomData[symbol] || {};
+                
                 watchlistData[symbol] = {
-                    name: watchlistData[symbol]?.name || symbol,
+                    name: customData.customName || watchlistData[symbol]?.name || symbol,
+                    customName: customData.customName,
+                    color: customData.color || null,
                     provider: provider,
                     price: 0,
                     changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
@@ -1803,6 +1947,9 @@
                 const flashClass = hasSignificantChange ? 
                     (changeDirection === 'up' ? 'flash-green' : 'flash-red') : '';
                 
+                const displayName = data.customName || symbol;
+                const colorStyle = data.color ? `background-color: ${data.color};` : 'display: none;';
+                
                 return `
                     <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred'}')" 
                         class="${flashClass}"
@@ -1810,9 +1957,13 @@
                         title="Double-click to view chart">
                         <td>
                             <div class="symbol-cell">
+                                <div class="color-tag" style="${colorStyle}" onclick="editSymbol(event, '${symbol}')"></div>
                                 <div class="symbol-icon">${symbol.charAt(0)}</div>
                                 <div class="symbol-info">
-                                    <div class="symbol-name">${symbol}</div>
+                                    <div class="symbol-name">
+                                        ${displayName}
+                                        <span class="edit-icon" onclick="editSymbol(event, '${symbol}')">✏️</span>
+                                    </div>
                                     <div class="symbol-fullname">${data.name}</div>
                                 </div>
                             </div>
@@ -1832,6 +1983,121 @@
             }).join('');
             
             tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
+        }
+        
+        // Edit symbol (rename and color)
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            
+            const data = watchlistData[symbol];
+            if (!data) return;
+            
+            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+            const customData = savedCustomData[symbol] || {};
+            
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', 
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1F2',
+                '#F8B500', '#6C5CE7', '#A29BFE', '#FD79A8', '#636E72'
+            ];
+            
+            const modal = document.createElement('div');
+            modal.className = 'edit-modal';
+            modal.innerHTML = `
+                <div class="edit-modal-content">
+                    <div class="edit-modal-header">Customize ${symbol}</div>
+                    
+                    <div class="edit-modal-row">
+                        <label class="edit-modal-label">Display Name</label>
+                        <input type="text" class="edit-modal-input" id="customName" 
+                               value="${customData.customName || symbol}" 
+                               placeholder="${symbol}">
+                    </div>
+                    
+                    <div class="edit-modal-row">
+                        <label class="edit-modal-label">Color Tag</label>
+                        <div class="color-picker">
+                            <div class="color-option ${!customData.color ? 'selected' : ''}" 
+                                 data-color="" 
+                                 style="background: #f0f0f0; position: relative;"
+                                 title="No color">
+                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999;">×</span>
+                            </div>
+                            ${colors.map(color => `
+                                <div class="color-option ${customData.color === color ? 'selected' : ''}" 
+                                     data-color="${color}" 
+                                     style="background-color: ${color};"
+                                     title="${color}"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="edit-modal-buttons">
+                        <button class="edit-modal-button secondary" onclick="closeEditModal()">Cancel</button>
+                        <button class="edit-modal-button primary" onclick="saveSymbolCustomization('${symbol}')">Save</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click handlers to color options
+            modal.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    modal.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Close modal on background click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeEditModal();
+                }
+            });
+        }
+        
+        // Save symbol customization
+        function saveSymbolCustomization(symbol) {
+            const customName = document.getElementById('customName').value.trim();
+            const selectedColor = document.querySelector('.color-option.selected');
+            const color = selectedColor ? selectedColor.getAttribute('data-color') : '';
+            
+            // Load existing custom data
+            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+            
+            // Update custom data
+            if (customName !== symbol || color) {
+                savedCustomData[symbol] = {
+                    customName: customName !== symbol ? customName : null,
+                    color: color || null
+                };
+            } else {
+                delete savedCustomData[symbol];
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('watchlistCustomData', JSON.stringify(savedCustomData));
+            
+            // Update watchlist data
+            if (watchlistData[symbol]) {
+                watchlistData[symbol].customName = customName !== symbol ? customName : null;
+                watchlistData[symbol].color = color || null;
+            }
+            
+            // Re-render watchlist
+            renderWatchlist();
+            
+            // Close modal
+            closeEditModal();
+        }
+        
+        // Close edit modal
+        function closeEditModal() {
+            const modal = document.querySelector('.edit-modal');
+            if (modal) {
+                modal.remove();
+            }
         }
         
         // Remove from watchlist
