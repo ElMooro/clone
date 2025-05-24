@@ -580,8 +580,7 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
-        // Initialize default watchlist without DXY
-        let watchlistSymbols = JSON.parse(localStorage.getItem('openbbWatchlist')) || ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'DTWEXBGS'];
+        let watchlistSymbols = JSON.parse(localStorage.getItem('openbbWatchlist')) || ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS'];
         let watchlistData = {};
         
         // Color palette for charts
@@ -857,33 +856,49 @@
             try {
                 console.log(`Loading ${symbol} from ${provider}`);
                 
-                // Build URL with start date to get more history
-                const endDate = new Date().toISOString().split('T')[0];
-                const startDate = new Date();
-                startDate.setFullYear(startDate.getFullYear() - 20); // Get 20 years of data
+                // Special handling for DXY - use DTWEXM instead
+                let actualSymbol = symbol;
+                if (symbol === 'DXY') {
+                    actualSymbol = 'DTWEXM';
+                    console.log('Using DTWEXM as proxy for DXY');
+                }
                 
-                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate}`;
+                // Build URL to get ALL available data
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
                 
+                // Add parameters to get maximum data
+                const params = new URLSearchParams();
+                params.append('start_date', '1900-01-01'); // Request from 1900
+                params.append('end_date', new Date().toISOString().split('T')[0]);
+                params.append('limit', '1000000'); // Request up to 1 million points
+                
+                url += '&' + params.toString();
+                
+                console.log(`Requesting data from: ${url}`);
                 let response = await fetch(url);
                 let result = null;
                 
                 if (!response.ok) {
-                    // Try without date parameters
-                    response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                    // Try without parameters
+                    console.log('First request failed, trying without parameters');
+                    response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`);
                 }
                 
-                if (response.ok) {
-                    result = await response.json();
-                } else if (symbol === 'DXY' || symbol.includes('DOLLAR')) {
+                if (!response.ok && (symbol === 'DXY' || symbol.includes('DOLLAR'))) {
                     // Try alternative symbols for dollar index
+                    console.log('Trying alternative dollar symbols');
                     const alternativeSymbols = ['DTWEXBGS', 'DTWEXM', 'DEXUSEU'];
                     for (const altSymbol of alternativeSymbols) {
-                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred`);
+                        const altUrl = `${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred&start_date=1900-01-01&limit=1000000`;
+                        response = await fetch(altUrl);
                         if (response.ok) {
                             result = await response.json();
+                            console.log(`Success with alternative symbol ${altSymbol}`);
                             break;
                         }
                     }
+                } else if (response.ok) {
+                    result = await response.json();
                 }
                 
                 if (result && result.data && result.data.length > 0) {
@@ -896,6 +911,7 @@
                     const latestItem = data[data.length - 1];
                     let latestValue = parseFloat(
                         latestItem.value || 
+                        latestItem[actualSymbol] || 
                         latestItem[symbol] || 
                         latestItem.close || 
                         latestItem.price ||
@@ -912,11 +928,12 @@
                         
                         if (numericFields.length > 0) {
                             latestValue = parseFloat(latestItem[numericFields[0]]);
+                            console.log(`Found value in field: ${numericFields[0]}`);
                         }
                     }
                     
                     // Calculate real percentage changes
-                    const changes = calculateRealPercentageChanges(data, symbol);
+                    const changes = calculateRealPercentageChanges(data, actualSymbol);
                     
                     watchlistData[symbol] = {
                         name: result.name || result.title || watchlistData[symbol]?.name || symbol,
@@ -925,7 +942,8 @@
                         changes: changes,
                         hasData: true,
                         fullData: data,
-                        latestDate: latestItem.date
+                        latestDate: latestItem.date,
+                        actualSymbol: actualSymbol // Store the actual symbol used
                     };
                     
                     renderWatchlist();
