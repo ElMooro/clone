@@ -1145,34 +1145,64 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Enhanced load single watchlist item with pagination for all data
-        async function loadSingleWatchlistItem(symbol, provider = 'fred') {
+        // Enhanced load single watchlist item with retry logic and better error handling
+        async function loadSingleWatchlistItem(symbol, provider = 'fred', retryCount = 0) {
+            const maxRetries = 2;
+            
             try {
-                console.log(`Loading ${symbol} from ${provider}`);
+                console.log(`Loading ${symbol} from ${provider} (attempt ${retryCount + 1})`);
                 
-                // Special handling for DXY - use DTWEXM instead
-                let actualSymbol = symbol;
-                if (symbol === 'DXY') {
-                    actualSymbol = 'DTWEXM';
-                    console.log('Using DTWEXM as proxy for DXY');
+                // Check if we have cached data
+                const cacheKey = `${symbol}_${provider}`;
+                const cachedData = getCachedData(cacheKey);
+                
+                if (cachedData && cachedData.data) {
+                    // Use cached data but still try to update in background
+                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result);
                 }
                 
-                // First, try to get recent data to check total available
+                // Special handling for known problematic symbols
+                let actualSymbol = symbol;
+                const symbolMappings = {
+                    'DXY': 'DTWEXM',
+                    'MNFCTRIRSA': 'MANMM101USA189S',
+                    'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',
+                    'BAMLEMPUPUBSLCRPIUSOAS': 'BAMLEMPUPUBSLCRPIUSOA',
+                    'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',
+                    'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',
+                    'T10YIE': 'T10Y',
+                    'AMERIBOR': 'OBFR30DAVG',
+                    'INTGSTMXM193N': 'INTGSTUSM193N',
+                    'WLCFLPCL': 'WLEMUINDXD',
+                    'TREAS1590': 'DGS10'
+                };
+                
+                if (symbolMappings[symbol]) {
+                    actualSymbol = symbolMappings[symbol];
+                    console.log(`Using ${actualSymbol} as proxy for ${symbol}`);
+                }
+                
+                // First, try to get recent data
                 let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
                 
                 console.log(`Initial request for ${symbol}`);
-                let response = await fetch(url);
+                let response = await fetchWithTimeout(url, 10000); // 10 second timeout
                 
-                if (!response.ok && (symbol === 'DXY' || symbol.includes('DOLLAR'))) {
-                    // Try alternative symbols for dollar index
-                    console.log('Trying alternative dollar symbols');
-                    const alternativeSymbols = ['DTWEXBGS', 'DTWEXM', 'DEXUSEU'];
-                    for (const altSymbol of alternativeSymbols) {
-                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred`);
-                        if (response.ok) {
-                            actualSymbol = altSymbol;
-                            console.log(`Success with alternative symbol ${altSymbol}`);
-                            break;
+                // If failed, try alternative endpoints or symbols
+                if (!response.ok) {
+                    // Try alternative providers
+                    const alternativeProviders = ['fred', 'bls', 'oecd'];
+                    for (const altProvider of alternativeProviders) {
+                        if (altProvider !== provider) {
+                            console.log(`Trying alternative provider ${altProvider} for ${symbol}`);
+                            response = await fetchWithTimeout(
+                                `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${altProvider}`,
+                                10000
+                            );
+                            if (response.ok) {
+                                provider = altProvider;
+                                break;
+                            }
                         }
                     }
                 }
@@ -1189,28 +1219,25 @@
                 if (initialResult.data && initialResult.data.length > 0) {
                     allData = [...initialResult.data];
                     
-                    // If we got 100 points, there might be more data available
-                    // Try to get historical data by using offset or pagination
+                    // Try to get more historical data if we got 100 points
                     if (initialResult.data.length === 100) {
                         console.log(`Got 100 points for ${symbol}, trying to get more historical data...`);
                         
-                        // Get the oldest date from current data
                         const oldestDate = initialResult.data.reduce((oldest, item) => {
                             const itemDate = new Date(item.date || item.time || item.period);
                             return itemDate < oldest ? itemDate : oldest;
                         }, new Date());
                         
-                        // Try to get data before the oldest date
                         const endDate = new Date(oldestDate);
                         endDate.setDate(endDate.getDate() - 1);
                         const startDate = new Date(endDate);
-                        startDate.setFullYear(startDate.getFullYear() - 10); // Try 10 years at a time
+                        startDate.setFullYear(startDate.getFullYear() - 10);
                         
                         try {
                             const historicalUrl = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`;
                             console.log(`Requesting historical data from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
                             
-                            const histResponse = await fetch(historicalUrl);
+                            const histResponse = await fetchWithTimeout(historicalUrl, 10000);
                             if (histResponse.ok) {
                                 const histResult = await histResponse.json();
                                 if (histResult.data && histResult.data.length > 0) {
@@ -1223,78 +1250,200 @@
                         }
                     }
                     
-                    // Sort all data by date
-                    allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    // Cache the data
+                    setCachedData(cacheKey, { data: allData, result: initialResult });
                     
-                    console.log(`Total ${allData.length} data points for ${symbol}`);
+                    // Process the data
+                    processWatchlistData(symbol, allData, provider, initialResult);
                     
-                    // Get the latest value - handle different data structures
-                    const latestItem = allData[allData.length - 1];
-                    let latestValue = parseFloat(
-                        latestItem.value || 
-                        latestItem[actualSymbol] || 
-                        latestItem[symbol] || 
-                        latestItem.close || 
-                        latestItem.price ||
-                        latestItem.rate ||
-                        0
-                    );
-                    
-                    // If still no value, try to find any numeric field
-                    if (latestValue === 0 || isNaN(latestValue)) {
-                        const numericFields = Object.keys(latestItem).filter(key => 
-                            key !== 'date' && key !== 'time' && key !== 'period' &&
-                            (typeof latestItem[key] === 'number' || !isNaN(parseFloat(latestItem[key])))
-                        );
-                        
-                        if (numericFields.length > 0) {
-                            latestValue = parseFloat(latestItem[numericFields[0]]);
-                            console.log(`Found value in field: ${numericFields[0]}`);
-                        }
-                    }
-                    
-                    // Calculate real percentage changes with all available data
-                    const changes = calculateRealPercentageChanges(allData, actualSymbol);
-                    
-                    // Check if we have custom data saved
-                    const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
-                    const customData = savedCustomData[symbol] || {};
-                    
-                    watchlistData[symbol] = {
-                        name: customData.customName || initialResult.name || initialResult.title || watchlistData[symbol]?.name || symbol,
-                        customName: customData.customName,
-                        color: customData.color || null,
-                        provider: provider,
-                        price: latestValue,
-                        changes: changes,
-                        hasData: true,
-                        fullData: allData,
-                        latestDate: latestItem.date,
-                        actualSymbol: actualSymbol
-                    };
-                    
-                    renderWatchlist();
                 } else {
                     throw new Error('No data received');
                 }
             } catch (error) {
                 console.error(`Error loading ${symbol}:`, error);
                 
-                // Check if we have custom data saved even on error
-                const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
-                const customData = savedCustomData[symbol] || {};
+                // Retry logic
+                if (retryCount < maxRetries) {
+                    console.log(`Retrying ${symbol} after delay...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+                    return loadSingleWatchlistItem(symbol, provider, retryCount + 1);
+                }
                 
-                watchlistData[symbol] = {
-                    name: customData.customName || watchlistData[symbol]?.name || symbol,
-                    customName: customData.customName,
-                    color: customData.color || null,
-                    provider: provider,
-                    price: 0,
-                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
-                    hasData: false
-                };
-                renderWatchlist();
+                // Check if we have cached data to use as fallback
+                const cacheKey = `${symbol}_${provider}`;
+                const cachedData = getCachedData(cacheKey, 24 * 60 * 60 * 1000); // 24 hour cache for errors
+                
+                if (cachedData && cachedData.data) {
+                    console.log(`Using cached data for ${symbol} due to error`);
+                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result);
+                } else {
+                    // No cached data, show error state
+                    const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+                    const customData = savedCustomData[symbol] || {};
+                    
+                    watchlistData[symbol] = {
+                        name: customData.customName || watchlistData[symbol]?.name || symbol,
+                        customName: customData.customName,
+                        color: customData.color || null,
+                        provider: provider,
+                        price: 0,
+                        changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                        hasData: false,
+                        error: error.message
+                    };
+                    renderWatchlist();
+                }
             }
+        }
+        
+        // Process watchlist data
+        function processWatchlistData(symbol, allData, provider, initialResult) {
+            // Sort all data by date
+            allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            console.log(`Total ${allData.length} data points for ${symbol}`);
+            
+            // Get the latest value
+            const latestItem = allData[allData.length - 1];
+            let latestValue = parseFloat(
+                latestItem.value || 
+                latestItem[symbol] || 
+                latestItem.close || 
+                latestItem.price ||
+                latestItem.rate ||
+                0
+            );
+            
+            // If still no value, try to find any numeric field
+            if (latestValue === 0 || isNaN(latestValue)) {
+                const numericFields = Object.keys(latestItem).filter(key => 
+                    key !== 'date' && key !== 'time' && key !== 'period' &&
+                    (typeof latestItem[key] === 'number' || !isNaN(parseFloat(latestItem[key])))
+                );
+                
+                if (numericFields.length > 0) {
+                    latestValue = parseFloat(latestItem[numericFields[0]]);
+                    console.log(`Found value in field: ${numericFields[0]}`);
+                }
+            }
+            
+            // Calculate real percentage changes
+            const changes = calculateRealPercentageChanges(allData, symbol);
+            
+            // Check if we have custom data saved
+            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+            const customData = savedCustomData[symbol] || {};
+            
+            watchlistData[symbol] = {
+                name: customData.customName || initialResult.name || initialResult.title || watchlistData[symbol]?.name || symbol,
+                customName: customData.customName,
+                color: customData.color || null,
+                provider: provider,
+                price: latestValue,
+                changes: changes,
+                hasData: true,
+                fullData: allData,
+                latestDate: latestItem.date,
+                actualSymbol: symbol
+            };
+            
+            renderWatchlist();
+        }
+        
+        // Fetch with timeout
+        async function fetchWithTimeout(url, timeout = 10000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout');
+                }
+                throw error;
+            }
+        }
+        
+        // Simple cache implementation
+        const dataCache = {
+            data: new Map(),
+            timestamps: new Map(),
+            
+            set(key, value) {
+                this.data.set(key, value);
+                this.timestamps.set(key, Date.now());
+                
+                // Store in localStorage for persistence (with size limit)
+                try {
+                    const cacheData = { value, timestamp: Date.now() };
+                    localStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
+                } catch (e) {
+                    console.warn('LocalStorage full, clearing old cache');
+                    this.clearOldCache();
+                }
+            },
+            
+            get(key, maxAge = 300000) { // 5 min default
+                // Try memory cache first
+                if (this.data.has(key)) {
+                    const age = Date.now() - this.timestamps.get(key);
+                    if (age <= maxAge) {
+                        return this.data.get(key);
+                    }
+                }
+                
+                // Try localStorage
+                try {
+                    const cached = localStorage.getItem(`cache_${key}`);
+                    if (cached) {
+                        const { value, timestamp } = JSON.parse(cached);
+                        if (Date.now() - timestamp <= maxAge) {
+                            // Restore to memory cache
+                            this.data.set(key, value);
+                            this.timestamps.set(key, timestamp);
+                            return value;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error reading cache:', e);
+                }
+                
+                return null;
+            },
+            
+            clearOldCache() {
+                // Clear items older than 24 hours from localStorage
+                const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+                const keysToRemove = [];
+                
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('cache_')) {
+                        try {
+                            const { timestamp } = JSON.parse(localStorage.getItem(key));
+                            if (timestamp < cutoff) {
+                                keysToRemove.push(key);
+                            }
+                        } catch (e) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                }
+                
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+            }
+        };
+        
+        function getCachedData(key, maxAge = 300000) {
+            return dataCache.get(key, maxAge);
+        }
+        
+        function setCachedData(key, value) {
+            dataCache.set(key, value);
         }
         
         // Calculate real percentage changes from actual data
