@@ -856,12 +856,18 @@
             try {
                 console.log(`Loading ${symbol} from ${provider}`);
                 
-                // Try with limit parameter first for more data
-                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&limit=5000`);
+                // Build URL with start date to get more history
+                const endDate = new Date().toISOString().split('T')[0];
+                const startDate = new Date();
+                startDate.setFullYear(startDate.getFullYear() - 20); // Get 20 years of data
+                
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate}`;
+                
+                let response = await fetch(url);
                 let result = null;
                 
                 if (!response.ok) {
-                    // Try without limit
+                    // Try without date parameters
                     response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 }
                 
@@ -871,7 +877,7 @@
                     // Try alternative symbols for dollar index
                     const alternativeSymbols = ['DTWEXBGS', 'DTWEXM', 'DEXUSEU'];
                     for (const altSymbol of alternativeSymbols) {
-                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred&limit=5000`);
+                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred`);
                         if (response.ok) {
                             result = await response.json();
                             break;
@@ -880,6 +886,8 @@
                 }
                 
                 if (result && result.data && result.data.length > 0) {
+                    console.log(`Received ${result.data.length} data points for ${symbol}`);
+                    
                     // Sort data by date
                     const data = result.data.sort((a, b) => new Date(a.date) - new Date(b.date));
                     
