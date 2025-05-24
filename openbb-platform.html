@@ -766,21 +766,35 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Load single watchlist item data
+        // Load single watchlist item data - fixed for all providers
         async function loadSingleWatchlistItem(symbol, provider = 'fred') {
             try {
-                // Get ALL historical data
+                console.log(`Loading ${symbol} from ${provider}`);
+                
+                // Get ALL historical data from the correct provider
                 const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 
                 if (response.ok) {
                     const result = await response.json();
+                    console.log(`Data received for ${symbol}:`, result);
                     
                     if (result.data && result.data.length > 0) {
-                        const data = result.data.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        const latestValue = parseFloat(data[0].value || data[0][symbol] || 0);
+                        // Sort data by date (oldest to newest for calculations)
+                        const data = result.data.sort((a, b) => new Date(a.date) - new Date(b.date));
                         
-                        // Calculate percentage changes
-                        const changes = calculatePercentageChanges(data, symbol);
+                        // Get the latest value - handle different data structures
+                        const latestItem = data[data.length - 1];
+                        const latestValue = parseFloat(
+                            latestItem.value || 
+                            latestItem[symbol] || 
+                            latestItem.close || 
+                            latestItem.price ||
+                            latestItem.rate ||
+                            0
+                        );
+                        
+                        // Calculate real percentage changes
+                        const changes = calculateRealPercentageChanges(data, symbol);
                         
                         watchlistData[symbol] = {
                             name: result.name || result.title || watchlistData[symbol]?.name || symbol,
@@ -788,7 +802,8 @@
                             price: latestValue,
                             changes: changes,
                             hasData: true,
-                            fullData: data // Store full historical data
+                            fullData: data, // Store full historical data
+                            latestDate: latestItem.date
                         };
                         
                         renderWatchlist();
@@ -796,7 +811,89 @@
                 }
             } catch (error) {
                 console.error(`Error loading ${symbol}:`, error);
+                watchlistData[symbol] = {
+                    name: watchlistData[symbol]?.name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                    hasData: false
+                };
+                renderWatchlist();
             }
+        }
+        
+        // Calculate real percentage changes from actual data
+        function calculateRealPercentageChanges(data, symbol) {
+            if (!data || data.length < 2) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
+            
+            const now = new Date();
+            const latestItem = data[data.length - 1];
+            const latestValue = parseFloat(
+                latestItem.value || 
+                latestItem[symbol] || 
+                latestItem.close || 
+                latestItem.price ||
+                latestItem.rate ||
+                0
+            );
+            
+            if (latestValue === 0) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
+            
+            const changes = {};
+            
+            // Define periods
+            const periods = {
+                '1d': 1,
+                '1w': 7,
+                '1m': 30,
+                '3m': 90,
+                '1y': 365
+            };
+            
+            // Calculate change for each period
+            for (const [period, days] of Object.entries(periods)) {
+                const targetDate = new Date(now);
+                targetDate.setDate(targetDate.getDate() - days);
+                
+                // Find the closest data point to target date
+                let closestItem = null;
+                let minDiff = Infinity;
+                
+                for (const item of data) {
+                    const itemDate = new Date(item.date);
+                    const diff = Math.abs(itemDate - targetDate);
+                    
+                    if (diff < minDiff && itemDate <= now) {
+                        minDiff = diff;
+                        closestItem = item;
+                    }
+                }
+                
+                if (closestItem) {
+                    const historicalValue = parseFloat(
+                        closestItem.value || 
+                        closestItem[symbol] || 
+                        closestItem.close || 
+                        closestItem.price ||
+                        closestItem.rate ||
+                        0
+                    );
+                    
+                    if (historicalValue !== 0) {
+                        changes[period] = ((latestValue - historicalValue) / historicalValue * 100);
+                    } else {
+                        changes[period] = null;
+                    }
+                } else {
+                    changes[period] = null;
+                }
+            }
+            
+            return changes;
         }
         
         // Create a new chart window
@@ -846,7 +943,7 @@
             }
         }
         
-        // Remove chart
+        // Remove chart - properly resize watchlist
         function removeChart(event, chartIdToRemove) {
             event.stopPropagation();
             if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
@@ -859,6 +956,17 @@
                 const chartKeys = Object.keys(charts);
                 activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
                 if(activeChartId) setActiveChart(activeChartId);
+            }
+            
+            // If no more charts, hide chart area and expand watchlist
+            if (Object.keys(charts).length === 0) {
+                const chartsArea = document.getElementById('chartsArea');
+                const watchlistSection = document.querySelector('.watchlist-section');
+                const chartViewBtn = document.getElementById('chartViewBtn');
+                
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+                chartViewBtn.style.display = 'none';
             }
         }
         
@@ -874,15 +982,16 @@
             setActiveChart(chartId);
         }
         
-        // Load chart data from OpenBB backend
+        // Load chart data from OpenBB backend - fixed for all providers
         async function loadChartData(chartId, symbol, provider) {
             const chart = charts[chartId];
             if (!chart) return;
             
             const canvasDiv = document.getElementById(`${chartId}_canvas`);
-            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol}...</div>`;
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
             
             try {
+                console.log(`Loading chart data for ${symbol} from ${provider}`);
                 const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
                 
                 if (!response.ok) {
@@ -890,16 +999,39 @@
                 }
                 
                 const result = await response.json();
+                console.log(`Chart data received for ${symbol}:`, result);
                 
                 if (result.data && result.data.length > 0) {
-                    // Process data
+                    // Process data - handle different field names
                     const processedData = result.data
-                        .map(item => ({
-                            date: item.date,
-                            value: parseFloat(item.value || item[symbol] || item.close || 0)
-                        }))
-                        .filter(item => !isNaN(item.value) && item.value !== null)
+                        .map(item => {
+                            // Try different possible value fields
+                            let value = item.value || 
+                                       item[symbol] || 
+                                       item.close || 
+                                       item.price ||
+                                       item.rate ||
+                                       item.observation_value ||
+                                       null;
+                            
+                            // Convert to number if it's a string
+                            if (typeof value === 'string') {
+                                value = parseFloat(value);
+                            }
+                            
+                            return {
+                                date: item.date || item.time || item.period,
+                                value: value
+                            };
+                        })
+                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
                         .sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    if (processedData.length === 0) {
+                        throw new Error('No valid data points found');
+                    }
+                    
+                    console.log(`Processed ${processedData.length} data points for ${symbol}`);
                     
                     chart.data[symbol] = processedData;
                     updateChartRender(chartId);
@@ -966,7 +1098,7 @@
             updateChartRender(chartId);
         }
         
-        // Filter data by timeframe
+        // Filter data by timeframe - properly implemented
         function filterDataByTimeframe(data, timeframe) {
             if (!data || data.length === 0) return data;
             
@@ -974,19 +1106,33 @@
             let cutoffDate = new Date();
             
             switch(timeframe) {
-                case '1M': cutoffDate.setMonth(now.getMonth() - 1); break;
-                case '3M': cutoffDate.setMonth(now.getMonth() - 3); break;
-                case '6M': cutoffDate.setMonth(now.getMonth() - 6); break;
-                case '1Y': cutoffDate.setFullYear(now.getFullYear() - 1); break;
-                case '2Y': cutoffDate.setFullYear(now.getFullYear() - 2); break;
-                case '5Y': cutoffDate.setFullYear(now.getFullYear() - 5); break;
-                case 'MAX': return data;
+                case '1M': 
+                    cutoffDate.setMonth(now.getMonth() - 1); 
+                    break;
+                case '3M': 
+                    cutoffDate.setMonth(now.getMonth() - 3); 
+                    break;
+                case '6M': 
+                    cutoffDate.setMonth(now.getMonth() - 6); 
+                    break;
+                case '1Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 1); 
+                    break;
+                case '2Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 2); 
+                    break;
+                case '5Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 5); 
+                    break;
+                case 'MAX': 
+                    return data; // Return all data
             }
             
+            // Filter data to only include dates after cutoff
             return data.filter(item => new Date(item.date) >= cutoffDate);
         }
         
-        // Render chart using Plotly
+        // Render chart using Plotly - fixed for multiple series
         function updateChartRender(chartId) {
             const chart = charts[chartId];
             const canvasElement = document.getElementById(`${chartId}_canvas`);
@@ -999,46 +1145,109 @@
             }
             
             const traces = [];
+            let yAxisCounter = 1;
+            const yAxes = {};
             
+            // Create traces for each symbol
             chart.symbols.forEach((s, index) => {
                 const symbolData = chart.data[s.symbol];
                 if (!symbolData || symbolData.length === 0) return;
                 
                 // Filter data by timeframe
                 const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
                 
                 const lineColor = colorPalette[index % colorPalette.length];
+                
+                // Determine if we need separate y-axis (for different scales)
+                const values = filteredData.map(d => d.value);
+                const maxValue = Math.max(...values);
+                const minValue = Math.min(...values);
+                const range = maxValue - minValue;
+                
+                // Use separate axis if values are very different in scale
+                let yaxis = 'y';
+                if (index > 0 && traces.length > 0) {
+                    const firstTraceMax = Math.max(...traces[0].y);
+                    const firstTraceMin = Math.min(...traces[0].y);
+                    const ratio = maxValue / firstTraceMax;
+                    
+                    if (ratio > 10 || ratio < 0.1) {
+                        yaxis = `y${++yAxisCounter}`;
+                        yAxes[yaxis] = {
+                            overlaying: 'y',
+                            side: index % 2 === 0 ? 'left' : 'right',
+                            position: index % 2 === 0 ? 0.0 : 1.0,
+                            gridcolor: '#22222250',
+                            tickfont: { color: lineColor },
+                            title: s.symbol,
+                            titlefont: { color: lineColor }
+                        };
+                    }
+                }
+                
+                // Calculate percentage change for display
+                const firstValue = filteredData[0].value;
+                const lastValue = filteredData[filteredData.length - 1].value;
+                const percentChange = ((lastValue - firstValue) / firstValue * 100).toFixed(2);
                 
                 traces.push({
                     x: filteredData.map(d => d.date),
                     y: filteredData.map(d => d.value),
                     type: 'scatter',
                     mode: 'lines',
-                    name: s.symbol,
+                    name: `${s.symbol} (${percentChange >= 0 ? '+' : ''}${percentChange}%)`,
                     line: { color: lineColor, width: 2 },
-                    hovertemplate: `<b>%{fullData.name}</b><br>%{x}<br>%{y:.4f}<extra></extra>`
+                    yaxis: yaxis,
+                    hovertemplate: `<b>${s.symbol}</b><br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`
                 });
             });
             
             if (traces.length === 0) {
-                canvasElement.innerHTML = '<div class="chart-message">No data to display</div>';
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
                 return;
+            }
+            
+            // Update chart title with percentage changes
+            const titleSection = document.getElementById(`${chartId}_title`);
+            if (titleSection && chart.symbols.length > 0) {
+                const changeInfo = chart.symbols.map(s => {
+                    const data = watchlistData[s.symbol];
+                    if (data && data.changes) {
+                        let changeText = '';
+                        if (chart.timeframe === '1M' && data.changes['1m'] !== null) {
+                            changeText = `1M: ${data.changes['1m'] >= 0 ? '+' : ''}${data.changes['1m'].toFixed(2)}%`;
+                        } else if (chart.timeframe === '3M' && data.changes['3m'] !== null) {
+                            changeText = `3M: ${data.changes['3m'] >= 0 ? '+' : ''}${data.changes['3m'].toFixed(2)}%`;
+                        } else if (chart.timeframe === '1Y' && data.changes['1y'] !== null) {
+                            changeText = `1Y: ${data.changes['1y'] >= 0 ? '+' : ''}${data.changes['1y'].toFixed(2)}%`;
+                        }
+                        return changeText;
+                    }
+                    return '';
+                }).filter(Boolean).join(' | ');
+                
+                titleSection.innerHTML = `Chart ${chartIdCounter} ${changeInfo ? `<span style="font-size: 14px; color: #888; margin-left: 10px;">${changeInfo}</span>` : ''}`;
             }
             
             const layout = {
                 paper_bgcolor: '#0a0a0a',
                 plot_bgcolor: '#0a0a0a',
                 font: { color: '#aaa', size: 12 },
-                margin: { t: 30, r: 30, b: 60, l: 60 },
+                margin: { t: 40, r: 80, b: 60, l: 80 },
                 xaxis: {
                     type: 'date',
                     gridcolor: '#22222250',
-                    tickfont: { color: '#888' }
+                    tickfont: { color: '#888' },
+                    rangeslider: { visible: false }
                 },
                 yaxis: {
                     gridcolor: '#22222250',
-                    tickfont: { color: '#888' }
+                    tickfont: { color: '#888' },
+                    title: traces.length === 1 ? traces[0].name.split(' ')[0] : '',
+                    side: 'left'
                 },
+                ...yAxes,
                 hovermode: 'x unified',
                 showlegend: true,
                 legend: {
@@ -1059,7 +1268,15 @@
             };
             
             if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
-            Plotly.react(canvasElement, traces, layout, config);
+            
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => { 
+                    charts[chartId].chartInstance = gd;
+                })
+                .catch(err => {
+                    console.error("Plotly error:", err);
+                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
+                });
         }
         
         // Load watchlist data
@@ -1079,53 +1296,7 @@
             }
         }
         
-        // Calculate percentage changes
-        function calculatePercentageChanges(data, symbol) {
-            const now = new Date();
-            const values = data.map(item => ({
-                date: new Date(item.date),
-                value: parseFloat(item.value || item[symbol] || 0)
-            })).filter(item => !isNaN(item.value));
 
-            if (values.length === 0) return { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 };
-
-            const latestValue = values[0].value;
-
-            // Helper function to find value at specific date
-            const findValueAtDate = (targetDate) => {
-                const closest = values.reduce((prev, curr) => {
-                    const prevDiff = Math.abs(prev.date - targetDate);
-                    const currDiff = Math.abs(curr.date - targetDate);
-                    return currDiff < prevDiff ? curr : prev;
-                });
-                return closest.value;
-            };
-
-            // Calculate changes for different periods
-            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-            const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-
-            const changes = {};
-            
-            if (values.length > 1) {
-                const dayValue = findValueAtDate(oneDayAgo);
-                const weekValue = findValueAtDate(oneWeekAgo);
-                const monthValue = findValueAtDate(oneMonthAgo);
-                const quarterValue = findValueAtDate(threeMonthsAgo);
-                const yearValue = findValueAtDate(oneYearAgo);
-
-                changes['1d'] = ((latestValue - dayValue) / dayValue * 100);
-                changes['1w'] = ((latestValue - weekValue) / weekValue * 100);
-                changes['1m'] = ((latestValue - monthValue) / monthValue * 100);
-                changes['3m'] = ((latestValue - quarterValue) / quarterValue * 100);
-                changes['1y'] = ((latestValue - yearValue) / yearValue * 100);
-            }
-
-            return changes;
-        }
         
         // Render watchlist
         function renderWatchlist() {
