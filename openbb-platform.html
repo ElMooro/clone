@@ -489,6 +489,28 @@
         .status-dot.connected {
             background: #00dd77;
         }
+        
+        /* Chart period info */
+        .chart-period-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .period-change {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .period-label {
+            color: #888;
+        }
     </style>
 </head>
 <body>
@@ -573,7 +595,6 @@
             setInterval(updateClock, 1000);
             
             await checkAPIConnection();
-            // Don't create chart by default - charts area is hidden
             loadWatchlistData();
             setInterval(loadWatchlistData, 60000); // Update every minute
             
@@ -605,7 +626,7 @@
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
         }
         
-        // Search function using OpenBB backend - case insensitive with suggestions
+        // Enhanced search function with better matching
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -620,12 +641,40 @@
                 resultsDiv.style.display = 'block';
                 
                 try {
-                    // Search with both uppercase and lowercase to catch more results
-                    const queries = [query, query.toUpperCase(), query.toLowerCase()];
-                    const searchPromises = queries.map(q => 
-                        fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(q)}`)
-                            .then(res => res.ok ? res.json() : null)
-                            .catch(() => null)
+                    // Create multiple search variations for better results
+                    const searchTerms = [
+                        query,
+                        query.toUpperCase(),
+                        query.toLowerCase(),
+                        query.charAt(0).toUpperCase() + query.slice(1).toLowerCase()
+                    ];
+                    
+                    // Add partial matches for longer queries
+                    if (query.length > 3) {
+                        const words = query.split(' ');
+                        if (words.length > 1) {
+                            searchTerms.push(words[0]);
+                            searchTerms.push(words[words.length - 1]);
+                        }
+                    }
+                    
+                    // Remove duplicates
+                    const uniqueTerms = [...new Set(searchTerms)];
+                    
+                    // Search with all variations
+                    const searchPromises = uniqueTerms.map(term => 
+                        fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(term)}`)
+                            .then(res => {
+                                if (!res.ok) {
+                                    console.warn(`Search failed for term: ${term}, status: ${res.status}`);
+                                    return null;
+                                }
+                                return res.json();
+                            })
+                            .catch(err => {
+                                console.warn(`Search error for term: ${term}`, err);
+                                return null;
+                            })
                     );
                     
                     const responses = await Promise.all(searchPromises);
@@ -640,20 +689,45 @@
                         if (Array.isArray(data)) {
                             results = data;
                         } else if (data.results) {
-                            if (data.results.fred) results = results.concat(data.results.fred);
-                            if (data.results.ecb) results = results.concat(data.results.ecb);
-                            if (data.results.treasury) results = results.concat(data.results.treasury);
-                            if (data.results.nyfed) results = results.concat(data.results.nyfed);
-                            if (data.results.ofr) results = results.concat(data.results.ofr);
+                            // Handle different provider results
+                            Object.keys(data.results).forEach(provider => {
+                                if (Array.isArray(data.results[provider])) {
+                                    results = results.concat(data.results[provider].map(item => ({
+                                        ...item,
+                                        provider: provider
+                                    })));
+                                }
+                            });
                         }
                         
                         results.forEach(result => {
-                            const symbol = result.series_id || result.symbol || result.code || result.id;
+                            const symbol = result.series_id || result.symbol || result.code || result.id || result.ticker;
                             if (symbol && !allResults.has(symbol)) {
                                 allResults.set(symbol, result);
                             }
                         });
                     });
+                    
+                    // If no results from API, add common symbols that match
+                    if (allResults.size === 0) {
+                        const commonSymbols = {
+                            'DXY': { symbol: 'DXY', name: 'US Dollar Index', provider: 'fred' },
+                            'DTWEXBGS': { series_id: 'DTWEXBGS', title: 'Nominal Broad U.S. Dollar Index', provider: 'fred' },
+                            'DTWEXM': { series_id: 'DTWEXM', title: 'Trade Weighted U.S. Dollar Index: Major Currencies', provider: 'fred' },
+                            'DOLLAR': { symbol: 'DXY', name: 'US Dollar Index', provider: 'fred' },
+                            'EUR': { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', provider: 'fred' },
+                            'GBP': { symbol: 'DEXUSUK', name: 'GBP/USD Exchange Rate', provider: 'fred' },
+                            'JPY': { symbol: 'DEXJPUS', name: 'USD/JPY Exchange Rate', provider: 'fred' }
+                        };
+                        
+                        Object.entries(commonSymbols).forEach(([key, value]) => {
+                            if (key.toLowerCase().includes(query.toLowerCase()) || 
+                                (value.name && value.name.toLowerCase().includes(query.toLowerCase())) ||
+                                (value.title && value.title.toLowerCase().includes(query.toLowerCase()))) {
+                                allResults.set(key, value);
+                            }
+                        });
+                    }
                     
                     displaySearchResults(Array.from(allResults.values()), query);
                     
@@ -665,40 +739,49 @@
                         </div>
                     `;
                 }
-            }, 200); // Faster debounce for suggestions
+            }, 200);
         }
         
-        // Display search results with better formatting
+        // Enhanced display search results with better matching
         function displaySearchResults(results, query) {
             const resultsDiv = document.getElementById('searchResults');
             
             if (!results || results.length === 0) {
-                // Show suggestions if no results
                 resultsDiv.innerHTML = `
                     <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
                         No results found for "${query}"
                         <div style="margin-top: 10px; font-size: 12px;">
                             Try searching for:<br>
-                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, EUR, inflation, unemployment
+                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, DXY, EUR, inflation, unemployment, dollar
                         </div>
                     </div>
                 `;
                 return;
             }
             
-            // Sort results by relevance (exact matches first)
+            // Enhanced sorting with fuzzy matching
             results.sort((a, b) => {
                 const symbolA = (a.series_id || a.symbol || a.code || '').toLowerCase();
                 const symbolB = (b.series_id || b.symbol || b.code || '').toLowerCase();
+                const nameA = (a.title || a.name || a.description || '').toLowerCase();
+                const nameB = (b.title || b.name || b.description || '').toLowerCase();
                 const queryLower = query.toLowerCase();
                 
-                // Exact matches first
+                // Exact symbol matches first
                 if (symbolA === queryLower) return -1;
                 if (symbolB === queryLower) return 1;
                 
-                // Then starts with
+                // Then symbol starts with
                 if (symbolA.startsWith(queryLower)) return -1;
                 if (symbolB.startsWith(queryLower)) return 1;
+                
+                // Then name contains at beginning
+                if (nameA.startsWith(queryLower)) return -1;
+                if (nameB.startsWith(queryLower)) return 1;
+                
+                // Then any contains
+                if (symbolA.includes(queryLower) || nameA.includes(queryLower)) return -1;
+                if (symbolB.includes(queryLower) || nameB.includes(queryLower)) return 1;
                 
                 return 0;
             });
@@ -716,7 +799,8 @@
                 
                 // Highlight matching text
                 const highlightMatch = (text) => {
-                    const regex = new RegExp(`(${query})`, 'gi');
+                    if (!text) return '';
+                    const regex = new RegExp(`(${query.split(' ').join('|')})`, 'gi');
                     return text.replace(regex, '<span style="color: #00ff88; font-weight: bold;">$1</span>');
                 };
                 
@@ -766,48 +850,76 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Load single watchlist item data - fixed for all providers
+        // Enhanced load single watchlist item with better data handling
         async function loadSingleWatchlistItem(symbol, provider = 'fred') {
             try {
                 console.log(`Loading ${symbol} from ${provider}`);
                 
-                // Get ALL historical data from the correct provider
-                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                // For special cases like DXY, try multiple endpoints
+                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                let result = null;
                 
                 if (response.ok) {
-                    const result = await response.json();
-                    console.log(`Data received for ${symbol}:`, result);
-                    
-                    if (result.data && result.data.length > 0) {
-                        // Sort data by date (oldest to newest for calculations)
-                        const data = result.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-                        
-                        // Get the latest value - handle different data structures
-                        const latestItem = data[data.length - 1];
-                        const latestValue = parseFloat(
-                            latestItem.value || 
-                            latestItem[symbol] || 
-                            latestItem.close || 
-                            latestItem.price ||
-                            latestItem.rate ||
-                            0
-                        );
-                        
-                        // Calculate real percentage changes
-                        const changes = calculateRealPercentageChanges(data, symbol);
-                        
-                        watchlistData[symbol] = {
-                            name: result.name || result.title || watchlistData[symbol]?.name || symbol,
-                            provider: provider,
-                            price: latestValue,
-                            changes: changes,
-                            hasData: true,
-                            fullData: data, // Store full historical data
-                            latestDate: latestItem.date
-                        };
-                        
-                        renderWatchlist();
+                    result = await response.json();
+                } else if (symbol === 'DXY' || symbol.includes('DOLLAR')) {
+                    // Try alternative symbols for dollar index
+                    const alternativeSymbols = ['DTWEXBGS', 'DTWEXM', 'DEXUSEU'];
+                    for (const altSymbol of alternativeSymbols) {
+                        response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${altSymbol}&provider=fred`);
+                        if (response.ok) {
+                            result = await response.json();
+                            break;
+                        }
                     }
+                }
+                
+                if (result && result.data && result.data.length > 0) {
+                    // Get ALL data, not just last 100
+                    let allData = result.data;
+                    
+                    // If we got limited data, try to fetch more
+                    if (result.data.length === 100) {
+                        // Try with date parameters to get more history
+                        const endDate = new Date().toISOString().split('T')[0];
+                        const startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString().split('T')[0];
+                        
+                        const fullResponse = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&start_date=${startDate}&end_date=${endDate}`);
+                        if (fullResponse.ok) {
+                            const fullResult = await fullResponse.json();
+                            if (fullResult.data && fullResult.data.length > result.data.length) {
+                                allData = fullResult.data;
+                            }
+                        }
+                    }
+                    
+                    // Sort data by date
+                    const data = allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    // Get the latest value
+                    const latestItem = data[data.length - 1];
+                    const latestValue = parseFloat(
+                        latestItem.value || 
+                        latestItem[symbol] || 
+                        latestItem.close || 
+                        latestItem.price ||
+                        latestItem.rate ||
+                        0
+                    );
+                    
+                    // Calculate real percentage changes
+                    const changes = calculateRealPercentageChanges(data, symbol);
+                    
+                    watchlistData[symbol] = {
+                        name: result.name || result.title || watchlistData[symbol]?.name || symbol,
+                        provider: provider,
+                        price: latestValue,
+                        changes: changes,
+                        hasData: true,
+                        fullData: data,
+                        latestDate: latestItem.date
+                    };
+                    
+                    renderWatchlist();
                 }
             } catch (error) {
                 console.error(`Error loading ${symbol}:`, error);
@@ -896,7 +1008,7 @@
             return changes;
         }
         
-        // Create a new chart window
+        // Create a new chart window with enhanced features
         function addNewChart() {
             const chartId = `chart_${chartIdCounter++}`;
             
@@ -906,10 +1018,11 @@
                         <div class="chart-title-section">
                             <div class="chart-title" id="${chartId}_title">Chart ${chartIdCounter}</div>
                             <div class="chart-symbols" id="${chartId}_symbols"></div>
+                            <div class="chart-period-info" id="${chartId}_period_info"></div>
                         </div>
                         <div class="chart-controls">
                             <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
-                                ${['1M','3M','6M','1Y','2Y','5Y','MAX'].map(tf => 
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','MAX'].map(tf => 
                                     `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}" 
                                              onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
                                 ).join('')}
@@ -930,6 +1043,15 @@
                 chartInstance: null
             };
             setActiveChart(chartId);
+            
+            // Show charts area when first chart is created
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+            
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
         }
         
         // Set active chart
@@ -943,7 +1065,7 @@
             }
         }
         
-        // Remove chart - properly resize watchlist
+        // Remove chart
         function removeChart(event, chartIdToRemove) {
             event.stopPropagation();
             if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
@@ -982,7 +1104,7 @@
             setActiveChart(chartId);
         }
         
-        // Load chart data from OpenBB backend - fixed for all providers
+        // Enhanced load chart data with full history
         async function loadChartData(chartId, symbol, provider) {
             const chart = charts[chartId];
             if (!chart) return;
@@ -992,7 +1114,17 @@
             
             try {
                 console.log(`Loading chart data for ${symbol} from ${provider}`);
-                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                
+                // Try to get full historical data
+                const endDate = new Date().toISOString().split('T')[0];
+                const startDate = new Date(new Date().setFullYear(new Date().getFullYear() - 30)).toISOString().split('T')[0];
+                
+                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&start_date=${startDate}&end_date=${endDate}`);
+                
+                // If that fails, try without date parameters
+                if (!response.ok) {
+                    response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                }
                 
                 if (!response.ok) {
                     throw new Error(`Failed to load data: ${response.status}`);
@@ -1002,10 +1134,9 @@
                 console.log(`Chart data received for ${symbol}:`, result);
                 
                 if (result.data && result.data.length > 0) {
-                    // Process data - handle different field names
+                    // Process data
                     const processedData = result.data
                         .map(item => {
-                            // Try different possible value fields
                             let value = item.value || 
                                        item[symbol] || 
                                        item.close || 
@@ -1014,7 +1145,6 @@
                                        item.observation_value ||
                                        null;
                             
-                            // Convert to number if it's a string
                             if (typeof value === 'string') {
                                 value = parseFloat(value);
                             }
@@ -1034,6 +1164,12 @@
                     console.log(`Processed ${processedData.length} data points for ${symbol}`);
                     
                     chart.data[symbol] = processedData;
+                    
+                    // Store full data in watchlist data if available
+                    if (watchlistData[symbol]) {
+                        watchlistData[symbol].fullData = processedData;
+                    }
+                    
                     updateChartRender(chartId);
                     updateChartSymbols(chartId);
                 } else {
@@ -1045,7 +1181,6 @@
                 if (canvasDiv) {
                     canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
                 }
-                // Remove the symbol from the chart if it failed to load
                 chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
                 updateChartSymbols(chartId);
             }
@@ -1080,6 +1215,7 @@
             
             if (chart.symbols.length === 0) {
                 document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                document.getElementById(`${chartId}_period_info`).innerHTML = '';
             }
         }
         
@@ -1098,7 +1234,7 @@
             updateChartRender(chartId);
         }
         
-        // Filter data by timeframe - properly implemented
+        // Enhanced filter data by timeframe with support for daily data
         function filterDataByTimeframe(data, timeframe) {
             if (!data || data.length === 0) return data;
             
@@ -1106,6 +1242,12 @@
             let cutoffDate = new Date();
             
             switch(timeframe) {
+                case '1D': 
+                    cutoffDate.setDate(now.getDate() - 1); 
+                    break;
+                case '1W': 
+                    cutoffDate.setDate(now.getDate() - 7); 
+                    break;
                 case '1M': 
                     cutoffDate.setMonth(now.getMonth() - 1); 
                     break;
@@ -1125,17 +1267,17 @@
                     cutoffDate.setFullYear(now.getFullYear() - 5); 
                     break;
                 case 'MAX': 
-                    return data; // Return all data
+                    return data;
             }
             
-            // Filter data to only include dates after cutoff
             return data.filter(item => new Date(item.date) >= cutoffDate);
         }
         
-        // Render chart using Plotly - fixed for multiple series
+        // Enhanced render chart with period information
         function updateChartRender(chartId) {
             const chart = charts[chartId];
             const canvasElement = document.getElementById(`${chartId}_canvas`);
+            const periodInfoElement = document.getElementById(`${chartId}_period_info`);
             if (!canvasElement || !chart) return;
             
             if (chart.symbols.length === 0) {
@@ -1147,6 +1289,7 @@
             const traces = [];
             let yAxisCounter = 1;
             const yAxes = {};
+            const periodChanges = [];
             
             // Create traces for each symbol
             chart.symbols.forEach((s, index) => {
@@ -1159,17 +1302,30 @@
                 
                 const lineColor = colorPalette[index % colorPalette.length];
                 
-                // Determine if we need separate y-axis (for different scales)
+                // Calculate percentage change
+                const firstValue = filteredData[0].value;
+                const lastValue = filteredData[filteredData.length - 1].value;
+                const percentChange = ((lastValue - firstValue) / firstValue * 100).toFixed(2);
+                
+                // Store period changes for display
+                const watchlistInfo = watchlistData[s.symbol];
+                if (watchlistInfo && watchlistInfo.changes) {
+                    periodChanges.push({
+                        symbol: s.symbol,
+                        color: lineColor,
+                        changes: watchlistInfo.changes,
+                        currentPrice: lastValue
+                    });
+                }
+                
+                // Determine if we need separate y-axis
                 const values = filteredData.map(d => d.value);
                 const maxValue = Math.max(...values);
                 const minValue = Math.min(...values);
-                const range = maxValue - minValue;
                 
-                // Use separate axis if values are very different in scale
                 let yaxis = 'y';
                 if (index > 0 && traces.length > 0) {
                     const firstTraceMax = Math.max(...traces[0].y);
-                    const firstTraceMin = Math.min(...traces[0].y);
                     const ratio = maxValue / firstTraceMax;
                     
                     if (ratio > 10 || ratio < 0.1) {
@@ -1185,11 +1341,6 @@
                         };
                     }
                 }
-                
-                // Calculate percentage change for display
-                const firstValue = filteredData[0].value;
-                const lastValue = filteredData[filteredData.length - 1].value;
-                const percentChange = ((lastValue - firstValue) / firstValue * 100).toFixed(2);
                 
                 traces.push({
                     x: filteredData.map(d => d.date),
@@ -1208,26 +1359,31 @@
                 return;
             }
             
-            // Update chart title with percentage changes
-            const titleSection = document.getElementById(`${chartId}_title`);
-            if (titleSection && chart.symbols.length > 0) {
-                const changeInfo = chart.symbols.map(s => {
-                    const data = watchlistData[s.symbol];
-                    if (data && data.changes) {
-                        let changeText = '';
-                        if (chart.timeframe === '1M' && data.changes['1m'] !== null) {
-                            changeText = `1M: ${data.changes['1m'] >= 0 ? '+' : ''}${data.changes['1m'].toFixed(2)}%`;
-                        } else if (chart.timeframe === '3M' && data.changes['3m'] !== null) {
-                            changeText = `3M: ${data.changes['3m'] >= 0 ? '+' : ''}${data.changes['3m'].toFixed(2)}%`;
-                        } else if (chart.timeframe === '1Y' && data.changes['1y'] !== null) {
-                            changeText = `1Y: ${data.changes['1y'] >= 0 ? '+' : ''}${data.changes['1y'].toFixed(2)}%`;
-                        }
-                        return changeText;
-                    }
-                    return '';
-                }).filter(Boolean).join(' | ');
-                
-                titleSection.innerHTML = `Chart ${chartIdCounter} ${changeInfo ? `<span style="font-size: 14px; color: #888; margin-left: 10px;">${changeInfo}</span>` : ''}`;
+            // Update period info display
+            if (periodInfoElement && periodChanges.length > 0) {
+                periodInfoElement.innerHTML = periodChanges.map(info => {
+                    const periods = ['1d', '1w', '1m', '3m', '1y'];
+                    const periodDisplay = periods.map(period => {
+                        const change = info.changes[period];
+                        if (change === null || change === undefined) return '';
+                        const changeClass = change >= 0 ? 'positive' : 'negative';
+                        const changeText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                        return `
+                            <div class="period-change">
+                                <span class="period-label">${period.toUpperCase()}:</span>
+                                <span class="${changeClass}">${changeText}</span>
+                            </div>
+                        `;
+                    }).filter(Boolean).join('');
+                    
+                    return `
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 5px; background: #1a1a1a; border-radius: 6px;">
+                            <span class="symbol-color-dot" style="background-color: ${info.color};"></span>
+                            <strong style="color: ${info.color};">${info.symbol}</strong>
+                            ${periodDisplay}
+                        </div>
+                    `;
+                }).join('');
             }
             
             const layout = {
@@ -1296,8 +1452,6 @@
             }
         }
         
-
-        
         // Render watchlist
         function renderWatchlist() {
             const tbody = document.getElementById('watchlistBody');
@@ -1319,13 +1473,13 @@
                 };
                 
                 const formatChange = (change) => {
-                    if (!change || isNaN(change)) return '—';
+                    if (change === null || change === undefined || isNaN(change)) return '—';
                     const val = parseFloat(change);
                     return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
                 };
                 
                 const getChangeClass = (change) => {
-                    if (!change || isNaN(change)) return 'neutral';
+                    if (change === null || change === undefined || isNaN(change)) return 'neutral';
                     return parseFloat(change) >= 0 ? 'positive' : 'negative';
                 };
                 
