@@ -1005,9 +1005,13 @@
         // Check API connection
         async function checkAPIConnection() {
             try {
+                console.log('Checking API connection at:', API_BASE);
                 const response = await fetch(`${API_BASE}/api/v1/universal/providers`);
+                console.log('API connection response:', response.status);
                 
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('API providers available:', data);
                     document.getElementById('apiStatus').classList.add('connected');
                     document.getElementById('apiStatusText').textContent = 'API Connected';
                     showTemporaryMessage('Connected to OpenBB API', 'info');
@@ -1017,7 +1021,16 @@
             } catch (error) {
                 console.error('API connection failed:', error);
                 document.getElementById('apiStatusText').textContent = 'API Disconnected';
-                showTemporaryMessage('API connection failed', 'error');
+                showTemporaryMessage(`API connection failed: ${error.message}`, 'error');
+                
+                // Try a simple test endpoint
+                try {
+                    console.log('Trying alternate endpoint...');
+                    const testResponse = await fetch(`${API_BASE}/docs`);
+                    console.log('Docs endpoint status:', testResponse.status);
+                } catch (e) {
+                    console.error('Alternate endpoint also failed:', e);
+                }
             }
         }
         
@@ -1074,113 +1087,67 @@
                     let allResults = [];
                     console.log('Searching for:', query, 'Provider:', currentSearchProvider);
                     
+                    // First, let's try a simple FRED search to test the API
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'fred') {
                         try {
-                            // Universal search endpoint
-                            const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}&provider=fred`);
+                            // Try the economy/fred_search endpoint first
+                            const fredSearchUrl = `${API_BASE}/api/v1/economy/fred_search?query=${encodeURIComponent(query)}`;
+                            console.log('Trying FRED search at:', fredSearchUrl);
+                            
+                            const response = await fetch(fredSearchUrl);
                             console.log('FRED search response status:', response.status);
+                            
                             if (response.ok) {
                                 const data = await response.json();
                                 console.log('FRED search data:', data);
-                                if (data.results && data.results.fred) {
-                                    allResults = allResults.concat(data.results.fred.map(item => ({
-                                        ...item,
-                                        provider: 'fred',
-                                        symbol: item.series_id || item.symbol
-                                    })));
+                                
+                                // Handle different response formats
+                                let fredResults = [];
+                                if (Array.isArray(data)) {
+                                    fredResults = data;
+                                } else if (data.results) {
+                                    if (Array.isArray(data.results)) {
+                                        fredResults = data.results;
+                                    } else if (data.results.fred) {
+                                        fredResults = data.results.fred;
+                                    }
                                 }
+                                
+                                allResults = allResults.concat(fredResults.map(item => ({
+                                    symbol: item.series_id || item.symbol || item.id,
+                                    title: item.title || item.name || item.description,
+                                    units: item.units || item.units_short || '',
+                                    frequency: item.frequency || item.frequency_short || '',
+                                    provider: 'fred'
+                                })));
                             }
                         } catch (err) {
                             console.error('FRED search error:', err);
                         }
                     }
                     
-                    if (currentSearchProvider === 'all' || currentSearchProvider === 'ecb') {
-                        try {
-                            // ECB search
-                            const response = await fetch(`${API_BASE}/api/v1/economy/ecb_search?query=${encodeURIComponent(query)}`);
-                            console.log('ECB search response status:', response.status);
-                            if (response.ok) {
-                                const data = await response.json();
-                                console.log('ECB search data:', data);
-                                if (data.results) {
-                                    allResults = allResults.concat(data.results.map(item => ({
-                                        ...item,
-                                        provider: 'ecb',
-                                        symbol: item.series_id
-                                    })));
-                                }
+                    // For now, let's also add some hardcoded common symbols as fallback
+                    if (allResults.length === 0) {
+                        const commonSymbols = {
+                            'GDP': { symbol: 'GDP', title: 'Gross Domestic Product', provider: 'fred' },
+                            'UNRATE': { symbol: 'UNRATE', title: 'Unemployment Rate', provider: 'fred' },
+                            'DGS10': { symbol: 'DGS10', title: '10-Year Treasury Constant Maturity Rate', provider: 'fred' },
+                            'CPIAUCSL': { symbol: 'CPIAUCSL', title: 'Consumer Price Index', provider: 'fred' },
+                            'DFF': { symbol: 'DFF', title: 'Federal Funds Rate', provider: 'fred' },
+                            'VIXCLS': { symbol: 'VIXCLS', title: 'VIX Volatility Index', provider: 'fred' },
+                            'SOFR': { symbol: 'SOFR', title: 'Secured Overnight Financing Rate', provider: 'fred' }
+                        };
+                        
+                        Object.entries(commonSymbols).forEach(([key, value]) => {
+                            if (key.toLowerCase().includes(query.toLowerCase()) || 
+                                value.title.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push(value);
                             }
-                        } catch (err) {
-                            console.error('ECB search error:', err);
-                        }
+                        });
                     }
                     
-                    if (currentSearchProvider === 'all' || currentSearchProvider === 'newyorkfed') {
-                        try {
-                            // NY Fed search
-                            const response = await fetch(`${API_BASE}/api/v1/economy/ny_fed_search?query=${encodeURIComponent(query)}`);
-                            console.log('NY Fed search response status:', response.status);
-                            if (response.ok) {
-                                const data = await response.json();
-                                console.log('NY Fed search data:', data);
-                                if (data.results) {
-                                    allResults = allResults.concat(data.results.map(item => ({
-                                        ...item,
-                                        provider: 'newyorkfed',
-                                        symbol: item.series_id
-                                    })));
-                                }
-                            }
-                        } catch (err) {
-                            console.error('NY Fed search error:', err);
-                        }
-                    }
-                    
-                    if (currentSearchProvider === 'all' || currentSearchProvider === 'ofr') {
-                        try {
-                            // OFR search
-                            const response = await fetch(`${API_BASE}/api/v1/economy/ofr_search?query=${encodeURIComponent(query)}`);
-                            console.log('OFR search response status:', response.status);
-                            if (response.ok) {
-                                const data = await response.json();
-                                console.log('OFR search data:', data);
-                                if (data.results) {
-                                    allResults = allResults.concat(data.results.map(item => ({
-                                        ...item,
-                                        provider: 'ofr',
-                                        symbol: item.series_id
-                                    })));
-                                }
-                            }
-                        } catch (err) {
-                            console.error('OFR search error:', err);
-                        }
-                    }
-                    
-                    if (currentSearchProvider === 'all' || currentSearchProvider === 'treasury') {
-                        try {
-                            // Treasury search
-                            const response = await fetch(`${API_BASE}/api/v1/economy/treasury_search?query=${encodeURIComponent(query)}`);
-                            console.log('Treasury search response status:', response.status);
-                            if (response.ok) {
-                                const data = await response.json();
-                                console.log('Treasury search data:', data);
-                                if (data.results) {
-                                    allResults = allResults.concat(data.results.map(item => ({
-                                        ...item,
-                                        provider: 'treasury',
-                                        symbol: item.series_id
-                                    })));
-                                }
-                            }
-                        } catch (err) {
-                            console.error('Treasury search error:', err);
-                        }
-                    }
-                    
+                    // Add stock symbols
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'polygon' || currentSearchProvider === 'fmp') {
-                        // Add common stocks for polygon/fmp
                         const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM', 'V', 'JNJ', 'SPY', 'QQQ', 'DIA', 'IWM'];
                         const upperQuery = query.toUpperCase();
                         
@@ -1203,9 +1170,15 @@
                 } catch (error) {
                     console.error('Search error:', error);
                     resultsDiv.innerHTML = `
-                        <div class="search-item" style="text-align:center; color:#888;">
-                            Error searching. Please try again.
-                            <br><small>${error.message}</small>
+                        <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
+                            <div style="color: #ff4444; margin-bottom: 10px;">
+                                API Connection Error
+                            </div>
+                            <div style="font-size: 12px;">
+                                Please check that the OpenBB API is running at:<br>
+                                <code>${API_BASE}</code><br><br>
+                                Error: ${error.message}
+                            </div>
                         </div>
                     `;
                 }
