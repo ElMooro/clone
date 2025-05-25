@@ -996,7 +996,7 @@
             'IWM': 'polygon_direct',
             'VIX': 'polygon_direct',
             
-            // NY Fed rates
+            // NY Fed rates - based on your documentation
             'sofr': 'ny_fed_direct',
             'SOFR': 'ny_fed_direct',
             'effr': 'ny_fed_direct',
@@ -1007,6 +1007,17 @@
             'TGCR': 'ny_fed_direct',
             'bgcr': 'ny_fed_direct',
             'BGCR': 'ny_fed_direct',
+            
+            // FRED series - use 'fred_direct' with include_changes=false for problematic ones
+            'GDP': 'fred_direct',
+            'UNRATE': 'fred_direct',
+            'CPIAUCSL': 'fred_direct',
+            'DFF': 'fred_direct',
+            'FEDFUNDS': 'fred_direct',
+            'VIXCLS': 'fred_direct',
+            'DGS10': 'fred_direct',
+            'T10YIE': 'fred_direct',
+            'AMERIBOR': 'fred_direct',
             
             // Default to FRED for everything else
             'DEFAULT': 'fred_direct'
@@ -1065,14 +1076,14 @@
             // Check patterns
             if (/^[A-Z]{1,5}$/.test(symbol) && symbol.length <= 5) {
                 // Check if it's a known FRED symbol
-                const fredSymbols = ['DFF', 'GDP', 'CPI', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30'];
+                const fredSymbols = ['DFF', 'GDP', 'CPI', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30', 'UNRATE', 'CPIAUCSL', 'FEDFUNDS', 'VIXCLS'];
                 if (!fredSymbols.some(fs => symbol.startsWith(fs))) {
                     return 'polygon_direct'; // Likely a stock ticker
                 }
             }
             
-            // Default to FRED
-            return 'fred_direct';
+            // Default to FRED without _direct suffix based on your documentation
+            return 'fred';
         }
         
         // Initialize the dashboard
@@ -1081,6 +1092,25 @@
             setInterval(updateClock, 1000);
             
             loadWatchlists();
+            
+            // Test a simple known working endpoint first
+            console.log('Testing API connection...');
+            try {
+                const testResponse = await fetch(`${API_BASE}/api/v1/universal/data?symbol=FEDFUNDS&provider=fred_direct&include_changes=false`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('Test response status:', testResponse.status);
+                console.log('Test response headers:', [...testResponse.headers.entries()]);
+            } catch (e) {
+                console.error('Test request failed:', e);
+            }
+            
             await checkAPIConnection();
             await discoverProviders();
             loadWatchlistData();
@@ -1138,6 +1168,10 @@
         // Discover available providers
         async function discoverProviders() {
             try {
+                // Skip this call if it's causing 404 errors
+                console.log('Skipping provider discovery due to 404 errors');
+                return;
+                
                 const response = await fetch(`${API_BASE}/api/v1/universal/providers`);
                 if (response.ok) {
                     const data = await response.json();
@@ -1456,9 +1490,8 @@
                 // Build URL based on provider
                 let url = `${API_BASE}/api/v1/universal/data?symbol=${requestSymbol}&provider=${provider}`;
                 
-                // Add include_changes=false for problematic series
-                const problemSeries = ['DGS10', 'DGS2', 'DGS5', 'DGS30', 'T10YIE', 'DEXUSEU', 'STLFSI4', 'STLFSI3', 'STLFSI2'];
-                if (problemSeries.includes(actualSymbol) || provider === 'ny_fed_direct') {
+                // Add include_changes=false for ALL FRED series to avoid pandas processing issues
+                if (provider.includes('fred') || provider === 'ny_fed_direct') {
                     url += '&include_changes=false';
                 }
                 
@@ -1629,7 +1662,15 @@
             const timeoutId = setTimeout(() => controller.abort(), timeout);
             
             try {
-                const response = await fetch(url, { signal: controller.signal });
+                const response = await fetch(url, { 
+                    signal: controller.signal,
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 clearTimeout(timeoutId);
                 return response;
             } catch (error) {
