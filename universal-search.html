@@ -779,7 +779,6 @@
                 </div>
                 <input type="text" class="search-box" id="searchBox" 
                        placeholder="Search financial data across all sources (e.g., GDP, SOFR, AAPL, ECB rates, Treasury auctions)..." 
-                       onkeyup="performSearch(this.value)"
                        autocomplete="off">
                 <span class="search-icon">🔍</span>
                 <div class="search-results" id="searchResults" style="display: none;"></div>
@@ -971,8 +970,27 @@
             // Set initial sort button state
             updateSortButtons();
             
+            // Set up event listeners
+            setupEventListeners();
+            
             // Focus on search box
             document.getElementById('searchBox').focus();
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // Search box event listener
+            const searchBox = document.getElementById('searchBox');
+            searchBox.addEventListener('keyup', (e) => performSearch(e.target.value));
+            
+            // Click outside to hide search results
+            document.addEventListener('click', function(event) {
+                const searchResults = document.getElementById('searchResults');
+                
+                if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
         }
         
         // Check API connection
@@ -2133,16 +2151,6 @@
             
             setTimeout(() => popup.remove(), 3000);
         }
-        
-        // Hide search results when clicking outside
-        document.addEventListener('click', function(event) {
-            const searchBox = document.getElementById('searchBox');
-            const searchResults = document.getElementById('searchResults');
-            
-            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
-                searchResults.style.display = 'none';
-            }
-        });
         
         // Initialize on page load
         window.onload = init;
