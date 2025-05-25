@@ -768,14 +768,14 @@
         <div class="search-section">
             <div class="search-container">
                 <div class="provider-pills">
-                    <div class="provider-pill active" onclick="setSearchProvider('all')">All Sources</div>
-                    <div class="provider-pill" onclick="setSearchProvider('fred')">FRED</div>
-                    <div class="provider-pill" onclick="setSearchProvider('ecb')">ECB</div>
-                    <div class="provider-pill" onclick="setSearchProvider('newyorkfed')">NY Fed</div>
-                    <div class="provider-pill" onclick="setSearchProvider('ofr')">OFR</div>
-                    <div class="provider-pill" onclick="setSearchProvider('treasury')">Treasury</div>
-                    <div class="provider-pill" onclick="setSearchProvider('polygon')">Polygon</div>
-                    <div class="provider-pill" onclick="setSearchProvider('fmp')">FMP</div>
+                    <div class="provider-pill active" data-provider="all">All Sources</div>
+                    <div class="provider-pill" data-provider="fred">FRED</div>
+                    <div class="provider-pill" data-provider="ecb">ECB</div>
+                    <div class="provider-pill" data-provider="newyorkfed">NY Fed</div>
+                    <div class="provider-pill" data-provider="ofr">OFR</div>
+                    <div class="provider-pill" data-provider="treasury">Treasury</div>
+                    <div class="provider-pill" data-provider="polygon">Polygon</div>
+                    <div class="provider-pill" data-provider="fmp">FMP</div>
                 </div>
                 <input type="text" class="search-box" id="searchBox" 
                        placeholder="Search financial data across all sources (e.g., GDP, SOFR, AAPL, ECB rates, Treasury auctions)..." 
@@ -983,6 +983,15 @@
             const searchBox = document.getElementById('searchBox');
             searchBox.addEventListener('keyup', (e) => performSearch(e.target.value));
             
+            // Provider pills event delegation
+            const providerPills = document.querySelector('.provider-pills');
+            providerPills.addEventListener('click', (e) => {
+                if (e.target.classList.contains('provider-pill')) {
+                    const provider = e.target.getAttribute('data-provider');
+                    setSearchProvider(provider, e.target);
+                }
+            });
+            
             // Click outside to hide search results
             document.addEventListener('click', function(event) {
                 const searchResults = document.getElementById('searchResults');
@@ -1018,14 +1027,14 @@
         }
         
         // Set search provider
-        function setSearchProvider(provider) {
+        function setSearchProvider(provider, targetElement) {
             currentSearchProvider = provider;
             
             // Update pill states
             document.querySelectorAll('.provider-pill').forEach(pill => {
                 pill.classList.remove('active');
             });
-            event.target.classList.add('active');
+            targetElement.classList.add('active');
             
             // Update search placeholder
             const searchBox = document.getElementById('searchBox');
