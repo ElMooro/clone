@@ -776,9 +776,9 @@
             },
             ny_fed: {
                 name: 'New York Federal Reserve',
-                provider: 'ny_fed_direct',
+                provider: 'fred_direct', // Use FRED for NY Fed rates
                 active: true,
-                searchSymbols: ['sofr', 'effr', 'obfr', 'tgcr', 'bgcr']
+                searchSymbols: ['SOFR', 'EFFR', 'OBFR', 'TGCR', 'BGCR'] // Use FRED symbols
             },
             ecb: {
                 name: 'European Central Bank',
@@ -800,7 +800,7 @@
                 symbols: [
                     { symbol: 'AAPL', provider: 'polygon_direct' },
                     { symbol: 'FEDFUNDS', provider: 'fred_direct' },
-                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'SOFR', provider: 'fred_direct' },
                     { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' }
                 ],
                 active: true
@@ -818,9 +818,9 @@
             },
             'RATES': {
                 symbols: [
-                    { symbol: 'sofr', provider: 'ny_fed_direct' },
-                    { symbol: 'effr', provider: 'ny_fed_direct' },
-                    { symbol: 'obfr', provider: 'ny_fed_direct' },
+                    { symbol: 'SOFR', provider: 'fred_direct' },
+                    { symbol: 'EFFR', provider: 'fred_direct' },
+                    { symbol: 'OBFR', provider: 'fred_direct' },
                     { symbol: 'FEDFUNDS', provider: 'fred_direct' },
                     { symbol: 'DFF', provider: 'fred_direct' }
                 ],
@@ -888,10 +888,8 @@
                     
                     if (source === 'polygon') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&data_type=quote`;
-                    } else if (source === 'fred') {
-                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
-                    } else if (source === 'ny_fed') {
-                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                    } else if (source === 'fred' || source === 'ny_fed') {
+                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=fred_direct&include_changes=false`;
                     } else if (source === 'ecb') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
                     }
