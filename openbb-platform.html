@@ -142,6 +142,33 @@
             text-transform: uppercase;
         }
         
+        /* Provider filter buttons */
+        .provider-filters {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .provider-filter {
+            background: #252525;
+            border: 1px solid #333;
+            color: #888;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .provider-filter:hover {
+            background: #333;
+            color: #fff;
+        }
+        .provider-filter.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+        
         /* Charts and Watchlist Container */
         .content { 
             flex: 1; 
@@ -741,10 +768,19 @@
         <div class="search-section">
             <div class="search-container">
                 <input type="text" class="search-box" id="searchBox" 
-                       placeholder="Search financial data (e.g., AAPL, GDP, inflation, unemployment)..." 
+                       placeholder="Search financial data (e.g., AAPL, GDP, inflation, unemployment, EUR/USD, treasury rates)..." 
                        onkeyup="performSearch(this.value)"
                        autocomplete="off">
                 <span class="search-icon">🔍</span>
+                <div class="provider-filters" id="providerFilters">
+                    <button class="provider-filter active" onclick="filterByProvider('all')">All</button>
+                    <button class="provider-filter" onclick="filterByProvider('fred_direct')">FRED</button>
+                    <button class="provider-filter" onclick="filterByProvider('polygon_direct')">Stocks</button>
+                    <button class="provider-filter" onclick="filterByProvider('ecb_direct')">ECB</button>
+                    <button class="provider-filter" onclick="filterByProvider('ny_fed_direct')">NY Fed</button>
+                    <button class="provider-filter" onclick="filterByProvider('ofr_direct')">OFR</button>
+                    <button class="provider-filter" onclick="filterByProvider('treasury_direct')">Treasury</button>
+                </div>
                 <div class="search-results" id="searchResults" style="display: none;"></div>
             </div>
         </div>
@@ -760,7 +796,10 @@
                         <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
                             <option value="MAIN">MAIN</option>
                             <option value="TOP">TOP</option>
-                            <option value="GLOBAL LIQUIDITY TREND REVERSAL">GLOBAL LIQUIDITY TREND REVERSAL</option>
+                            <option value="STOCKS">STOCKS</option>
+                            <option value="CURRENCIES">CURRENCIES</option>
+                            <option value="TREASURY">TREASURY</option>
+                            <option value="GLOBAL LIQUIDITY TREND REVERSAL">GLOBAL LIQUIDITY</option>
                             <option value="BLACK SWAN">BLACK SWAN</option>
                         </select>
                     </div>
@@ -811,8 +850,9 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
+        let activeProviderFilter = 'all';
         
-        // Multiple watchlists configuration
+        // Multiple watchlists configuration with provider-specific lists
         const watchlists = {
             'MAIN': {
                 symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR'],
@@ -820,6 +860,18 @@
             },
             'TOP': {
                 symbols: ['DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DTWEXM', 'DXY', 'M2SL', 'ISRATIO', 'MNFCTRIRSA'],
+                active: false
+            },
+            'STOCKS': {
+                symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK.B', 'JPM', 'JNJ'],
+                active: false
+            },
+            'CURRENCIES': {
+                symbols: ['DEXUSEU', 'DEXJPUS', 'DEXUSUK', 'DEXCHUS', 'DEXCAUS', 'DEXMXUS', 'DEXBZUS', 'DEXINUS'],
+                active: false
+            },
+            'TREASURY': {
+                symbols: ['DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30', 'DFII5', 'DFII10', 'T10Y2Y', 'T10Y3M'],
                 active: false
             },
             'GLOBAL LIQUIDITY TREND REVERSAL': {
@@ -840,6 +892,48 @@
         let watchlistData = {};
         let sortOrder = 'default'; // 'default', 'increase', 'decrease'
         let columnSort = { column: null, direction: null }; // For column-specific sorting
+        
+        // Provider mappings
+        const providerMappings = {
+            // Stocks
+            'AAPL': 'polygon_direct',
+            'MSFT': 'polygon_direct',
+            'GOOGL': 'polygon_direct',
+            'AMZN': 'polygon_direct',
+            'NVDA': 'polygon_direct',
+            'TSLA': 'polygon_direct',
+            'META': 'polygon_direct',
+            'BRK.B': 'polygon_direct',
+            'JPM': 'polygon_direct',
+            'JNJ': 'polygon_direct',
+            'SPY': 'polygon_direct',
+            'QQQ': 'polygon_direct',
+            'IWM': 'polygon_direct',
+            'VIX': 'polygon_direct',
+            
+            // ECB Exchange Rates
+            'EURUSD': 'ecb_direct',
+            'EUR/USD': 'ecb_direct',
+            'EXR.D.USD.EUR.SP00.A': 'ecb_direct',
+            
+            // NY Fed Rates
+            'SOFR': 'ny_fed_direct',
+            'EFFR': 'ny_fed_direct',
+            'OBFR': 'ny_fed_direct',
+            'TGCR': 'ny_fed_direct',
+            'BGCR': 'ny_fed_direct',
+            
+            // Treasury symbols
+            'DTS_OPERATING_CASH': 'treasury_direct',
+            'AUCTION_4WEEK': 'treasury_direct',
+            'AUCTION_13WEEK': 'treasury_direct',
+            'AUCTION_26WEEK': 'treasury_direct',
+            'TREASURY_EXCHANGE_RATES': 'treasury_direct',
+            'TREASURY_SECURITIES': 'treasury_direct',
+            
+            // Default to FRED for everything else
+            'DEFAULT': 'fred_direct'
+        };
         
         // Color palette for charts
         const colorPalette = [
@@ -876,6 +970,28 @@
             localStorage.setItem('openbbWatchlists', JSON.stringify(toSave));
         }
         
+        // Get provider for symbol
+        function getProviderForSymbol(symbol) {
+            // Check direct mappings first
+            if (providerMappings[symbol]) {
+                return providerMappings[symbol];
+            }
+            
+            // Check patterns
+            if (/^[A-Z]{1,5}$/.test(symbol) && symbol.length <= 5) {
+                // Could be a stock ticker
+                return 'polygon_direct';
+            }
+            
+            // ECB pattern
+            if (symbol.includes('EXR.')) {
+                return 'ecb_direct';
+            }
+            
+            // Default to FRED
+            return 'fred_direct';
+        }
+        
         // Initialize the dashboard
         async function init() {
             updateClock();
@@ -883,6 +999,7 @@
             
             loadWatchlists();
             await checkAPIConnection();
+            await discoverProviders();
             loadWatchlistData();
             setInterval(loadWatchlistData, 60000); // Update every minute
             
@@ -896,7 +1013,7 @@
         // Check API connection
         async function checkAPIConnection() {
             try {
-                const response = await fetch(`${API_BASE}/api/v1/universal/providers`);
+                const response = await fetch(`${API_BASE}/api/v1/health`);
                 
                 if (response.ok) {
                     document.getElementById('apiStatus').classList.add('connected');
@@ -912,12 +1029,42 @@
             }
         }
         
+        // Discover available providers
+        async function discoverProviders() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/providers`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Available providers:', data);
+                }
+            } catch (error) {
+                console.error('Failed to discover providers:', error);
+            }
+        }
+        
         // Update clock
         function updateClock() {
             document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
         }
         
-        // Enhanced search function with better matching
+        // Filter by provider
+        function filterByProvider(provider) {
+            activeProviderFilter = provider;
+            
+            // Update button states
+            document.querySelectorAll('.provider-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Re-run search if there's a query
+            const searchBox = document.getElementById('searchBox');
+            if (searchBox.value) {
+                performSearch(searchBox.value);
+            }
+        }
+        
+        // Enhanced search function with multi-provider support
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -933,95 +1080,150 @@
                 resultsDiv.style.display = 'block';
                 
                 try {
-                    // Create multiple search variations for better results
-                    const searchTerms = [
-                        query,
-                        query.toUpperCase(),
-                        query.toLowerCase(),
-                        query.charAt(0).toUpperCase() + query.slice(1).toLowerCase()
-                    ];
+                    let allResults = [];
                     
-                    // Add partial matches for longer queries
-                    if (query.length > 3) {
-                        const words = query.split(' ');
-                        if (words.length > 1) {
-                            searchTerms.push(words[0]);
-                            searchTerms.push(words[words.length - 1]);
-                        }
-                    }
-                    
-                    // Remove duplicates
-                    const uniqueTerms = [...new Set(searchTerms)];
-                    
-                    // Search with all variations
-                    const searchPromises = uniqueTerms.map(term => 
-                        fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(term)}`)
-                            .then(res => {
-                                if (!res.ok) {
-                                    console.warn(`Search failed for term: ${term}, status: ${res.status}`);
-                                    return null;
-                                }
-                                return res.json();
-                            })
-                            .catch(err => {
-                                console.warn(`Search error for term: ${term}`, err);
-                                return null;
-                            })
-                    );
-                    
-                    const responses = await Promise.all(searchPromises);
-                    
-                    // Combine and deduplicate results
-                    const allResults = new Map();
-                    
-                    responses.forEach(data => {
-                        if (!data) return;
-                        
-                        let results = [];
-                        if (Array.isArray(data)) {
-                            results = data;
-                        } else if (data.results) {
-                            // Handle different provider results
-                            Object.keys(data.results).forEach(provider => {
-                                if (Array.isArray(data.results[provider])) {
-                                    results = results.concat(data.results[provider].map(item => ({
-                                        ...item,
-                                        provider: provider
+                    // Search FRED
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'fred_direct') {
+                        try {
+                            const fredResponse = await fetch(`${API_BASE}/api/v1/fred/search?search_text=${encodeURIComponent(query)}&limit=50`);
+                            if (fredResponse.ok) {
+                                const fredData = await fredResponse.json();
+                                if (fredData.seriess) {
+                                    allResults = allResults.concat(fredData.seriess.map(item => ({
+                                        symbol: item.id,
+                                        name: item.title,
+                                        description: `${item.units || ''} ${item.frequency || ''}`.trim(),
+                                        provider: 'fred_direct',
+                                        source: 'FRED'
                                     })));
                                 }
-                            });
-                        }
-                        
-                        results.forEach(result => {
-                            const symbol = result.series_id || result.symbol || result.code || result.id || result.ticker;
-                            if (symbol && !allResults.has(symbol)) {
-                                allResults.set(symbol, result);
                             }
-                        });
-                    });
+                        } catch (e) {
+                            console.error('FRED search error:', e);
+                        }
+                    }
                     
-                    // If no results from API, add common symbols that match
-                    if (allResults.size === 0) {
-                        const commonSymbols = {
-                            'DXY': { symbol: 'DXY', name: 'US Dollar Index', provider: 'fred' },
-                            'DTWEXBGS': { series_id: 'DTWEXBGS', title: 'Nominal Broad U.S. Dollar Index', provider: 'fred' },
-                            'DTWEXM': { series_id: 'DTWEXM', title: 'Trade Weighted U.S. Dollar Index: Major Currencies', provider: 'fred' },
-                            'DOLLAR': { symbol: 'DXY', name: 'US Dollar Index', provider: 'fred' },
-                            'EUR': { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', provider: 'fred' },
-                            'GBP': { symbol: 'DEXUSUK', name: 'GBP/USD Exchange Rate', provider: 'fred' },
-                            'JPY': { symbol: 'DEXJPUS', name: 'USD/JPY Exchange Rate', provider: 'fred' }
-                        };
+                    // Search OFR series
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ofr_direct') {
+                        try {
+                            const ofrResponse = await fetch(`${API_BASE}/api/v1/ofr/series`);
+                            if (ofrResponse.ok) {
+                                const ofrData = await ofrResponse.json();
+                                if (ofrData.available_series) {
+                                    Object.entries(ofrData.available_series).forEach(([symbol, info]) => {
+                                        if (symbol.toLowerCase().includes(query.toLowerCase()) ||
+                                            info.name.toLowerCase().includes(query.toLowerCase())) {
+                                            allResults.push({
+                                                symbol: symbol,
+                                                name: info.name,
+                                                description: `Latest: ${info.latest_value} ${info.unit}`,
+                                                provider: 'ofr_direct',
+                                                source: 'OFR'
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.error('OFR search error:', e);
+                        }
+                    }
+                    
+                    // Search Treasury datasets
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'treasury_direct') {
+                        const treasurySymbols = [
+                            { symbol: 'DTS_OPERATING_CASH', name: 'Daily Treasury Operating Cash', description: 'Daily Treasury Statement' },
+                            { symbol: 'AUCTION_4WEEK', name: '4-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
+                            { symbol: 'AUCTION_13WEEK', name: '13-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
+                            { symbol: 'AUCTION_26WEEK', name: '26-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
+                            { symbol: 'TREASURY_EXCHANGE_RATES', name: 'Treasury Exchange Rates', description: 'Official US Treasury Rates' },
+                            { symbol: 'TREASURY_SECURITIES', name: 'Treasury Securities Outstanding', description: 'US Government Debt' }
+                        ];
                         
-                        Object.entries(commonSymbols).forEach(([key, value]) => {
-                            if (key.toLowerCase().includes(query.toLowerCase()) || 
-                                (value.name && value.name.toLowerCase().includes(query.toLowerCase())) ||
-                                (value.title && value.title.toLowerCase().includes(query.toLowerCase()))) {
-                                allResults.set(key, value);
+                        treasurySymbols.forEach(item => {
+                            if (item.symbol.toLowerCase().includes(query.toLowerCase()) ||
+                                item.name.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push({
+                                    ...item,
+                                    provider: 'treasury_direct',
+                                    source: 'Treasury'
+                                });
                             }
                         });
                     }
                     
-                    displaySearchResults(Array.from(allResults.values()), query);
+                    // Add common symbols for stocks
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'polygon_direct') {
+                        const stockSymbols = [
+                            { symbol: 'AAPL', name: 'Apple Inc.', description: 'Technology Company' },
+                            { symbol: 'MSFT', name: 'Microsoft Corporation', description: 'Technology Company' },
+                            { symbol: 'GOOGL', name: 'Alphabet Inc.', description: 'Technology Company' },
+                            { symbol: 'AMZN', name: 'Amazon.com Inc.', description: 'E-commerce & Cloud' },
+                            { symbol: 'NVDA', name: 'NVIDIA Corporation', description: 'Semiconductors' },
+                            { symbol: 'TSLA', name: 'Tesla Inc.', description: 'Electric Vehicles' },
+                            { symbol: 'META', name: 'Meta Platforms', description: 'Social Media' },
+                            { symbol: 'SPY', name: 'SPDR S&P 500 ETF', description: 'S&P 500 Index ETF' },
+                            { symbol: 'QQQ', name: 'Invesco QQQ Trust', description: 'NASDAQ 100 ETF' },
+                            { symbol: 'IWM', name: 'iShares Russell 2000', description: 'Small Cap ETF' }
+                        ];
+                        
+                        stockSymbols.forEach(stock => {
+                            if (stock.symbol.includes(query.toUpperCase()) || 
+                                stock.name.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push({
+                                    ...stock,
+                                    provider: 'polygon_direct',
+                                    source: 'Polygon'
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Add ECB exchange rates
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct') {
+                        const ecbPairs = [
+                            { symbol: 'EXR.D.USD.EUR.SP00.A', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar' },
+                            { symbol: 'EXR.D.GBP.EUR.SP00.A', name: 'EUR/GBP Exchange Rate', description: 'Euro to British Pound' },
+                            { symbol: 'EXR.D.JPY.EUR.SP00.A', name: 'EUR/JPY Exchange Rate', description: 'Euro to Japanese Yen' },
+                            { symbol: 'EXR.D.CHF.EUR.SP00.A', name: 'EUR/CHF Exchange Rate', description: 'Euro to Swiss Franc' }
+                        ];
+                        
+                        ecbPairs.forEach(pair => {
+                            if (pair.name.toLowerCase().includes(query.toLowerCase()) ||
+                                pair.description.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push({
+                                    ...pair,
+                                    provider: 'ecb_direct',
+                                    source: 'ECB'
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Add NY Fed rates
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ny_fed_direct') {
+                        const nyFedRates = [
+                            { symbol: 'sofr', name: 'SOFR', description: 'Secured Overnight Financing Rate' },
+                            { symbol: 'effr', name: 'EFFR', description: 'Effective Federal Funds Rate' },
+                            { symbol: 'obfr', name: 'OBFR', description: 'Overnight Bank Funding Rate' },
+                            { symbol: 'tgcr', name: 'TGCR', description: 'Tri-Party General Collateral Rate' },
+                            { symbol: 'bgcr', name: 'BGCR', description: 'Broad General Collateral Rate' }
+                        ];
+                        
+                        nyFedRates.forEach(rate => {
+                            if (rate.symbol.includes(query.toLowerCase()) ||
+                                rate.name.toLowerCase().includes(query.toLowerCase()) ||
+                                rate.description.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push({
+                                    ...rate,
+                                    provider: 'ny_fed_direct',
+                                    source: 'NY Fed'
+                                });
+                            }
+                        });
+                    }
+                    
+                    displaySearchResults(allResults, query);
                     
                 } catch (error) {
                     console.error('Search error:', error);
@@ -1034,7 +1236,7 @@
             }, 200);
         }
         
-        // Enhanced display search results with better matching
+        // Enhanced display search results
         function displaySearchResults(results, query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -1044,50 +1246,23 @@
                         No results found for "${query}"
                         <div style="margin-top: 10px; font-size: 12px;">
                             Try searching for:<br>
-                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, DXY, EUR, inflation, unemployment, dollar
+                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, AAPL, EUR/USD, treasury, inflation
                         </div>
                     </div>
                 `;
                 return;
             }
             
-            // Enhanced sorting with fuzzy matching
-            results.sort((a, b) => {
-                const symbolA = (a.series_id || a.symbol || a.code || '').toLowerCase();
-                const symbolB = (b.series_id || b.symbol || b.code || '').toLowerCase();
-                const nameA = (a.title || a.name || a.description || '').toLowerCase();
-                const nameB = (b.title || b.name || b.description || '').toLowerCase();
-                const queryLower = query.toLowerCase();
-                
-                // Exact symbol matches first
-                if (symbolA === queryLower) return -1;
-                if (symbolB === queryLower) return 1;
-                
-                // Then symbol starts with
-                if (symbolA.startsWith(queryLower)) return -1;
-                if (symbolB.startsWith(queryLower)) return 1;
-                
-                // Then name contains at beginning
-                if (nameA.startsWith(queryLower)) return -1;
-                if (nameB.startsWith(queryLower)) return 1;
-                
-                // Then any contains
-                if (symbolA.includes(queryLower) || nameA.includes(queryLower)) return -1;
-                if (symbolB.includes(queryLower) || nameB.includes(queryLower)) return 1;
-                
-                return 0;
-            });
-            
-            // Limit to 30 results
-            const displayResults = results.slice(0, 30);
+            // Limit to 50 results
+            const displayResults = results.slice(0, 50);
             
             let html = '';
             displayResults.forEach(result => {
-                const symbol = result.series_id || result.symbol || result.code || result.id || 'N/A';
-                const name = result.title || result.name || result.description || result.notes || symbol;
-                const provider = result.provider || 'fred';
-                const units = result.units || result.units_short || '';
-                const frequency = result.frequency || '';
+                const symbol = result.symbol || 'N/A';
+                const name = result.name || symbol;
+                const description = result.description || '';
+                const provider = result.provider || 'fred_direct';
+                const source = result.source || provider.split('_')[0].toUpperCase();
                 
                 // Highlight matching text
                 const highlightMatch = (text) => {
@@ -1101,9 +1276,9 @@
                         <div class="search-item-left">
                             <div class="search-item-symbol">${highlightMatch(symbol)}</div>
                             <div class="search-item-name">${highlightMatch(name)}</div>
-                            ${units || frequency ? `<div class="search-item-description">${[units, frequency].filter(Boolean).join(' • ')}</div>` : ''}
+                            ${description ? `<div class="search-item-description">${description}</div>` : ''}
                         </div>
-                        <div class="search-item-source">${provider}</div>
+                        <div class="search-item-source">${source}</div>
                     </div>
                 `;
             });
@@ -1145,154 +1320,96 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Enhanced load single watchlist item with retry logic and better error handling
-        async function loadSingleWatchlistItem(symbol, provider = 'fred', retryCount = 0) {
+        // Switch watchlist
+        function switchWatchlist(watchlistName) {
+            currentWatchlist = watchlistName;
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+            
+            // Clear current data
+            watchlistData = {};
+            
+            // Load new watchlist data
+            loadWatchlistData();
+        }
+        
+        // Enhanced load single watchlist item with better provider detection
+        async function loadSingleWatchlistItem(symbol, provider = null, retryCount = 0) {
             const maxRetries = 2;
+            
+            // Auto-detect provider if not specified
+            if (!provider) {
+                provider = getProviderForSymbol(symbol);
+            }
             
             try {
                 console.log(`Loading ${symbol} from ${provider} (attempt ${retryCount + 1})`);
                 
-                // Check if we have cached data
-                const cacheKey = `${symbol}_${provider}`;
-                const cachedData = getCachedData(cacheKey);
+                // Build URL based on provider
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
                 
-                if (cachedData && cachedData.data) {
-                    // Use cached data but still try to update in background
-                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result);
+                // Add specific parameters for certain providers
+                if (provider === 'ny_fed_direct') {
+                    url += '&include_changes=false'; // NY Fed data might not support all calculations
                 }
                 
-                // Special handling for known problematic symbols
-                let actualSymbol = symbol;
-                const symbolMappings = {
-                    'DXY': 'DTWEXM',
-                    'MNFCTRIRSA': 'MANMM101USA189S',
-                    'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',
-                    'BAMLEMPUPUBSLCRPIUSOAS': 'BAMLEMPUPUBSLCRPIUSOA',
-                    'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',
-                    'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',
-                    'T10YIE': 'T10Y',
-                    'AMERIBOR': 'OBFR30DAVG',
-                    'INTGSTMXM193N': 'INTGSTUSM193N',
-                    'WLCFLPCL': 'WLEMUINDXD',
-                    'TREAS1590': 'DGS10'
-                };
-                
-                if (symbolMappings[symbol]) {
-                    actualSymbol = symbolMappings[symbol];
-                    console.log(`Using ${actualSymbol} as proxy for ${symbol}`);
-                }
-                
-                // First, try to get recent data
-                let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
-                
-                console.log(`Initial request for ${symbol}`);
-                let response = await fetchWithTimeout(url, 10000); // 10 second timeout
-                
-                // If failed, try alternative endpoints or symbols
-                if (!response.ok) {
-                    // Try alternative providers
-                    const alternativeProviders = ['fred', 'bls', 'oecd'];
-                    for (const altProvider of alternativeProviders) {
-                        if (altProvider !== provider) {
-                            console.log(`Trying alternative provider ${altProvider} for ${symbol}`);
-                            response = await fetchWithTimeout(
-                                `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${altProvider}`,
-                                10000
-                            );
-                            if (response.ok) {
-                                provider = altProvider;
-                                break;
-                            }
-                        }
-                    }
-                }
+                console.log(`Request URL: ${url}`);
+                let response = await fetchWithTimeout(url, 10000);
                 
                 if (!response.ok) {
                     throw new Error(`Failed to load data: ${response.status}`);
                 }
                 
-                const initialResult = await response.json();
+                const result = await response.json();
                 
-                // Collect all data
-                let allData = [];
-                
-                if (initialResult.data && initialResult.data.length > 0) {
-                    allData = [...initialResult.data];
-                    
-                    // Try to get more historical data if we got 100 points
-                    if (initialResult.data.length === 100) {
-                        console.log(`Got 100 points for ${symbol}, trying to get more historical data...`);
-                        
-                        const oldestDate = initialResult.data.reduce((oldest, item) => {
-                            const itemDate = new Date(item.date || item.time || item.period);
-                            return itemDate < oldest ? itemDate : oldest;
-                        }, new Date());
-                        
-                        const endDate = new Date(oldestDate);
-                        endDate.setDate(endDate.getDate() - 1);
-                        const startDate = new Date(endDate);
-                        startDate.setFullYear(startDate.getFullYear() - 10);
-                        
-                        try {
-                            const historicalUrl = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}&start_date=${startDate.toISOString().split('T')[0]}&end_date=${endDate.toISOString().split('T')[0]}`;
-                            console.log(`Requesting historical data from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
-                            
-                            const histResponse = await fetchWithTimeout(historicalUrl, 10000);
-                            if (histResponse.ok) {
-                                const histResult = await histResponse.json();
-                                if (histResult.data && histResult.data.length > 0) {
-                                    console.log(`Got ${histResult.data.length} additional historical points`);
-                                    allData = [...histResult.data, ...allData];
-                                }
-                            }
-                        } catch (err) {
-                            console.warn('Could not fetch additional historical data:', err);
-                        }
-                    }
-                    
-                    // Cache the data
-                    setCachedData(cacheKey, { data: allData, result: initialResult });
-                    
-                    // Process the data
-                    processWatchlistData(symbol, allData, provider, initialResult);
-                    
+                if (result.data && result.data.length > 0) {
+                    processWatchlistData(symbol, result.data, provider, result);
+                } else if (result.metrics && result.metrics.latest_value !== undefined) {
+                    // Some providers might only return metrics
+                    watchlistData[symbol] = {
+                        name: result.name || symbol,
+                        provider: provider,
+                        price: result.metrics.latest_value || 0,
+                        changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
+                        hasData: true
+                    };
+                    renderWatchlist();
                 } else {
                     throw new Error('No data received');
                 }
             } catch (error) {
                 console.error(`Error loading ${symbol}:`, error);
                 
-                // Retry logic
+                // Retry with different provider
                 if (retryCount < maxRetries) {
-                    console.log(`Retrying ${symbol} after delay...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
-                    return loadSingleWatchlistItem(symbol, provider, retryCount + 1);
-                }
-                
-                // Check if we have cached data to use as fallback
-                const cacheKey = `${symbol}_${provider}`;
-                const cachedData = getCachedData(cacheKey, 24 * 60 * 60 * 1000); // 24 hour cache for errors
-                
-                if (cachedData && cachedData.data) {
-                    console.log(`Using cached data for ${symbol} due to error`);
-                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result);
-                } else {
-                    // No cached data, show error state
-                    const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
-                    const customData = savedCustomData[symbol] || {};
-                    
-                    watchlistData[symbol] = {
-                        name: customData.customName || watchlistData[symbol]?.name || symbol,
-                        customName: customData.customName,
-                        color: customData.color || null,
-                        provider: provider,
-                        price: 0,
-                        changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
-                        hasData: false,
-                        error: error.message
+                    // Try alternative providers
+                    const alternativeProviders = {
+                        'polygon_direct': ['fred_direct'],
+                        'fred_direct': ['fred'],
+                        'ny_fed_direct': ['fred_direct'],
+                        'treasury_direct': ['fred_direct'],
+                        'ecb_direct': ['fred_direct'],
+                        'ofr_direct': ['fred_direct']
                     };
-                    renderWatchlist();
+                    
+                    const alternatives = alternativeProviders[provider] || [];
+                    if (alternatives.length > retryCount) {
+                        const altProvider = alternatives[retryCount];
+                        console.log(`Retrying ${symbol} with provider ${altProvider}...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return loadSingleWatchlistItem(symbol, altProvider, retryCount + 1);
+                    }
                 }
+                
+                // Show error state
+                watchlistData[symbol] = {
+                    name: watchlistData[symbol]?.name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                    hasData: false,
+                    error: error.message
+                };
+                renderWatchlist();
             }
         }
         
@@ -1366,84 +1483,6 @@
                 }
                 throw error;
             }
-        }
-        
-        // Simple cache implementation
-        const dataCache = {
-            data: new Map(),
-            timestamps: new Map(),
-            
-            set(key, value) {
-                this.data.set(key, value);
-                this.timestamps.set(key, Date.now());
-                
-                // Store in localStorage for persistence (with size limit)
-                try {
-                    const cacheData = { value, timestamp: Date.now() };
-                    localStorage.setItem(`cache_${key}`, JSON.stringify(cacheData));
-                } catch (e) {
-                    console.warn('LocalStorage full, clearing old cache');
-                    this.clearOldCache();
-                }
-            },
-            
-            get(key, maxAge = 300000) { // 5 min default
-                // Try memory cache first
-                if (this.data.has(key)) {
-                    const age = Date.now() - this.timestamps.get(key);
-                    if (age <= maxAge) {
-                        return this.data.get(key);
-                    }
-                }
-                
-                // Try localStorage
-                try {
-                    const cached = localStorage.getItem(`cache_${key}`);
-                    if (cached) {
-                        const { value, timestamp } = JSON.parse(cached);
-                        if (Date.now() - timestamp <= maxAge) {
-                            // Restore to memory cache
-                            this.data.set(key, value);
-                            this.timestamps.set(key, timestamp);
-                            return value;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Error reading cache:', e);
-                }
-                
-                return null;
-            },
-            
-            clearOldCache() {
-                // Clear items older than 24 hours from localStorage
-                const cutoff = Date.now() - (24 * 60 * 60 * 1000);
-                const keysToRemove = [];
-                
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key.startsWith('cache_')) {
-                        try {
-                            const { timestamp } = JSON.parse(localStorage.getItem(key));
-                            if (timestamp < cutoff) {
-                                keysToRemove.push(key);
-                            }
-                        } catch (e) {
-                            keysToRemove.push(key);
-                        }
-                    }
-                }
-                
-                keysToRemove.forEach(key => localStorage.removeItem(key));
-            }
-        };
-        
-        function getCachedData(key, maxAge = 300000) {
-            return dataCache.get(key, maxAge);
-        }
-        
-        function setCachedData(key, value) {
-            dataCache.set(key, value);
         }
         
         // Calculate real percentage changes from actual data
@@ -1653,13 +1692,11 @@
             try {
                 console.log(`Loading chart data for ${symbol} from ${provider}`);
                 
-                // First try to get more recent data with limit
-                let response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&limit=5000`);
+                // Build URL with provider
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
                 
-                // If that fails, try without parameters
-                if (!response.ok) {
-                    response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
-                }
+                // Try to get maximum data
+                const response = await fetch(url);
                 
                 if (!response.ok) {
                     throw new Error(`Failed to load data: ${response.status}`);
@@ -2043,7 +2080,7 @@
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
             
             for (const symbol of watchlistSymbols) {
-                const provider = watchlistData[symbol]?.provider || 'fred';
+                const provider = watchlistData[symbol]?.provider || getProviderForSymbol(symbol);
                 await loadSingleWatchlistItem(symbol, provider);
             }
         }
@@ -2264,6 +2301,116 @@
             } else {
                 chartsArea.style.display = 'none';
                 watchlistSection.style.flex = '1';
+            }
+        }
+        
+        // Edit symbol
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            
+            const data = watchlistData[symbol];
+            if (!data) return;
+            
+            const savedCustomData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+            const customData = savedCustomData[symbol] || {};
+            
+            const colors = ['#FF4444', '#00DD77', '#00AEEF', '#F4D03F', '#FF7043', '#AF7AC5', '#48C9B0', '#EC7063'];
+            
+            const modal = document.createElement('div');
+            modal.className = 'edit-modal';
+            modal.innerHTML = `
+                <div class="edit-modal-content">
+                    <div class="edit-modal-header">Edit ${symbol}</div>
+                    
+                    <div class="edit-modal-row">
+                        <label class="edit-modal-label">Display Name</label>
+                        <input type="text" class="edit-modal-input" id="customName" 
+                               value="${customData.customName || ''}" 
+                               placeholder="${data.name || symbol}">
+                    </div>
+                    
+                    <div class="edit-modal-row">
+                        <label class="edit-modal-label">Color Tag</label>
+                        <div class="color-picker">
+                            <div class="color-option ${!customData.color ? 'selected' : ''}" 
+                                 style="background: #ccc;" 
+                                 onclick="selectColor(this, null)"></div>
+                            ${colors.map(color => `
+                                <div class="color-option ${customData.color === color ? 'selected' : ''}" 
+                                     style="background: ${color};" 
+                                     onclick="selectColor(this, '${color}')"></div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="edit-modal-buttons">
+                        <button class="edit-modal-button secondary" onclick="closeEditModal()">Cancel</button>
+                        <button class="edit-modal-button primary" onclick="saveSymbolEdit('${symbol}')">Save</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Make color selection work
+            window.selectColor = function(element, color) {
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                element.classList.add('selected');
+                element.dataset.selectedColor = color;
+            };
+            
+            window.closeEditModal = function() {
+                modal.remove();
+            };
+            
+            window.saveSymbolEdit = function(symbolToSave) {
+                const customName = document.getElementById('customName').value.trim();
+                const selectedColorElement = document.querySelector('.color-option.selected');
+                const selectedColor = selectedColorElement?.dataset.selectedColor || null;
+                
+                const savedData = JSON.parse(localStorage.getItem('watchlistCustomData') || '{}');
+                
+                if (customName || selectedColor !== null) {
+                    savedData[symbolToSave] = {
+                        customName: customName || null,
+                        color: selectedColor
+                    };
+                    
+                    // Update watchlistData
+                    if (watchlistData[symbolToSave]) {
+                        watchlistData[symbolToSave].customName = customName || null;
+                        watchlistData[symbolToSave].color = selectedColor;
+                    }
+                } else {
+                    delete savedData[symbolToSave];
+                    if (watchlistData[symbolToSave]) {
+                        delete watchlistData[symbolToSave].customName;
+                        delete watchlistData[symbolToSave].color;
+                    }
+                }
+                
+                localStorage.setItem('watchlistCustomData', JSON.stringify(savedData));
+                renderWatchlist();
+                modal.remove();
+            };
+        }
+        
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol) {
+            event.stopPropagation();
+            
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            const index = currentSymbols.indexOf(symbol);
+            
+            if (index > -1) {
+                currentSymbols.splice(index, 1);
+                watchlistSymbols = [...currentSymbols];
+                delete watchlistData[symbol];
+                
+                saveWatchlists();
+                renderWatchlist();
+                
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
             }
         }
         
