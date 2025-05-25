@@ -852,14 +852,64 @@
         let searchTimeout = null;
         let activeProviderFilter = 'all';
         
-        // Multiple watchlists configuration with provider-specific lists
+        // Enhanced symbol mappings for problematic series
+        const symbolMappings = {
+            // Working FRED mappings
+            'AMERIBOR': 'AMERIBOR30T',
+            'T10YIE': 'T10YIE',
+            'DXY': 'DTWEXBGS',
+            'ISRATIO': 'ISRATIO',
+            'MNFCTRIRSA': 'INDPRO',
+            'CC4WSA': 'CCLACBW027SBOG',
+            
+            // Global Liquidity symbols - Updated mappings
+            'RESPPNTEPNWW': 'WRESBAL',
+            'RESPPALGUOXAWXCH52NWW': 'WALCL',
+            'RESPPALGUONNWW': 'WRESBAL',
+            'SWP1690': 'DSWP10',
+            'SUBLPDCISTQNQ': 'BOGMBASE',
+            'DRISCFLM': 'H15T1M',
+            'RMFSL': 'WRMFSL',
+            'SBCACBW027SBOG': 'TOTRESNS',
+            'MABMM301EZM189S': 'ECBASSETSW',
+            'DRISCFS': 'RPONTSYD',
+            'MABMM301JPM189S': 'JPNASSETS',
+            'TREAS911Y': 'DGS10',
+            'RREP15': 'RPONTSYD',
+            'OTHL15': 'RRPONTSYD',
+            'RESH4MFNWW': 'WSHOMCB',
+            'OTHL1690': 'WLRRAL',
+            'BOGZ1FL663067003Q': 'BOGMBASE',
+            
+            // Black Swan indicators - Updated mappings
+            'NFCINONFINLEVERAGE': 'NFCI',
+            'FRBKCLMCIM': 'KCFSI',
+            'AMTMUO': 'BAMLEMCBPITRIV',
+            'TREAS1590': 'DGS10',
+            'INTGSTMXM193N': 'A091RC1Q027SBEA',
+            'WLCFLPCL': 'WLEMUINDXD',
+            'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',
+            'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',
+            'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',
+            
+            // Additional mapping
+            'ICSA': 'ICSA',
+            'D5WACBS': 'WACBS',
+            
+            // ECB/Euro area data
+            'EXR.D.USD.EUR.SP00.A': 'DEXUSEU',
+            'CISS_EUR': 'STLFSI3',
+            'CISS_US': 'STLFSI2'
+        };
+        
+        // Multiple watchlists configuration with updated symbols
         const watchlists = {
             'MAIN': {
-                symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR'],
+                symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR30T'],
                 active: true
             },
             'TOP': {
-                symbols: ['DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DTWEXM', 'DXY', 'M2SL', 'ISRATIO', 'MNFCTRIRSA'],
+                symbols: ['DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DTWEXM', 'DEXUSEU', 'M2SL', 'ISRATIO', 'INDPRO'],
                 active: false
             },
             'STOCKS': {
@@ -875,14 +925,13 @@
                 active: false
             },
             'GLOBAL LIQUIDITY TREND REVERSAL': {
-                symbols: ['RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690', 'SUBLPDCISTQNQ', 'DRISCFLM', 
-                         'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S', 'DRISCFS', 'MABMM301JPM189S', 'TREAS911Y', 'RREP15', 'OTHL15', 
-                         'RESH4MFNWW', 'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES'],
+                symbols: ['WALCL', 'WRESBAL', 'TOTRESNS', 'BOGMBASE', 'ECBASSETSW', 'JPNASSETS', 
+                         'RPONTSYD', 'RRPONTSYD', 'WSHOMCB', 'WLRRAL', 'WRMFSL', 'DSWP10'],
                 active: false
             },
             'BLACK SWAN': {
-                symbols: ['NFCINONFINLEVERAGE', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 
-                         'BAMLEMPUPUBSLCRPIUSSYTW', 'BAMLEMIBHGCRPIOAS', 'BAMLEMHYHYLCRPIUSSYTW'],
+                symbols: ['NFCI', 'KCFSI', 'STLFSI2', 'STLFSI3', 'BAMLH0A0HYM2', 'BAMLC0A1CAAAEY', 
+                         'BAMLEMCBPITRIV', 'WLEMUINDXD', 'A091RC1Q027SBEA'],
                 active: false
             }
         };
@@ -890,10 +939,29 @@
         let currentWatchlist = 'MAIN';
         let watchlistSymbols = [];
         let watchlistData = {};
-        let sortOrder = 'default'; // 'default', 'increase', 'decrease'
-        let columnSort = { column: null, direction: null }; // For column-specific sorting
+        let sortOrder = 'default';
+        let columnSort = { column: null, direction: null };
         
-        // Provider mappings
+        // Cache implementation
+        const dataCache = new Map();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+        
+        function getCachedData(key, maxAge = CACHE_DURATION) {
+            const cached = dataCache.get(key);
+            if (cached && Date.now() - cached.timestamp < maxAge) {
+                return cached.data;
+            }
+            return null;
+        }
+        
+        function setCachedData(key, data) {
+            dataCache.set(key, {
+                data: data,
+                timestamp: Date.now()
+            });
+        }
+        
+        // Enhanced provider mappings
         const providerMappings = {
             // Stocks
             'AAPL': 'polygon_direct',
@@ -911,25 +979,17 @@
             'IWM': 'polygon_direct',
             'VIX': 'polygon_direct',
             
-            // ECB Exchange Rates
-            'EURUSD': 'ecb_direct',
-            'EUR/USD': 'ecb_direct',
-            'EXR.D.USD.EUR.SP00.A': 'ecb_direct',
-            
-            // NY Fed Rates
+            // NY Fed rates
+            'sofr': 'ny_fed_direct',
             'SOFR': 'ny_fed_direct',
+            'effr': 'ny_fed_direct',
             'EFFR': 'ny_fed_direct',
+            'obfr': 'ny_fed_direct',
             'OBFR': 'ny_fed_direct',
+            'tgcr': 'ny_fed_direct',
             'TGCR': 'ny_fed_direct',
+            'bgcr': 'ny_fed_direct',
             'BGCR': 'ny_fed_direct',
-            
-            // Treasury symbols
-            'DTS_OPERATING_CASH': 'treasury_direct',
-            'AUCTION_4WEEK': 'treasury_direct',
-            'AUCTION_13WEEK': 'treasury_direct',
-            'AUCTION_26WEEK': 'treasury_direct',
-            'TREASURY_EXCHANGE_RATES': 'treasury_direct',
-            'TREASURY_SECURITIES': 'treasury_direct',
             
             // Default to FRED for everything else
             'DEFAULT': 'fred_direct'
@@ -957,8 +1017,10 @@
                 }
             }
             
-            // Set current watchlist symbols
-            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+            // Apply symbol mappings to watchlist symbols
+            watchlistSymbols = watchlists[currentWatchlist].symbols.map(symbol => {
+                return symbolMappings[symbol] || symbol;
+            });
         }
         
         // Save watchlists
@@ -977,15 +1039,19 @@
                 return providerMappings[symbol];
             }
             
-            // Check patterns
-            if (/^[A-Z]{1,5}$/.test(symbol) && symbol.length <= 5) {
-                // Could be a stock ticker
-                return 'polygon_direct';
+            // Check for NY Fed rates (case insensitive)
+            const lowerSymbol = symbol.toLowerCase();
+            if (['sofr', 'effr', 'obfr', 'tgcr', 'bgcr'].includes(lowerSymbol)) {
+                return 'ny_fed_direct';
             }
             
-            // ECB pattern
-            if (symbol.includes('EXR.')) {
-                return 'ecb_direct';
+            // Check patterns
+            if (/^[A-Z]{1,5}$/.test(symbol) && symbol.length <= 5) {
+                // Check if it's a known FRED symbol
+                const fredSymbols = ['DFF', 'GDP', 'CPI', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30'];
+                if (!fredSymbols.some(fs => symbol.startsWith(fs))) {
+                    return 'polygon_direct'; // Likely a stock ticker
+                }
             }
             
             // Default to FRED
@@ -1064,7 +1130,7 @@
             }
         }
         
-        // Enhanced search function with multi-provider support
+        // Enhanced search function with ECB and NY Fed data
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -1103,51 +1169,52 @@
                         }
                     }
                     
-                    // Search OFR series
-                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ofr_direct') {
-                        try {
-                            const ofrResponse = await fetch(`${API_BASE}/api/v1/ofr/series`);
-                            if (ofrResponse.ok) {
-                                const ofrData = await ofrResponse.json();
-                                if (ofrData.available_series) {
-                                    Object.entries(ofrData.available_series).forEach(([symbol, info]) => {
-                                        if (symbol.toLowerCase().includes(query.toLowerCase()) ||
-                                            info.name.toLowerCase().includes(query.toLowerCase())) {
-                                            allResults.push({
-                                                symbol: symbol,
-                                                name: info.name,
-                                                description: `Latest: ${info.latest_value} ${info.unit}`,
-                                                provider: 'ofr_direct',
-                                                source: 'OFR'
-                                            });
-                                        }
-                                    });
-                                }
-                            }
-                        } catch (e) {
-                            console.error('OFR search error:', e);
-                        }
-                    }
-                    
-                    // Search Treasury datasets
-                    if (activeProviderFilter === 'all' || activeProviderFilter === 'treasury_direct') {
-                        const treasurySymbols = [
-                            { symbol: 'DTS_OPERATING_CASH', name: 'Daily Treasury Operating Cash', description: 'Daily Treasury Statement' },
-                            { symbol: 'AUCTION_4WEEK', name: '4-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
-                            { symbol: 'AUCTION_13WEEK', name: '13-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
-                            { symbol: 'AUCTION_26WEEK', name: '26-Week T-Bill Auction Rate', description: 'Treasury Auction Results' },
-                            { symbol: 'TREASURY_EXCHANGE_RATES', name: 'Treasury Exchange Rates', description: 'Official US Treasury Rates' },
-                            { symbol: 'TREASURY_SECURITIES', name: 'Treasury Securities Outstanding', description: 'US Government Debt' }
+                    // Add ECB data series for euro area data
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct') {
+                        const ecbSeries = [
+                            // Composite Indicator of Systemic Stress
+                            { symbol: 'STLFSI3', name: 'Composite Indicator of Systemic Stress - Euro Area', description: 'Financial stress index for Euro area', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'STLFSI2', name: 'Composite Indicator of Systemic Stress - United States', description: 'Financial stress index for US', provider: 'fred_direct', source: 'FRED' },
+                            
+                            // ECB Balance Sheet items
+                            { symbol: 'ECBASSETSW', name: 'ECB Total Assets', description: 'European Central Bank total assets', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'ECBASSETS', name: 'ECB Assets (Monthly)', description: 'European Central Bank assets monthly', provider: 'fred_direct', source: 'FRED' },
+                            
+                            // Exchange rates
+                            { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar exchange rate', provider: 'fred_direct', source: 'FRED' }
                         ];
                         
-                        treasurySymbols.forEach(item => {
-                            if (item.symbol.toLowerCase().includes(query.toLowerCase()) ||
-                                item.name.toLowerCase().includes(query.toLowerCase())) {
-                                allResults.push({
-                                    ...item,
-                                    provider: 'treasury_direct',
-                                    source: 'Treasury'
-                                });
+                        ecbSeries.forEach(series => {
+                            if (series.name.toLowerCase().includes(query.toLowerCase()) ||
+                                series.description.toLowerCase().includes(query.toLowerCase()) ||
+                                series.symbol.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push(series);
+                            }
+                        });
+                    }
+                    
+                    // Add NY Fed Primary Dealer data
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ny_fed_direct') {
+                        const nyFedSeries = [
+                            // Primary Dealer data (these are actually in FRED)
+                            { symbol: 'PDCMFRIM', name: 'Primary Dealer Fails to Receive: U.S. Treasury Securities', description: 'Weekly average fails to receive', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'PDCMFDIM', name: 'Primary Dealer Fails to Deliver: U.S. Treasury Securities', description: 'Weekly average fails to deliver', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'RPONTSYD', name: 'Overnight Repurchase Agreements', description: 'Federal Reserve overnight repo', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'RRPONTSYD', name: 'Overnight Reverse Repurchase Agreements', description: 'Federal Reserve reverse repo', provider: 'fred_direct', source: 'FRED' },
+                            
+                            // Regular NY Fed rates
+                            { symbol: 'sofr', name: 'SOFR', description: 'Secured Overnight Financing Rate', provider: 'ny_fed_direct', source: 'NY Fed' },
+                            { symbol: 'effr', name: 'EFFR', description: 'Effective Federal Funds Rate', provider: 'ny_fed_direct', source: 'NY Fed' },
+                            { symbol: 'obfr', name: 'OBFR', description: 'Overnight Bank Funding Rate', provider: 'ny_fed_direct', source: 'NY Fed' },
+                            { symbol: 'tgcr', name: 'TGCR', description: 'Tri-Party General Collateral Rate', provider: 'ny_fed_direct', source: 'NY Fed' },
+                            { symbol: 'bgcr', name: 'BGCR', description: 'Broad General Collateral Rate', provider: 'ny_fed_direct', source: 'NY Fed' }
+                        ];
+                        
+                        nyFedSeries.forEach(series => {
+                            if (series.name.toLowerCase().includes(query.toLowerCase()) ||
+                                series.description.toLowerCase().includes(query.toLowerCase()) ||
+                                series.symbol.toLowerCase().includes(query.toLowerCase())) {
+                                allResults.push(series);
                             }
                         });
                     }
@@ -1179,50 +1246,6 @@
                         });
                     }
                     
-                    // Add ECB exchange rates
-                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct') {
-                        const ecbPairs = [
-                            { symbol: 'EXR.D.USD.EUR.SP00.A', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar' },
-                            { symbol: 'EXR.D.GBP.EUR.SP00.A', name: 'EUR/GBP Exchange Rate', description: 'Euro to British Pound' },
-                            { symbol: 'EXR.D.JPY.EUR.SP00.A', name: 'EUR/JPY Exchange Rate', description: 'Euro to Japanese Yen' },
-                            { symbol: 'EXR.D.CHF.EUR.SP00.A', name: 'EUR/CHF Exchange Rate', description: 'Euro to Swiss Franc' }
-                        ];
-                        
-                        ecbPairs.forEach(pair => {
-                            if (pair.name.toLowerCase().includes(query.toLowerCase()) ||
-                                pair.description.toLowerCase().includes(query.toLowerCase())) {
-                                allResults.push({
-                                    ...pair,
-                                    provider: 'ecb_direct',
-                                    source: 'ECB'
-                                });
-                            }
-                        });
-                    }
-                    
-                    // Add NY Fed rates
-                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ny_fed_direct') {
-                        const nyFedRates = [
-                            { symbol: 'sofr', name: 'SOFR', description: 'Secured Overnight Financing Rate' },
-                            { symbol: 'effr', name: 'EFFR', description: 'Effective Federal Funds Rate' },
-                            { symbol: 'obfr', name: 'OBFR', description: 'Overnight Bank Funding Rate' },
-                            { symbol: 'tgcr', name: 'TGCR', description: 'Tri-Party General Collateral Rate' },
-                            { symbol: 'bgcr', name: 'BGCR', description: 'Broad General Collateral Rate' }
-                        ];
-                        
-                        nyFedRates.forEach(rate => {
-                            if (rate.symbol.includes(query.toLowerCase()) ||
-                                rate.name.toLowerCase().includes(query.toLowerCase()) ||
-                                rate.description.toLowerCase().includes(query.toLowerCase())) {
-                                allResults.push({
-                                    ...rate,
-                                    provider: 'ny_fed_direct',
-                                    source: 'NY Fed'
-                                });
-                            }
-                        });
-                    }
-                    
                     displaySearchResults(allResults, query);
                     
                 } catch (error) {
@@ -1236,7 +1259,7 @@
             }, 200);
         }
         
-        // Enhanced display search results
+        // Display search results
         function displaySearchResults(results, query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -1246,7 +1269,7 @@
                         No results found for "${query}"
                         <div style="margin-top: 10px; font-size: 12px;">
                             Try searching for:<br>
-                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, AAPL, EUR/USD, treasury, inflation
+                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, AAPL, EUR/USD, treasury, inflation, primary dealer
                         </div>
                     </div>
                 `;
@@ -1323,7 +1346,10 @@
         // Switch watchlist
         function switchWatchlist(watchlistName) {
             currentWatchlist = watchlistName;
-            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+            // Apply symbol mappings
+            watchlistSymbols = watchlists[currentWatchlist].symbols.map(symbol => {
+                return symbolMappings[symbol] || symbol;
+            });
             
             // Clear current data
             watchlistData = {};
@@ -1332,37 +1358,12 @@
             loadWatchlistData();
         }
         
-        // Enhanced load single watchlist item with better provider detection
+        // Enhanced load single watchlist item with better error handling
         async function loadSingleWatchlistItem(symbol, provider = null, retryCount = 0) {
             const maxRetries = 2;
             
-            // Symbol mappings for problematic or renamed series
-            const symbolMappings = {
-                // Known problematic symbols
-                'OTHL1690': 'RESPPLLOPNWW',  // Alternative liquidity measure
-                'OTHL15': 'RRPONTSYD',        // Alternative repo measure
-                'RESH4MFNWW': 'WSHOMCB',      // Alternative housing measure
-                'SWP1690': 'DSWP1',           // Swap spreads
-                'TREAS911Y': 'DGS10',         // 10-year treasury
-                'RREP15': 'RPONTSYD',         // Repo rate
-                'TREAS1590': 'DGS10',         // Treasury 10-year
-                'INTGSTMXM193N': 'INTGSTUSM193N',  // Interest payments
-                'WLCFLPCL': 'WLEMUINDXD',     // World equity index
-                'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',  // BofA index
-                'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',  // High yield
-                'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',  // Investment grade
-                'MNFCTRIRSA': 'MANMM101USA189S',  // Manufacturing
-                'CC4WSA': 'CCSA',             // Consumer credit
-                'AMERIBOR': 'OBFR30DAVG',     // Alternative to AMERIBOR
-                'T10YIE': 'T10YIE',           // Keep as is, might work
-                'DXY': 'DTWEXM'               // Dollar index
-            };
-            
-            // Check if we need to map the symbol
+            // Apply symbol mapping
             const actualSymbol = symbolMappings[symbol] || symbol;
-            if (actualSymbol !== symbol) {
-                console.log(`Mapping ${symbol} to ${actualSymbol}`);
-            }
             
             // Auto-detect provider if not specified
             if (!provider) {
@@ -1374,39 +1375,66 @@
                 
                 // Check cache first
                 const cacheKey = `${actualSymbol}_${provider}`;
-                const cachedData = getCachedData(cacheKey, 3600000); // 1 hour cache
+                const cachedData = getCachedData(cacheKey);
                 
                 if (cachedData && cachedData.data && cachedData.data.length > 0) {
                     console.log(`Using cached data for ${actualSymbol}`);
                     processWatchlistData(symbol, cachedData.data, provider, cachedData.result || {});
-                    // Still try to update in background
-                    fetchLatestData(actualSymbol, symbol, provider);
                     return;
                 }
                 
-                // Build URL based on provider
-                let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
-                
-                // Add specific parameters for certain providers
+                // For NY Fed rates, use lowercase
+                let requestSymbol = actualSymbol;
                 if (provider === 'ny_fed_direct') {
-                    url += '&include_changes=false'; // NY Fed data might not support all calculations
+                    requestSymbol = actualSymbol.toLowerCase();
                 }
                 
-                console.log(`Initial request for ${actualSymbol}`);
+                // Build URL based on provider
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${requestSymbol}&provider=${provider}`;
+                
+                // Add include_changes=false for problematic series
+                const problemSeries = ['DGS10', 'DGS2', 'DGS5', 'DGS30', 'T10YIE'];
+                if (problemSeries.includes(actualSymbol) || provider === 'ny_fed_direct') {
+                    url += '&include_changes=false';
+                }
+                
+                console.log(`Request URL: ${url}`);
                 let response = await fetchWithTimeout(url, 10000);
                 
                 if (!response.ok) {
-                    // Try without the _direct suffix
-                    if (provider.endsWith('_direct')) {
-                        const baseProvider = provider.replace('_direct', '');
-                        console.log(`Trying base provider ${baseProvider} for ${actualSymbol}`);
-                        url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${baseProvider}`;
-                        response = await fetchWithTimeout(url, 10000);
+                    // For some FRED series, try raw endpoint
+                    if (provider === 'fred_direct' && response.status === 500) {
+                        console.log(`Trying raw FRED endpoint for ${actualSymbol}`);
+                        const rawUrl = `${API_BASE}/api/v1/fred/series/observations?series_id=${actualSymbol}&limit=10&sort_order=desc&include_pandas=false`;
+                        const rawResponse = await fetchWithTimeout(rawUrl, 10000);
+                        
+                        if (rawResponse.ok) {
+                            const rawData = await rawResponse.json();
+                            if (rawData.observations && rawData.observations.length > 0) {
+                                // Convert raw FRED data to expected format
+                                const latestObs = rawData.observations[0];
+                                const value = parseFloat(latestObs.value);
+                                
+                                if (!isNaN(value)) {
+                                    watchlistData[symbol] = {
+                                        name: watchlistData[symbol]?.name || actualSymbol,
+                                        provider: provider,
+                                        price: value,
+                                        changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
+                                        hasData: true,
+                                        actualSymbol: actualSymbol
+                                    };
+                                    renderWatchlist();
+                                    
+                                    // Cache the result
+                                    setCachedData(cacheKey, { data: [{ date: latestObs.date, value: value }], result: {} });
+                                    return;
+                                }
+                            }
+                        }
                     }
                     
-                    if (!response.ok) {
-                        throw new Error(`Failed to load data: ${response.status}`);
-                    }
+                    throw new Error(`Failed to load data: ${response.status}`);
                 }
                 
                 const result = await response.json();
@@ -1418,7 +1446,7 @@
                 } else if (result.metrics && result.metrics.latest_value !== undefined) {
                     // Some providers might only return metrics
                     watchlistData[symbol] = {
-                        name: result.name || symbol,
+                        name: result.name || watchlistData[symbol]?.name || symbol,
                         provider: provider,
                         price: result.metrics.latest_value || 0,
                         changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
@@ -1426,73 +1454,54 @@
                         actualSymbol: actualSymbol
                     };
                     renderWatchlist();
+                    
+                    // Cache the result
+                    setCachedData(cacheKey, { data: [{ date: new Date().toISOString(), value: result.metrics.latest_value }], result: result });
                 } else {
                     throw new Error('No data received');
                 }
             } catch (error) {
                 console.error(`Error loading ${actualSymbol}:`, error);
                 
-                // Retry with different provider
+                // Retry with different provider or approach
                 if (retryCount < maxRetries) {
-                    // Try alternative providers
-                    const alternativeProviders = {
-                        'fred_direct': ['fred', 'fred_direct'],
-                        'fred': ['fred_direct'],
-                        'polygon_direct': ['fred_direct'],
-                        'ny_fed_direct': ['fred_direct'],
-                        'treasury_direct': ['fred_direct'],
-                        'ecb_direct': ['fred_direct'],
-                        'ofr_direct': ['fred_direct']
-                    };
-                    
-                    const alternatives = alternativeProviders[provider] || ['fred_direct', 'fred'];
-                    if (alternatives.length > retryCount && alternatives[retryCount] !== provider) {
-                        const altProvider = alternatives[retryCount];
-                        console.log(`Retrying ${actualSymbol} with provider ${altProvider}...`);
-                        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
-                        return loadSingleWatchlistItem(symbol, altProvider, retryCount + 1);
+                    if (provider === 'fred_direct' && retryCount === 0) {
+                        // Try without _direct suffix
+                        console.log(`Retrying ${actualSymbol} with provider fred...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return loadSingleWatchlistItem(symbol, 'fred', retryCount + 1);
                     }
                 }
                 
-                // Check if we have any cached data to use as fallback
-                const cacheKey = `${actualSymbol}_${provider}`;
-                const cachedData = getCachedData(cacheKey, 86400000); // 24 hour cache for errors
-                
-                if (cachedData && cachedData.data) {
-                    console.log(`Using cached data for ${actualSymbol} due to error`);
-                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result || {});
-                } else {
-                    // Show error state
-                    watchlistData[symbol] = {
-                        name: watchlistData[symbol]?.name || symbol,
-                        provider: provider,
-                        price: 0,
-                        changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
-                        hasData: false,
-                        error: error.message,
-                        actualSymbol: actualSymbol
-                    };
-                    renderWatchlist();
-                }
+                // Show error state
+                watchlistData[symbol] = {
+                    name: watchlistData[symbol]?.name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                    hasData: false,
+                    error: error.message,
+                    actualSymbol: actualSymbol
+                };
+                renderWatchlist();
             }
         }
         
-        // Fetch latest data in background
-        async function fetchLatestData(actualSymbol, displaySymbol, provider) {
+        // Fetch with timeout
+        async function fetchWithTimeout(url, timeout = 10000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
             try {
-                const url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
-                const response = await fetchWithTimeout(url, 10000);
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.data && result.data.length > 0) {
-                        const cacheKey = `${actualSymbol}_${provider}`;
-                        setCachedData(cacheKey, { data: result.data, result: result });
-                        processWatchlistData(displaySymbol, result.data, provider, result);
-                    }
-                }
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                return response;
             } catch (error) {
-                console.log(`Background update failed for ${actualSymbol}, using cached data`);
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout');
+                }
+                throw error;
             }
         }
         
@@ -1548,24 +1557,6 @@
             };
             
             renderWatchlist();
-        }
-        
-        // Fetch with timeout
-        async function fetchWithTimeout(url, timeout = 10000) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), timeout);
-            
-            try {
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                return response;
-            } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    throw new Error('Request timeout');
-                }
-                throw error;
-            }
         }
         
         // Calculate real percentage changes from actual data
@@ -1775,8 +1766,17 @@
             try {
                 console.log(`Loading chart data for ${symbol} from ${provider}`);
                 
+                // Apply symbol mapping
+                const actualSymbol = symbolMappings[symbol] || symbol;
+                let requestSymbol = actualSymbol;
+                
+                // For NY Fed rates, use lowercase
+                if (provider === 'ny_fed_direct') {
+                    requestSymbol = actualSymbol.toLowerCase();
+                }
+                
                 // Build URL with provider
-                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${requestSymbol}&provider=${provider}`;
                 
                 // Try to get maximum data
                 const response = await fetch(url);
@@ -1889,7 +1889,7 @@
             updateChartRender(chartId);
         }
         
-        // Enhanced filter data by timeframe with support for daily data
+        // Filter data by timeframe
         function filterDataByTimeframe(data, timeframe) {
             if (!data || data.length === 0) return data;
             
@@ -2162,9 +2162,18 @@
             
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
             
-            for (const symbol of watchlistSymbols) {
-                const provider = watchlistData[symbol]?.provider || getProviderForSymbol(symbol);
-                await loadSingleWatchlistItem(symbol, provider);
+            // Process symbols in batches to avoid overwhelming the API
+            const batchSize = 5;
+            for (let i = 0; i < watchlistSymbols.length; i += batchSize) {
+                const batch = watchlistSymbols.slice(i, i + batchSize);
+                await Promise.all(batch.map(symbol => {
+                    const provider = watchlistData[symbol]?.provider || getProviderForSymbol(symbol);
+                    return loadSingleWatchlistItem(symbol, provider);
+                }));
+                // Small delay between batches
+                if (i + batchSize < watchlistSymbols.length) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             }
         }
         
