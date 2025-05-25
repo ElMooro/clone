@@ -1336,32 +1336,84 @@
         async function loadSingleWatchlistItem(symbol, provider = null, retryCount = 0) {
             const maxRetries = 2;
             
+            // Symbol mappings for problematic or renamed series
+            const symbolMappings = {
+                // Known problematic symbols
+                'OTHL1690': 'RESPPLLOPNWW',  // Alternative liquidity measure
+                'OTHL15': 'RRPONTSYD',        // Alternative repo measure
+                'RESH4MFNWW': 'WSHOMCB',      // Alternative housing measure
+                'SWP1690': 'DSWP1',           // Swap spreads
+                'TREAS911Y': 'DGS10',         // 10-year treasury
+                'RREP15': 'RPONTSYD',         // Repo rate
+                'TREAS1590': 'DGS10',         // Treasury 10-year
+                'INTGSTMXM193N': 'INTGSTUSM193N',  // Interest payments
+                'WLCFLPCL': 'WLEMUINDXD',     // World equity index
+                'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',  // BofA index
+                'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',  // High yield
+                'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',  // Investment grade
+                'MNFCTRIRSA': 'MANMM101USA189S',  // Manufacturing
+                'CC4WSA': 'CCSA',             // Consumer credit
+                'AMERIBOR': 'OBFR30DAVG',     // Alternative to AMERIBOR
+                'T10YIE': 'T10YIE',           // Keep as is, might work
+                'DXY': 'DTWEXM'               // Dollar index
+            };
+            
+            // Check if we need to map the symbol
+            const actualSymbol = symbolMappings[symbol] || symbol;
+            if (actualSymbol !== symbol) {
+                console.log(`Mapping ${symbol} to ${actualSymbol}`);
+            }
+            
             // Auto-detect provider if not specified
             if (!provider) {
-                provider = getProviderForSymbol(symbol);
+                provider = getProviderForSymbol(actualSymbol);
             }
             
             try {
-                console.log(`Loading ${symbol} from ${provider} (attempt ${retryCount + 1})`);
+                console.log(`Loading ${actualSymbol} from ${provider} (attempt ${retryCount + 1})`);
+                
+                // Check cache first
+                const cacheKey = `${actualSymbol}_${provider}`;
+                const cachedData = getCachedData(cacheKey, 3600000); // 1 hour cache
+                
+                if (cachedData && cachedData.data && cachedData.data.length > 0) {
+                    console.log(`Using cached data for ${actualSymbol}`);
+                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result || {});
+                    // Still try to update in background
+                    fetchLatestData(actualSymbol, symbol, provider);
+                    return;
+                }
                 
                 // Build URL based on provider
-                let url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
+                let url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
                 
                 // Add specific parameters for certain providers
                 if (provider === 'ny_fed_direct') {
                     url += '&include_changes=false'; // NY Fed data might not support all calculations
                 }
                 
-                console.log(`Request URL: ${url}`);
+                console.log(`Initial request for ${actualSymbol}`);
                 let response = await fetchWithTimeout(url, 10000);
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to load data: ${response.status}`);
+                    // Try without the _direct suffix
+                    if (provider.endsWith('_direct')) {
+                        const baseProvider = provider.replace('_direct', '');
+                        console.log(`Trying base provider ${baseProvider} for ${actualSymbol}`);
+                        url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${baseProvider}`;
+                        response = await fetchWithTimeout(url, 10000);
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to load data: ${response.status}`);
+                    }
                 }
                 
                 const result = await response.json();
                 
                 if (result.data && result.data.length > 0) {
+                    // Cache the successful result
+                    setCachedData(cacheKey, { data: result.data, result: result });
                     processWatchlistData(symbol, result.data, provider, result);
                 } else if (result.metrics && result.metrics.latest_value !== undefined) {
                     // Some providers might only return metrics
@@ -1370,46 +1422,77 @@
                         provider: provider,
                         price: result.metrics.latest_value || 0,
                         changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
-                        hasData: true
+                        hasData: true,
+                        actualSymbol: actualSymbol
                     };
                     renderWatchlist();
                 } else {
                     throw new Error('No data received');
                 }
             } catch (error) {
-                console.error(`Error loading ${symbol}:`, error);
+                console.error(`Error loading ${actualSymbol}:`, error);
                 
                 // Retry with different provider
                 if (retryCount < maxRetries) {
                     // Try alternative providers
                     const alternativeProviders = {
+                        'fred_direct': ['fred', 'fred_direct'],
+                        'fred': ['fred_direct'],
                         'polygon_direct': ['fred_direct'],
-                        'fred_direct': ['fred'],
                         'ny_fed_direct': ['fred_direct'],
                         'treasury_direct': ['fred_direct'],
                         'ecb_direct': ['fred_direct'],
                         'ofr_direct': ['fred_direct']
                     };
                     
-                    const alternatives = alternativeProviders[provider] || [];
-                    if (alternatives.length > retryCount) {
+                    const alternatives = alternativeProviders[provider] || ['fred_direct', 'fred'];
+                    if (alternatives.length > retryCount && alternatives[retryCount] !== provider) {
                         const altProvider = alternatives[retryCount];
-                        console.log(`Retrying ${symbol} with provider ${altProvider}...`);
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        console.log(`Retrying ${actualSymbol} with provider ${altProvider}...`);
+                        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
                         return loadSingleWatchlistItem(symbol, altProvider, retryCount + 1);
                     }
                 }
                 
-                // Show error state
-                watchlistData[symbol] = {
-                    name: watchlistData[symbol]?.name || symbol,
-                    provider: provider,
-                    price: 0,
-                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
-                    hasData: false,
-                    error: error.message
-                };
-                renderWatchlist();
+                // Check if we have any cached data to use as fallback
+                const cacheKey = `${actualSymbol}_${provider}`;
+                const cachedData = getCachedData(cacheKey, 86400000); // 24 hour cache for errors
+                
+                if (cachedData && cachedData.data) {
+                    console.log(`Using cached data for ${actualSymbol} due to error`);
+                    processWatchlistData(symbol, cachedData.data, provider, cachedData.result || {});
+                } else {
+                    // Show error state
+                    watchlistData[symbol] = {
+                        name: watchlistData[symbol]?.name || symbol,
+                        provider: provider,
+                        price: 0,
+                        changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                        hasData: false,
+                        error: error.message,
+                        actualSymbol: actualSymbol
+                    };
+                    renderWatchlist();
+                }
+            }
+        }
+        
+        // Fetch latest data in background
+        async function fetchLatestData(actualSymbol, displaySymbol, provider) {
+            try {
+                const url = `${API_BASE}/api/v1/universal/data?symbol=${actualSymbol}&provider=${provider}`;
+                const response = await fetchWithTimeout(url, 10000);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.data && result.data.length > 0) {
+                        const cacheKey = `${actualSymbol}_${provider}`;
+                        setCachedData(cacheKey, { data: result.data, result: result });
+                        processWatchlistData(displaySymbol, result.data, provider, result);
+                    }
+                }
+            } catch (error) {
+                console.log(`Background update failed for ${actualSymbol}, using cached data`);
             }
         }
         
