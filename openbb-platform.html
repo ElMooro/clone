@@ -691,9 +691,9 @@
                     <span class="source-indicator" id="fred-indicator"></span>
                     FRED
                 </button>
-                <button class="source-toggle active" data-source="ny_fed" onclick="toggleDataSource('ny_fed')">
-                    <span class="source-indicator" id="ny_fed-indicator"></span>
-                    NY Fed
+                <button class="source-toggle active" data-source="ofr" onclick="toggleDataSource('ofr')">
+                    <span class="source-indicator" id="ofr-indicator"></span>
+                    OFR
                 </button>
                 <button class="source-toggle active" data-source="ecb" onclick="toggleDataSource('ecb')">
                     <span class="source-indicator" id="ecb-indicator"></span>
@@ -713,8 +713,12 @@
                         <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
                             <option value="MAIN">MAIN</option>
                             <option value="STOCKS">STOCKS</option>
-                            <option value="RATES">RATES</option>
-                            <option value="ECONOMIC">ECONOMIC</option>
+                            <option value="SYSTEMIC STRESS (CISS)">SYSTEMIC STRESS (CISS)</option>
+                            <option value="DOLLAR & EXCHANGE">DOLLAR & EXCHANGE</option>
+                            <option value="GLOBAL LIQUIDITY">GLOBAL LIQUIDITY</option>
+                            <option value="BLACK SWAN INDICATORS">BLACK SWAN INDICATORS</option>
+                            <option value="ECONOMIC INDICATORS">ECONOMIC INDICATORS</option>
+                            <option value="RATES & MONETARY">RATES & MONETARY</option>
                         </select>
                     </div>
                     <div class="watchlist-controls">
@@ -772,7 +776,24 @@
                 name: 'Federal Reserve Economic Data',
                 provider: 'fred_direct',
                 active: true,
-                searchSymbols: ['FEDFUNDS', 'UNRATE', 'GDP', 'CPIAUCSL', 'DFF', 'M2SL', 'PAYEMS', 'HOUST', 'INDPRO']
+                searchSymbols: [
+                    // Core Economic Indicators
+                    'FEDFUNDS', 'UNRATE', 'GDP', 'CPIAUCSL', 'DFF', 'M2SL', 'PAYEMS', 'HOUST', 'INDPRO',
+                    // Dollar & Exchange Rates
+                    'DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS',
+                    // Treasury Rates
+                    'DGS10', 'DGS2', 'DGS30', 'DGS5', 'DGS1',
+                    // Global Liquidity Indicators
+                    'RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690',
+                    'SUBLPDCISTQNQ', 'DRISCFLM', 'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S',
+                    'DRISCFS', 'MABMM301JPM189S', 'TREAS911Y', 'RREP15', 'OTHL15', 'RESH4MFNWW',
+                    'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES',
+                    // Black Swan Indicators
+                    'NFCINONFINLEVERAGE', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'T10YIE', 'AMERIBOR',
+                    'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 'VIXCLS',
+                    // Additional Economic Data
+                    'ISRATIO', 'MNFCTRIRSA', 'SOFR', 'EFFR', 'OBFR'
+                ]
             },
             ny_fed: {
                 name: 'New York Federal Reserve',
@@ -792,16 +813,20 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
-        let activeSources = ['polygon', 'fred', 'ny_fed', 'ecb'];
+        let activeSources = ['polygon', 'fred', 'ofr', 'ecb'];
         
-        // Updated watchlists to match your backend capabilities
+        // Updated watchlists with comprehensive indicators including ECB CISS and OFR data
         const watchlists = {
             'MAIN': {
                 symbols: [
                     { symbol: 'AAPL', provider: 'polygon_direct' },
                     { symbol: 'FEDFUNDS', provider: 'fred_direct' },
-                    { symbol: 'SOFR', provider: 'fred_direct' },
-                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' }
+                    { symbol: 'UNRATE', provider: 'fred_direct' },
+                    { symbol: 'CPIAUCSL', provider: 'fred_direct' },
+                    { symbol: 'GDP', provider: 'fred_direct' },
+                    { symbol: 'DGS10', provider: 'fred_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }
                 ],
                 active: true
             },
@@ -812,27 +837,106 @@
                     { symbol: 'GOOGL', provider: 'polygon_direct' },
                     { symbol: 'AMZN', provider: 'polygon_direct' },
                     { symbol: 'TSLA', provider: 'polygon_direct' },
-                    { symbol: 'SPY', provider: 'polygon_direct' }
+                    { symbol: 'SPY', provider: 'polygon_direct' },
+                    { symbol: 'QQQ', provider: 'polygon_direct' },
+                    { symbol: 'IWM', provider: 'polygon_direct' }
                 ],
                 active: false
             },
-            'RATES': {
+            'SYSTEMIC STRESS (CISS)': {
                 symbols: [
-                    { symbol: 'SOFR', provider: 'fred_direct' },
-                    { symbol: 'EFFR', provider: 'fred_direct' },
-                    { symbol: 'OBFR', provider: 'fred_direct' },
-                    { symbol: 'FEDFUNDS', provider: 'fred_direct' },
-                    { symbol: 'DFF', provider: 'fred_direct' }
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }, // Euro Area Daily CISS
+                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct' }, // US Daily CISS
+                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }, // China Daily CISS
+                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // Sweden Sovereign CISS
+                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // France Sovereign CISS
+                    { symbol: 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // Finland Sovereign CISS
+                    { symbol: 'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // Denmark Sovereign CISS
+                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // UK Sovereign CISS
+                    { symbol: 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // Belgium Sovereign CISS
+                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb_direct' } // Germany Financial Stress
                 ],
                 active: false
             },
-            'ECONOMIC': {
+            'DOLLAR & EXCHANGE': {
                 symbols: [
-                    { symbol: 'UNRATE', provider: 'fred_direct' },
-                    { symbol: 'CPIAUCSL', provider: 'fred_direct' },
-                    { symbol: 'GDP', provider: 'fred_direct' },
-                    { symbol: 'PAYEMS', provider: 'fred_direct' },
-                    { symbol: 'INDPRO', provider: 'fred_direct' }
+                    { symbol: 'DTWEXBGS', provider: 'fred_direct' }, // Nominal Broad U.S. Dollar Index
+                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct' }, // Nominal Advanced Foreign Economies U.S. Dollar Index
+                    { symbol: 'DTWEXEMEGS', provider: 'fred_direct' }, // Nominal Emerging Markets U.S. Dollar Index
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' }, // EUR/USD
+                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb_direct' }, // EUR/GBP
+                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb_direct' } // EUR/JPY
+                ],
+                active: false
+            },
+            'GLOBAL LIQUIDITY': {
+                symbols: [
+                    { symbol: 'RESPPNTEPNWW', provider: 'fred_direct' }, // Global Total Reserves
+                    { symbol: 'RESPPALGUOXAWXCH52NWW', provider: 'fred_direct' }, // Global Reserves Excluding Gold
+                    { symbol: 'RESPPALGUONNWW', provider: 'fred_direct' }, // Global Reserves Including Gold
+                    { symbol: 'SWP1690', provider: 'fred_direct' }, // Central Bank Swaps
+                    { symbol: 'OTHL1690', provider: 'fred_direct' }, // Other Liquidity
+                    { symbol: 'SUBLPDCISTQNQ', provider: 'fred_direct' }, // Subprime Lending
+                    { symbol: 'DRISCFLM', provider: 'fred_direct' }, // Discount Rate
+                    { symbol: 'RMFSL', provider: 'fred_direct' }, // Retail Money Funds
+                    { symbol: 'SBCACBW027SBOG', provider: 'fred_direct' }, // Central Bank Assets
+                    { symbol: 'MABMM301EZM189S', provider: 'fred_direct' }, // Eurozone Monetary Base
+                    { symbol: 'DRISCFS', provider: 'fred_direct' }, // Discount Rate Secondary
+                    { symbol: 'MABMM301JPM189S', provider: 'fred_direct' }, // Japan Monetary Base
+                    { symbol: 'TREAS911Y', provider: 'fred_direct' }, // Treasury Holdings
+                    { symbol: 'RREP15', provider: 'fred_direct' }, // Reverse Repo 15
+                    { symbol: 'OTHL15', provider: 'fred_direct' }, // Other Holdings 15
+                    { symbol: 'RESH4MFNWW', provider: 'fred_direct' }, // Global Reserve Holdings
+                    { symbol: 'BOGZ1FL663067003Q', provider: 'fred_direct' }, // Flow of Funds
+                    { symbol: 'BOGMBASE', provider: 'fred_direct' }, // Monetary Base
+                    { symbol: 'WSHOSHO', provider: 'fred_direct' }, // Bank Holdings
+                    { symbol: 'WRESBAL', provider: 'fred_direct' }, // Reserve Balances
+                    { symbol: 'TOTRESNS', provider: 'fred_direct' }, // Total Reserves
+                    { symbol: 'NONBORRES', provider: 'fred_direct' }, // Non-Borrowed Reserves
+                    { symbol: 'ILM.W.U2.C.A030000.U2.Z06', provider: 'ecb_direct' }, // Euro Area Weekly Liquidity
+                    { symbol: 'ILM.W.U2.C.L060000.U4.EUR', provider: 'ecb_direct' } // Euro Area Weekly Interest Rate Measures
+                ],
+                active: false
+            },
+            'BLACK SWAN INDICATORS': {
+                symbols: [
+                    { symbol: 'NFCINONFINLEVERAGE', provider: 'fred_direct' }, // Non-Financial Corporate Leverage
+                    { symbol: 'FRBKCLMCIM', provider: 'fred_direct' }, // Bank Credit Conditions
+                    { symbol: 'AMTMUO', provider: 'fred_direct' }, // Outstanding Consumer Credit
+                    { symbol: 'TREAS1590', provider: 'fred_direct' }, // Treasury Holdings
+                    { symbol: 'T10YIE', provider: 'fred_direct' }, // 10-Year Inflation Expectations
+                    { symbol: 'AMERIBOR', provider: 'fred_direct' }, // American Interbank Rate
+                    { symbol: 'INTGSTMXM193N', provider: 'fred_direct' }, // Interest Payments
+                    { symbol: 'WLCFLPCL', provider: 'fred_direct' }, // Commercial Paper
+                    { symbol: 'CC4WSA', provider: 'fred_direct' }, // Consumer Credit
+                    { symbol: 'VIXCLS', provider: 'fred_direct' } // VIX Volatility Index
+                ],
+                active: false
+            },
+            'ECONOMIC INDICATORS': {
+                symbols: [
+                    { symbol: 'GDP', provider: 'fred_direct' }, // Gross Domestic Product
+                    { symbol: 'UNRATE', provider: 'fred_direct' }, // Unemployment Rate
+                    { symbol: 'CPIAUCSL', provider: 'fred_direct' }, // Consumer Price Index
+                    { symbol: 'PAYEMS', provider: 'fred_direct' }, // Nonfarm Payrolls
+                    { symbol: 'INDPRO', provider: 'fred_direct' }, // Industrial Production
+                    { symbol: 'HOUST', provider: 'fred_direct' }, // Housing Starts
+                    { symbol: 'ISRATIO', provider: 'fred_direct' }, // Inventories to Sales Ratio
+                    { symbol: 'MNFCTRIRSA', provider: 'fred_direct' } // Manufacturing: TSA
+                ],
+                active: false
+            },
+            'RATES & MONETARY': {
+                symbols: [
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct' }, // Federal Funds Rate
+                    { symbol: 'DFF', provider: 'fred_direct' }, // Daily Federal Funds Rate
+                    { symbol: 'DGS10', provider: 'fred_direct' }, // 10-Year Treasury
+                    { symbol: 'DGS2', provider: 'fred_direct' }, // 2-Year Treasury
+                    { symbol: 'DGS30', provider: 'fred_direct' }, // 30-Year Treasury
+                    { symbol: 'SOFR', provider: 'fred_direct' }, // Secured Overnight Financing Rate
+                    { symbol: 'EFFR', provider: 'fred_direct' }, // Effective Federal Funds Rate
+                    { symbol: 'OBFR', provider: 'fred_direct' }, // Overnight Bank Funding Rate
+                    { symbol: 'M2SL', provider: 'fred_direct' } // M2 Money Supply
                 ],
                 active: false
             }
@@ -888,7 +992,7 @@
                     
                     if (source === 'polygon') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&data_type=quote`;
-                    } else if (source === 'fred' || source === 'ny_fed') {
+                    } else if (source === 'fred' || source === 'ofr') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=fred_direct&include_changes=false`;
                     } else if (source === 'ecb') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
@@ -1021,22 +1125,43 @@
                     'bgcr': 'Broad General Collateral Rate'
                 },
                 ecb: {
+                    // Exchange Rates
                     'EXR.D.USD.EUR.SP00.A': 'EUR/USD Exchange Rate',
                     'EXR.D.GBP.EUR.SP00.A': 'EUR/GBP Exchange Rate',
-                    'EXR.D.JPY.EUR.SP00.A': 'EUR/JPY Exchange Rate'
+                    'EXR.D.JPY.EUR.SP00.A': 'EUR/JPY Exchange Rate',
+                    // CISS - Composite Indicator of Systemic Stress
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX': 'China Daily Systemic Stress Index',
+                    'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX': 'Euro Area Daily Systemic Stress Index',
+                    'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX': 'US Daily Systemic Stress Index',
+                    // Country-specific Sovereign CISS
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX': 'Sweden Monthly Sovereign Stress Index',
+                    'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX': 'France Monthly Sovereign Stress Index',
+                    'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX': 'Finland Monthly Sovereign Stress Index',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX': 'Denmark Monthly Sovereign Stress Index',
+                    'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX': 'UK Monthly Sovereign Stress Index',
+                    'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX': 'Belgium Monthly Sovereign Stress Index',
+                    // CLIFS - Country-Level Index of Financial Stress
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX': 'Germany Country-Level Financial Stress Index',
+                    // ILM - Interest Rate and Liquidity Measures
+                    'ILM.W.U2.C.A030000.U2.Z06': 'Euro Area Weekly Liquidity Measures',
+                    'ILM.W.U2.C.L060000.U4.EUR': 'Euro Area Weekly Interest Rate Measures'
+                },
+                ofr: {
+                    'NYPD-PD_AFtR_T-A': 'NY Primary Dealers After-Tax Returns Total',
+                    'NYPD-PD_AFtD_TOT-A': 'NY Primary Dealers After-Tax Daily Total'
                 }
             };
             
             return descriptions[source]?.[symbol] || symbol;
         }
         
-        // Get detailed description
+        // Get detailed description with comprehensive coverage
         function getDetailedDescription(symbol, source) {
             const details = {
                 polygon: 'Stock market data',
                 fred: 'Economic indicator',
-                ny_fed: 'Reference rate',
-                ecb: 'Exchange rate'
+                ofr: 'Financial stability data',
+                ecb: 'European financial indicator'
             };
             
             return details[source] || '';
