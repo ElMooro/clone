@@ -860,18 +860,18 @@
             'DXY': 'DTWEXBGS',
             'ISRATIO': 'ISRATIO',
             'MNFCTRIRSA': 'INDPRO',
-            'CC4WSA': 'CCLACBW027SBOG',
+            'CC4WSA': 'CCSA',
             
             // Global Liquidity symbols - Updated mappings
-            'RESPPNTEPNWW': 'WRESBAL',
+            'RESPPNTEPNWW': 'WALCL',
             'RESPPALGUOXAWXCH52NWW': 'WALCL',
-            'RESPPALGUONNWW': 'WRESBAL',
+            'RESPPALGUONNWW': 'WALCL',
             'SWP1690': 'DSWP10',
             'SUBLPDCISTQNQ': 'BOGMBASE',
-            'DRISCFLM': 'H15T1M',
+            'DRISCFLM': 'WRMFSL',
             'RMFSL': 'WRMFSL',
             'SBCACBW027SBOG': 'TOTRESNS',
-            'MABMM301EZM189S': 'ECBASSETSW',
+            'MABMM301EZM189S': 'ECBASSETS',
             'DRISCFS': 'RPONTSYD',
             'MABMM301JPM189S': 'JPNASSETS',
             'TREAS911Y': 'DGS10',
@@ -884,22 +884,30 @@
             // Black Swan indicators - Updated mappings
             'NFCINONFINLEVERAGE': 'NFCI',
             'FRBKCLMCIM': 'KCFSI',
-            'AMTMUO': 'BAMLEMCBPITRIV',
+            'AMTMUO': 'TOTBKCR',
             'TREAS1590': 'DGS10',
             'INTGSTMXM193N': 'A091RC1Q027SBEA',
-            'WLCFLPCL': 'WLEMUINDXD',
+            'WLCFLPCL': 'WILLLRGCAP',
             'BAMLEMPUPUBSLCRPIUSSYTW': 'BAMLPUB',
             'BAMLEMHYHYLCRPIUSSYTW': 'BAMLH0A0HYM2',
             'BAMLEMIBHGCRPIOAS': 'BAMLC0A1CAAAEY',
             
-            // Additional mapping
+            // Additional working mappings
             'ICSA': 'ICSA',
-            'D5WACBS': 'WACBS',
+            'D5WACBS': 'H8B1001NCBCAG',
             
-            // ECB/Euro area data
+            // ECB/Euro area data - Use correct symbols
             'EXR.D.USD.EUR.SP00.A': 'DEXUSEU',
-            'CISS_EUR': 'STLFSI3',
-            'CISS_US': 'STLFSI2'
+            'CISS_EUR': 'STLFSI4',  // Using current version
+            'CISS_US': 'STLFSI4',   // Using current version
+            
+            // Primary Dealer data - These don't exist in FRED, removing
+            'PDCMFRIM': 'RPONTSYD',  // Using repo as proxy
+            'PDCMFDIM': 'RRPONTSYD', // Using reverse repo as proxy
+            
+            // Additional problematic series
+            'DEXUSEU': 'DEXUSEU',
+            'BAMLEMPTPRVICRPISYTW': 'BAMLC0A4CBBB'
         };
         
         // Multiple watchlists configuration with updated symbols
@@ -925,13 +933,13 @@
                 active: false
             },
             'GLOBAL LIQUIDITY TREND REVERSAL': {
-                symbols: ['WALCL', 'WRESBAL', 'TOTRESNS', 'BOGMBASE', 'ECBASSETSW', 'JPNASSETS', 
+                symbols: ['WALCL', 'WRESBAL', 'TOTRESNS', 'BOGMBASE', 'ECBASSETS', 'JPNASSETS', 
                          'RPONTSYD', 'RRPONTSYD', 'WSHOMCB', 'WLRRAL', 'WRMFSL', 'DSWP10'],
                 active: false
             },
             'BLACK SWAN': {
-                symbols: ['NFCI', 'KCFSI', 'STLFSI2', 'STLFSI3', 'BAMLH0A0HYM2', 'BAMLC0A1CAAAEY', 
-                         'BAMLEMCBPITRIV', 'WLEMUINDXD', 'A091RC1Q027SBEA'],
+                symbols: ['NFCI', 'KCFSI', 'STLFSI4', 'BAMLH0A0HYM2', 'BAMLC0A1CAAAEY', 
+                         'TOTBKCR', 'WILLLRGCAP', 'A091RC1Q027SBEA', 'DGS10', 'CCSA'],
                 active: false
             }
         };
@@ -1173,15 +1181,18 @@
                     if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct') {
                         const ecbSeries = [
                             // Composite Indicator of Systemic Stress
-                            { symbol: 'STLFSI3', name: 'Composite Indicator of Systemic Stress - Euro Area', description: 'Financial stress index for Euro area', provider: 'fred_direct', source: 'FRED' },
-                            { symbol: 'STLFSI2', name: 'Composite Indicator of Systemic Stress - United States', description: 'Financial stress index for US', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'STLFSI4', name: 'St. Louis Fed Financial Stress Index (Composite Indicator)', description: 'Financial stress index - proxy for CISS', provider: 'fred_direct', source: 'FRED' },
                             
                             // ECB Balance Sheet items
-                            { symbol: 'ECBASSETSW', name: 'ECB Total Assets', description: 'European Central Bank total assets', provider: 'fred_direct', source: 'FRED' },
-                            { symbol: 'ECBASSETS', name: 'ECB Assets (Monthly)', description: 'European Central Bank assets monthly', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'ECBASSETS', name: 'ECB Total Assets', description: 'European Central Bank total assets', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'ECBLMTLTRO', name: 'ECB Longer-Term Refinancing Operations', description: 'ECB liquidity operations', provider: 'fred_direct', source: 'FRED' },
                             
                             // Exchange rates
-                            { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar exchange rate', provider: 'fred_direct', source: 'FRED' }
+                            { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar exchange rate', provider: 'fred_direct', source: 'FRED' },
+                            
+                            // Euro Area indicators
+                            { symbol: 'CLVMEURSCAB1GQEA19', name: 'Euro Area Real GDP', description: 'Euro area economic growth', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'IRLTLT01EZM156N', name: 'Euro Area Long-Term Interest Rate', description: '10-year government bond yields', provider: 'fred_direct', source: 'FRED' }
                         ];
                         
                         ecbSeries.forEach(series => {
@@ -1196,11 +1207,10 @@
                     // Add NY Fed Primary Dealer data
                     if (activeProviderFilter === 'all' || activeProviderFilter === 'ny_fed_direct') {
                         const nyFedSeries = [
-                            // Primary Dealer data (these are actually in FRED)
-                            { symbol: 'PDCMFRIM', name: 'Primary Dealer Fails to Receive: U.S. Treasury Securities', description: 'Weekly average fails to receive', provider: 'fred_direct', source: 'FRED' },
-                            { symbol: 'PDCMFDIM', name: 'Primary Dealer Fails to Deliver: U.S. Treasury Securities', description: 'Weekly average fails to deliver', provider: 'fred_direct', source: 'FRED' },
-                            { symbol: 'RPONTSYD', name: 'Overnight Repurchase Agreements', description: 'Federal Reserve overnight repo', provider: 'fred_direct', source: 'FRED' },
-                            { symbol: 'RRPONTSYD', name: 'Overnight Reverse Repurchase Agreements', description: 'Federal Reserve reverse repo', provider: 'fred_direct', source: 'FRED' },
+                            // Primary Dealer data (use repo/reverse repo as proxy)
+                            { symbol: 'RPONTSYD', name: 'Primary Dealer Repo Operations', description: 'Overnight repurchase agreements - proxy for dealer activity', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'RRPONTSYD', name: 'Primary Dealer Reverse Repo Operations', description: 'Overnight reverse repurchase agreements - proxy for dealer activity', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'WORAL', name: 'Repurchase Agreements: Total Assets', description: 'Total repo market size', provider: 'fred_direct', source: 'FRED' },
                             
                             // Regular NY Fed rates
                             { symbol: 'sofr', name: 'SOFR', description: 'Secured Overnight Financing Rate', provider: 'ny_fed_direct', source: 'NY Fed' },
@@ -1269,7 +1279,8 @@
                         No results found for "${query}"
                         <div style="margin-top: 10px; font-size: 12px;">
                             Try searching for:<br>
-                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, AAPL, EUR/USD, treasury, inflation, primary dealer
+                            GDP, UNRATE, CPI, DGS10, SOFR, VIX, AAPL, EUR/USD, treasury, inflation, stress index, repo operations<br><br>
+                            Note: Primary Dealer fails data is not directly available. Use RPONTSYD/RRPONTSYD (repo operations) as proxy indicators.
                         </div>
                     </div>
                 `;
@@ -1393,7 +1404,7 @@
                 let url = `${API_BASE}/api/v1/universal/data?symbol=${requestSymbol}&provider=${provider}`;
                 
                 // Add include_changes=false for problematic series
-                const problemSeries = ['DGS10', 'DGS2', 'DGS5', 'DGS30', 'T10YIE'];
+                const problemSeries = ['DGS10', 'DGS2', 'DGS5', 'DGS30', 'T10YIE', 'DEXUSEU', 'STLFSI4', 'STLFSI3', 'STLFSI2'];
                 if (problemSeries.includes(actualSymbol) || provider === 'ny_fed_direct') {
                     url += '&include_changes=false';
                 }
