@@ -1072,79 +1072,110 @@
                 
                 try {
                     let allResults = [];
+                    console.log('Searching for:', query, 'Provider:', currentSearchProvider);
                     
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'fred') {
-                        // Universal search endpoint
-                        const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}&provider=fred`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.results && data.results.fred) {
-                                allResults = allResults.concat(data.results.fred.map(item => ({
-                                    ...item,
-                                    provider: 'fred',
-                                    symbol: item.series_id || item.symbol
-                                })));
+                        try {
+                            // Universal search endpoint
+                            const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}&provider=fred`);
+                            console.log('FRED search response status:', response.status);
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('FRED search data:', data);
+                                if (data.results && data.results.fred) {
+                                    allResults = allResults.concat(data.results.fred.map(item => ({
+                                        ...item,
+                                        provider: 'fred',
+                                        symbol: item.series_id || item.symbol
+                                    })));
+                                }
                             }
+                        } catch (err) {
+                            console.error('FRED search error:', err);
                         }
                     }
                     
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'ecb') {
-                        // ECB search
-                        const response = await fetch(`${API_BASE}/api/v1/economy/ecb_search?query=${encodeURIComponent(query)}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.results) {
-                                allResults = allResults.concat(data.results.map(item => ({
-                                    ...item,
-                                    provider: 'ecb',
-                                    symbol: item.series_id
-                                })));
+                        try {
+                            // ECB search
+                            const response = await fetch(`${API_BASE}/api/v1/economy/ecb_search?query=${encodeURIComponent(query)}`);
+                            console.log('ECB search response status:', response.status);
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('ECB search data:', data);
+                                if (data.results) {
+                                    allResults = allResults.concat(data.results.map(item => ({
+                                        ...item,
+                                        provider: 'ecb',
+                                        symbol: item.series_id
+                                    })));
+                                }
                             }
+                        } catch (err) {
+                            console.error('ECB search error:', err);
                         }
                     }
                     
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'newyorkfed') {
-                        // NY Fed search
-                        const response = await fetch(`${API_BASE}/api/v1/economy/ny_fed_search?query=${encodeURIComponent(query)}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.results) {
-                                allResults = allResults.concat(data.results.map(item => ({
-                                    ...item,
-                                    provider: 'newyorkfed',
-                                    symbol: item.series_id
-                                })));
+                        try {
+                            // NY Fed search
+                            const response = await fetch(`${API_BASE}/api/v1/economy/ny_fed_search?query=${encodeURIComponent(query)}`);
+                            console.log('NY Fed search response status:', response.status);
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('NY Fed search data:', data);
+                                if (data.results) {
+                                    allResults = allResults.concat(data.results.map(item => ({
+                                        ...item,
+                                        provider: 'newyorkfed',
+                                        symbol: item.series_id
+                                    })));
+                                }
                             }
+                        } catch (err) {
+                            console.error('NY Fed search error:', err);
                         }
                     }
                     
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'ofr') {
-                        // OFR search
-                        const response = await fetch(`${API_BASE}/api/v1/economy/ofr_search?query=${encodeURIComponent(query)}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.results) {
-                                allResults = allResults.concat(data.results.map(item => ({
-                                    ...item,
-                                    provider: 'ofr',
-                                    symbol: item.series_id
-                                })));
+                        try {
+                            // OFR search
+                            const response = await fetch(`${API_BASE}/api/v1/economy/ofr_search?query=${encodeURIComponent(query)}`);
+                            console.log('OFR search response status:', response.status);
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('OFR search data:', data);
+                                if (data.results) {
+                                    allResults = allResults.concat(data.results.map(item => ({
+                                        ...item,
+                                        provider: 'ofr',
+                                        symbol: item.series_id
+                                    })));
+                                }
                             }
+                        } catch (err) {
+                            console.error('OFR search error:', err);
                         }
                     }
                     
                     if (currentSearchProvider === 'all' || currentSearchProvider === 'treasury') {
-                        // Treasury search
-                        const response = await fetch(`${API_BASE}/api/v1/economy/treasury_search?query=${encodeURIComponent(query)}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.results) {
-                                allResults = allResults.concat(data.results.map(item => ({
-                                    ...item,
-                                    provider: 'treasury',
-                                    symbol: item.series_id
-                                })));
+                        try {
+                            // Treasury search
+                            const response = await fetch(`${API_BASE}/api/v1/economy/treasury_search?query=${encodeURIComponent(query)}`);
+                            console.log('Treasury search response status:', response.status);
+                            if (response.ok) {
+                                const data = await response.json();
+                                console.log('Treasury search data:', data);
+                                if (data.results) {
+                                    allResults = allResults.concat(data.results.map(item => ({
+                                        ...item,
+                                        provider: 'treasury',
+                                        symbol: item.series_id
+                                    })));
+                                }
                             }
+                        } catch (err) {
+                            console.error('Treasury search error:', err);
                         }
                     }
                     
@@ -1166,6 +1197,7 @@
                         });
                     }
                     
+                    console.log('Total results found:', allResults.length);
                     displaySearchResults(allResults, query);
                     
                 } catch (error) {
@@ -1173,6 +1205,7 @@
                     resultsDiv.innerHTML = `
                         <div class="search-item" style="text-align:center; color:#888;">
                             Error searching. Please try again.
+                            <br><small>${error.message}</small>
                         </div>
                     `;
                 }
