@@ -855,12 +855,21 @@
         // Enhanced symbol mappings for problematic series
         const symbolMappings = {
             // Working FRED mappings
-            'AMERIBOR': 'AMERIBOR30T',
+            'AMERIBOR': 'AMERIBOR',  // Remove the 30T suffix
             'T10YIE': 'T10YIE',
             'DXY': 'DTWEXBGS',
             'ISRATIO': 'ISRATIO',
             'MNFCTRIRSA': 'INDPRO',
             'CC4WSA': 'CCSA',
+            
+            // Fix for common FRED series
+            'GDP': 'GDP',
+            'UNRATE': 'UNRATE',
+            'CPIAUCSL': 'CPIAUCSL',
+            'DFF': 'DFF',
+            'FEDFUNDS': 'FEDFUNDS',
+            'VIXCLS': 'VIXCLS',
+            'DGS10': 'DGS10',
             
             // Global Liquidity symbols - Updated mappings
             'RESPPNTEPNWW': 'WALCL',
@@ -913,7 +922,7 @@
         // Multiple watchlists configuration with updated symbols
         const watchlists = {
             'MAIN': {
-                symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR30T'],
+                symbols: ['GDP', 'UNRATE', 'DGS10', 'CPIAUCSL', 'DFF', 'VIXCLS', 'SOFR', 'FEDFUNDS', 'T10YIE', 'AMERIBOR'],
                 active: true
             },
             'TOP': {
@@ -1087,19 +1096,42 @@
         // Check API connection
         async function checkAPIConnection() {
             try {
-                const response = await fetch(`${API_BASE}/api/v1/health`);
+                // First check if we can reach the API at all
+                const testUrl = `${API_BASE}/api/v1/health`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
                 
-                if (response.ok) {
-                    document.getElementById('apiStatus').classList.add('connected');
-                    document.getElementById('apiStatusText').textContent = 'API Connected';
-                    showTemporaryMessage('Connected to OpenBB API', 'info');
-                } else {
-                    throw new Error(`API returned ${response.status}`);
+                try {
+                    const response = await fetch(testUrl, { 
+                        signal: controller.signal,
+                        mode: 'cors',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        document.getElementById('apiStatus').classList.add('connected');
+                        document.getElementById('apiStatusText').textContent = 'API Connected';
+                        showTemporaryMessage('Connected to OpenBB API', 'info');
+                    } else {
+                        throw new Error(`API returned ${response.status}`);
+                    }
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    throw fetchError;
                 }
             } catch (error) {
                 console.error('API connection failed:', error);
-                document.getElementById('apiStatusText').textContent = 'API Disconnected';
-                showTemporaryMessage('API connection failed', 'error');
+                document.getElementById('apiStatusText').textContent = 'API Issues - Using Cache';
+                
+                // Show more detailed error message
+                if (error.message.includes('Failed to fetch')) {
+                    showTemporaryMessage('CORS/Network error - Data may be limited', 'error');
+                } else {
+                    showTemporaryMessage('API connection issues - Using cached data where available', 'error');
+                }
             }
         }
         
@@ -1178,14 +1210,24 @@
                     }
                     
                     // Add ECB data series for euro area data
-                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct') {
+                    if (activeProviderFilter === 'all' || activeProviderFilter === 'ecb_direct' || activeProviderFilter === 'fred_direct') {
                         const ecbSeries = [
-                            // Composite Indicator of Systemic Stress
+                            // Composite Indicator of Systemic Stress (CISS)
                             { symbol: 'STLFSI4', name: 'St. Louis Fed Financial Stress Index (Composite Indicator)', description: 'Financial stress index - proxy for CISS', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'CLIFS_CN', name: 'CISS - Composite Indicator of Systemic Stress, China', description: 'Country Level Index of Financial Stress for China, Daily', provider: 'fred_direct', source: 'FRED/ECB' },
+                            { symbol: 'CLIFS_DE', name: 'Country Level Index of Financial Stress (CLIFS) Germany', description: 'Financial stress index for Germany, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
+                            
+                            // Sovereign Stress Indicators (SovCISS)
+                            { symbol: 'SOVCISS_SE', name: 'Composite Indicator of Sovereign Stress (SovCISS) Sweden', description: 'Sovereign stress index for Sweden, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
+                            { symbol: 'SOVCISS_FR', name: 'Composite Indicator of Sovereign Stress (SovCISS) France', description: 'Sovereign stress index for France, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
+                            { symbol: 'SOVCISS_FI', name: 'Composite Indicator of Sovereign Stress (SovCISS) Finland', description: 'Sovereign stress index for Finland, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
+                            { symbol: 'SOVCISS_DK', name: 'Composite Indicator of Sovereign Stress (SovCISS) Denmark', description: 'Sovereign stress index for Denmark, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
+                            { symbol: 'SOVCISS_UK', name: 'Composite Indicator of Sovereign Stress (SovCISS) United Kingdom', description: 'Sovereign stress index for UK, Monthly', provider: 'fred_direct', source: 'FRED/ECB' },
                             
                             // ECB Balance Sheet items
                             { symbol: 'ECBASSETS', name: 'ECB Total Assets', description: 'European Central Bank total assets', provider: 'fred_direct', source: 'FRED' },
                             { symbol: 'ECBLMTLTRO', name: 'ECB Longer-Term Refinancing Operations', description: 'ECB liquidity operations', provider: 'fred_direct', source: 'FRED' },
+                            { symbol: 'ECBLIABILITIES', name: 'Liabilities to non-euro area residents denominated in euro', description: 'Eurosystem liabilities, Euro area (changing composition), Weekly', provider: 'fred_direct', source: 'FRED/ECB' },
                             
                             // Exchange rates
                             { symbol: 'DEXUSEU', name: 'EUR/USD Exchange Rate', description: 'Euro to US Dollar exchange rate', provider: 'fred_direct', source: 'FRED' },
@@ -1196,9 +1238,20 @@
                         ];
                         
                         ecbSeries.forEach(series => {
-                            if (series.name.toLowerCase().includes(query.toLowerCase()) ||
-                                series.description.toLowerCase().includes(query.toLowerCase()) ||
-                                series.symbol.toLowerCase().includes(query.toLowerCase())) {
+                            const searchTerms = [query.toLowerCase()];
+                            const queryWords = query.toLowerCase().split(' ');
+                            
+                            // Check if any part of the query matches
+                            const matches = series.name.toLowerCase().includes(query.toLowerCase()) ||
+                                           series.description.toLowerCase().includes(query.toLowerCase()) ||
+                                           series.symbol.toLowerCase().includes(query.toLowerCase()) ||
+                                           // Check for partial matches like "ciss" or "sovciss"
+                                           queryWords.some(word => 
+                                               series.name.toLowerCase().includes(word) || 
+                                               series.symbol.toLowerCase().includes(word)
+                                           );
+                            
+                            if (matches) {
                                 allResults.push(series);
                             }
                         });
@@ -1410,7 +1463,66 @@
                 }
                 
                 console.log(`Request URL: ${url}`);
-                let response = await fetchWithTimeout(url, 10000);
+                
+                let response;
+                try {
+                    response = await fetchWithTimeout(url, 10000);
+                } catch (fetchError) {
+                    // CORS or network error - try alternative endpoints
+                    if (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('CORS')) {
+                        console.log(`CORS/Network error for ${actualSymbol}, trying alternative approach`);
+                        
+                        // For FRED data, try the raw endpoint
+                        if (provider.includes('fred')) {
+                            const rawUrl = `${API_BASE}/api/v1/fred/series/observations?series_id=${actualSymbol}&limit=100&sort_order=desc`;
+                            try {
+                                const rawResponse = await fetchWithTimeout(rawUrl, 10000);
+                                if (rawResponse.ok) {
+                                    const rawData = await rawResponse.json();
+                                    if (rawData.observations && rawData.observations.length > 0) {
+                                        // Convert to expected format
+                                        const convertedData = rawData.observations.map(obs => ({
+                                            date: obs.date,
+                                            value: parseFloat(obs.value)
+                                        })).filter(d => !isNaN(d.value));
+                                        
+                                        if (convertedData.length > 0) {
+                                            processWatchlistData(symbol, convertedData, provider, { name: actualSymbol });
+                                            setCachedData(cacheKey, { data: convertedData, result: { name: actualSymbol } });
+                                            return;
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.log(`Raw endpoint also failed for ${actualSymbol}`);
+                            }
+                        }
+                        
+                        // Try with include_changes=false if not already
+                        if (!url.includes('include_changes=false')) {
+                            const simpleUrl = `${API_BASE}/api/v1/universal/data?symbol=${requestSymbol}&provider=${provider}&include_changes=false`;
+                            try {
+                                const simpleResponse = await fetchWithTimeout(simpleUrl, 10000);
+                                if (simpleResponse.ok) {
+                                    const result = await simpleResponse.json();
+                                    if (result.metrics && result.metrics.latest_value !== undefined) {
+                                        // Create minimal data structure
+                                        const minimalData = [{
+                                            date: new Date().toISOString().split('T')[0],
+                                            value: result.metrics.latest_value
+                                        }];
+                                        processWatchlistData(symbol, minimalData, provider, result);
+                                        setCachedData(cacheKey, { data: minimalData, result: result });
+                                        return;
+                                    }
+                                }
+                            } catch (e) {
+                                console.log(`Simple endpoint also failed for ${actualSymbol}`);
+                            }
+                        }
+                    }
+                    throw fetchError;
+                }
                 
                 if (!response.ok) {
                     // For some FRED series, try raw endpoint
@@ -1481,20 +1593,33 @@
                         console.log(`Retrying ${actualSymbol} with provider fred...`);
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         return loadSingleWatchlistItem(symbol, 'fred', retryCount + 1);
+                    } else if (provider === 'ny_fed_direct' && retryCount === 1) {
+                        // Try as FRED data
+                        console.log(`Retrying ${actualSymbol} with FRED provider...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return loadSingleWatchlistItem(symbol, 'fred_direct', retryCount + 1);
                     }
                 }
                 
-                // Show error state
-                watchlistData[symbol] = {
-                    name: watchlistData[symbol]?.name || symbol,
-                    provider: provider,
-                    price: 0,
-                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
-                    hasData: false,
-                    error: error.message,
-                    actualSymbol: actualSymbol
-                };
-                renderWatchlist();
+                // Show error state with cached data if available
+                const cacheKey = `${actualSymbol}_${provider}`;
+                const staleCache = getCachedData(cacheKey, Infinity); // Get any cached data regardless of age
+                
+                if (staleCache && staleCache.data && staleCache.data.length > 0) {
+                    console.log(`Using stale cached data for ${actualSymbol}`);
+                    processWatchlistData(symbol, staleCache.data, provider, staleCache.result || {});
+                } else {
+                    watchlistData[symbol] = {
+                        name: watchlistData[symbol]?.name || symbol,
+                        provider: provider,
+                        price: 0,
+                        changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                        hasData: false,
+                        error: error.message,
+                        actualSymbol: actualSymbol
+                    };
+                    renderWatchlist();
+                }
             }
         }
         
