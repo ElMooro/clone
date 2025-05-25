@@ -760,6 +760,7 @@
                 <span id="apiStatusText">Checking connection...</span>
             </div>
             <button class="control-btn" onclick="addNewChart()">+ New Chart</button>
+            <button class="control-btn" onclick="testAPIConnection()" style="margin-left: 10px;">Test API</button>
             <span id="clock" style="color: #888; font-size: 14px;"></span>
         </div>
     </div>
@@ -769,7 +770,6 @@
             <div class="search-container">
                 <input type="text" class="search-box" id="searchBox" 
                        placeholder="Search financial data (e.g., AAPL, GDP, inflation, unemployment, EUR/USD, treasury rates)..." 
-                       onkeyup="performSearch(this.value)"
                        autocomplete="off">
                 <span class="search-icon">🔍</span>
                 <div class="provider-filters" id="providerFilters">
