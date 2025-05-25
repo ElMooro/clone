@@ -3,1413 +3,2146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Search - Macro Intelligence Platform</title>
+    <title>OpenBB Financial Intelligence Platform</title>
+    
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a; 
+            color: #e0e0e0; 
+            overflow-x: hidden; 
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0e1b;
-            color: #e0e0e0;
-            min-height: 100vh;
+        
+        /* Header */
+        .header { 
+            background: #121212; 
+            padding: 15px 20px; 
+            border-bottom: 1px solid #282828; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
+        .logo { 
+            font-size: 22px; 
+            font-weight: bold; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
+        .header-controls { 
+            display: flex; 
+            gap: 15px; 
+            align-items: center; 
         }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: pulse 4s ease-in-out infinite;
+        
+        /* Main Container */
+        .main-container { 
+            display: flex; 
+            flex-direction: column;
+            height: calc(100vh - 71px); 
         }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #ffffff;
-            position: relative;
-            z-index: 1;
-        }
-
-        .header p {
-            font-size: 1.2em;
-            color: #b3c5ff;
-            position: relative;
-            z-index: 1;
-        }
-
-        .providers-list {
+        
+        /* Search Section */
+        .search-section { 
+            background: #121212;
+            padding: 20px; 
+            border-bottom: 1px solid #282828; 
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
             justify-content: center;
-            margin-top: 20px;
+            align-items: center;
         }
-
-        .provider-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .search-section {
-            background: #1a1f2e;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
         .search-container {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .search-input-wrapper {
-            flex: 1;
             position: relative;
-        }
-
-        .search-input {
             width: 100%;
-            padding: 15px 50px 15px 20px;
-            background: #2a3142;
-            color: #fff;
-            border: 2px solid #3949ab;
-            border-radius: 8px;
+            max-width: 900px;
+        }
+        .search-box { 
+            width: 100%; 
+            padding: 15px 50px 15px 20px; 
+            background: #222; 
+            border: 2px solid #333; 
+            color: #fff; 
+            border-radius: 8px; 
             font-size: 16px;
-            transition: all 0.3s ease;
+            transition: border-color 0.3s;
         }
-
-        .search-input:focus {
+        .search-box:focus {
             outline: none;
-            border-color: #5c6bc0;
-            box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.2);
+            border-color: #00ff88;
         }
-
         .search-icon {
             position: absolute;
-            right: 15px;
+            right: 20px;
             top: 50%;
             transform: translateY(-50%);
-            color: #5c6bc0;
-            font-size: 20px;
+            color: #777;
+            font-size: 18px;
         }
-
-        .search-btn {
-            padding: 15px 30px;
-            background: #3949ab;
-            color: white;
-            border: none;
+        .search-results { 
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            margin-top: 5px; 
+            max-height: 500px;
+            overflow-y: auto; 
+            background: #181818;
+            border: 1px solid #333;
             border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .search-loading {
+            padding: 20px;
+            text-align: center;
+            color: #00ff88;
+        }
+        .search-item { 
+            padding: 15px 20px; 
+            cursor: pointer; 
+            transition: background 0.15s; 
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: #252525; }
+        .search-item-left {
+            flex: 1;
+        }
+        .search-item-symbol { 
+            font-weight: bold; 
+            color: #00dd77; 
             font-size: 16px;
-            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .search-item-name {
+            font-size: 14px; 
+            color: #ddd;
+            margin-bottom: 4px;
+        }
+        .search-item-description {
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.3;
+        }
+        .search-item-source {
+            font-size: 11px;
+            color: #888;
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        
+        /* Provider pills */
+        .provider-pills {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .provider-pill {
+            padding: 6px 12px;
+            background: #252525;
+            border: 1px solid #333;
+            border-radius: 20px;
+            font-size: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
+        }
+        .provider-pill:hover {
+            background: #333;
+            border-color: #00ff88;
+        }
+        .provider-pill.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+            font-weight: bold;
+        }
+        
+        /* Charts and Watchlist Container */
+        .content { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Charts Area */
+        .charts-area { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            background: #0f0f0f; 
+        }
+        .chart-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); 
+            gap: 20px; 
+        }
+        .chart-window { 
+            background: #131313; 
+            border: 1px solid #282828; 
+            border-radius: 10px; 
+            padding: 20px; 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.3s;
+            min-height: 500px;
+        }
+        .chart-window.active-chart {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+        .chart-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start;
+            margin-bottom: 15px; 
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .chart-title-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+        .chart-title { 
+            font-size: 18px; 
+            color: #fff; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chart-symbols {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .chart-symbol-tag {
+            background: #252525;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #333;
+        }
+        .symbol-color-dot {
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%;
+        }
+        .remove-symbol {
+            cursor: pointer;
+            color: #ff5555;
+            font-weight: bold;
+            margin-left: 5px;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        .remove-symbol:hover { opacity: 1; }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .timeframe-buttons { 
+            display: flex; 
+            gap: 2px; 
+            background: #080808;
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid #252525;
+        }
+        .timeframe-btn { 
+            background: transparent; 
+            border: none; 
+            color: #888; 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 12px; 
+            border-radius: 4px;
+        }
+        .timeframe-btn:hover { 
+            background: #2e2e2e; 
+            color: #fff; 
+        }
+        .timeframe-btn.active { 
+            background: #00dd77; 
+            color: #000; 
+            font-weight: bold;
+        }
+        
+        .chart-canvas { 
+            background: #0a0a0a; 
+            border-radius: 6px; 
+            height: 500px;
+            flex-grow: 1;
+            min-height: 450px;
+        }
+        .chart-message {
+            position: absolute;
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555; 
+            font-size: 16px;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .control-btn { 
+            background: #252525; 
+            border: 1px solid #383838; 
+            color: #ccc; 
+            padding: 8px 12px; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            transition: all 0.2s; 
+        }
+        .control-btn:hover { 
+            background: #333; 
+            border-color: #555; 
+            color: #fff;
+        }
+        .close-btn { 
+            background: #dd4444; 
+            border-color: #dd4444; 
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .close-btn:hover { background: #ff5555; }
+        
+        /* Watchlist Section */
+        .watchlist-section { 
+            background: #121212;
+            border-top: 1px solid #282828;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .watchlist-header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #282828;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .watchlist-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .watchlist-selector {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .watchlist-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .sort-button {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sort-button:hover {
+            background: #333;
+            border-color: #555;
+        }
+        
+        .sort-button.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+        
+        .add-watchlist { 
+            background: #00dd77; 
+            color: #000; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .add-watchlist:hover { background: #00ff88; }
+        
+        /* CoinMarketCap Style Table */
+        .watchlist-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        
+        .watchlist-table th {
+            background: #f5f5f5;
+            color: #333;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+            position: sticky;
+            top: 57px;
+            z-index: 5;
+        }
+        
+        .watchlist-table th.sortable:hover {
+            background: #e8e8e8;
+        }
+        
+        .sort-indicator {
+            font-size: 10px;
+            margin-left: 4px;
+            color: #999;
+        }
+        
+        .sort-indicator.asc::after {
+            content: "▲";
+            color: #00dd77;
+        }
+        
+        .sort-indicator.desc::after {
+            content: "▼";
+            color: #ff4444;
+        }
+        
+        .watchlist-table tbody tr {
+            transition: background-color 0.2s;
+            cursor: pointer;
+            background: #fff;
+            color: #333;
+        }
+        
+        .watchlist-table tbody tr:hover {
+            background: #f8f8f8;
+        }
+        
+        .watchlist-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .symbol-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .symbol-name {
+            font-weight: bold;
+            color: #000;
+            font-size: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .search-btn:hover {
-            background: #5c6bc0;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(57, 73, 171, 0.3);
-        }
-
-        .filters {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .filter-label {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .provider-filter {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .provider-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 12px;
-            background: #2a3142;
-            border: 1px solid #444;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 13px;
-        }
-
-        .provider-checkbox:hover {
-            background: #3949ab;
-            border-color: #3949ab;
-        }
-
-        .provider-checkbox input {
-            cursor: pointer;
-        }
-
-        .provider-checkbox.active {
-            background: #3949ab;
-            border-color: #5c6bc0;
-        }
-
-        .watchlist-section {
-            background: #1a1f2e;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        .watchlist-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .watchlist-title {
-            font-size: 1.5em;
-            color: #5c6bc0;
-            font-weight: 600;
-        }
-
-        .watchlist-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }
-
-        .watchlist-item {
-            background: #2a3142;
-            padding: 15px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-
-        .watchlist-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .watchlist-info {
-            flex: 1;
-        }
-
-        .watchlist-symbol {
-            font-size: 16px;
-            font-weight: 600;
-            color: #5c6bc0;
-        }
-
-        .watchlist-name {
-            font-size: 12px;
-            color: #888;
-            margin-top: 2px;
-        }
-
-        .results-info {
-            background: #2a3142;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .results-count {
-            font-size: 18px;
-            color: #5c6bc0;
-            font-weight: 600;
-        }
-
-        .results-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-btn {
-            padding: 8px 16px;
-            background: #2a3142;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .action-btn:hover {
-            background: #3949ab;
-            border-color: #3949ab;
-        }
-
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 20px;
-        }
-
-        .result-card {
-            background: #1a1f2e;
-            border: 1px solid #2a3142;
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .result-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #3949ab, #5c6bc0);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-        }
-
-        .result-card:hover::before {
-            transform: translateX(0);
-        }
-
-        .result-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            border-color: #3949ab;
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 15px;
-        }
-
-        .result-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #5c6bc0;
-            margin-bottom: 5px;
-            flex: 1;
-        }
-
-        .provider-tag {
-            padding: 4px 10px;
-            background: #2a3142;
-            border-radius: 12px;
+        
+        .symbol-fullname {
+            color: #666;
             font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
         }
-
-        .provider-fred { background: #4caf50; color: white; }
-        .provider-ecb { background: #2196f3; color: white; }
-        .provider-treasury { background: #ff9800; color: white; }
-        .provider-nyfed { background: #9c27b0; color: white; }
-        .provider-ofr { background: #f44336; color: white; }
-        .provider-bls { background: #795548; color: white; }
-        .provider-fmp { background: #607d8b; color: white; }
-        .provider-polygon { background: #00bcd4; color: white; }
-        .provider-yfinance { background: #673ab7; color: white; }
-        .provider-intrinio { background: #3f51b5; color: white; }
-        .provider-benzinga { background: #ff5722; color: white; }
-        .provider-tiingo { background: #009688; color: white; }
-
-        .result-id {
-            font-family: monospace;
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 12px;
-        }
-
-        .result-meta {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            color: #888;
-        }
-
-        .meta-icon {
-            font-size: 16px;
-        }
-
-        .result-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .result-btn {
-            flex: 1;
-            padding: 8px 12px;
-            background: #2a3142;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 6px;
-            font-size: 13px;
+        
+        .edit-icon {
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .result-btn:hover {
-            background: #3949ab;
-            border-color: #3949ab;
-            transform: translateY(-1px);
-        }
-
-        .result-btn.primary {
-            background: #3949ab;
-            border-color: #3949ab;
-        }
-
-        .result-btn.primary:hover {
-            background: #5c6bc0;
-            border-color: #5c6bc0;
-        }
-
-        .result-btn.added {
-            background: #4caf50;
-            border-color: #4caf50;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            font-size: 18px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
             color: #666;
         }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 50px;
-            height: 50px;
-            border: 4px solid #333;
-            border-top-color: #5c6bc0;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+        
+        .symbol-cell:hover .edit-icon {
+            opacity: 1;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        
+        .color-tag {
+            width: 8px;
+            height: 24px;
+            border-radius: 2px;
+            margin-right: 4px;
+            cursor: pointer;
         }
-
-        .stats-section {
-            background: #1a1f2e;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .stat-card {
-            background: #2a3142;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #5c6bc0;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .chart-modal {
-            display: none;
+        
+        /* Edit Modal */
+        .edit-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            padding: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
         }
-
-        .chart-content {
-            background: #1a1f2e;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 1200px;
-            max-height: 90vh;
-            margin: auto;
-            overflow-y: auto;
-            position: relative;
+        
+        .edit-modal-content {
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-width: 90%;
         }
-
-        .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #f44336;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
+        
+        .edit-modal-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .edit-modal-row {
+            margin-bottom: 16px;
+        }
+        
+        .edit-modal-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .edit-modal-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            transition: all 0.2s;
         }
-
-        .close-btn:hover {
-            background: #d32f2f;
+        
+        .color-option:hover {
             transform: scale(1.1);
         }
-
-        .suggestions-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #2a3142;
-            border: 1px solid #3949ab;
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            z-index: 100;
+        
+        .color-option.selected {
+            border-color: #333;
         }
-
-        .suggestion-item {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background 0.2s;
+        
+        .edit-modal-buttons {
             display: flex;
-            justify-content: space-between;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+        
+        .edit-modal-button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .edit-modal-button.primary {
+            background: #00dd77;
+            color: #000;
+        }
+        
+        .edit-modal-button.primary:hover {
+            background: #00ff88;
+        }
+        
+        .edit-modal-button.secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .edit-modal-button.secondary:hover {
+            background: #e8e8e8;
+        }
+        
+        .price-cell {
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+        
+        .change-cell {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .positive { color: #00dd77; }
+        .negative { color: #ff4444; }
+        .neutral { color: #666; }
+        
+        /* Flashing animations for significant changes */
+        @keyframes flashGreen {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #00ff8830; }
+        }
+        
+        @keyframes flashRed {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #ff444430; }
+        }
+        
+        .flash-green {
+            animation: flashGreen 1s infinite;
+        }
+        
+        .flash-red {
+            animation: flashRed 1s infinite;
+        }
+        
+        /* Loading */
+        .loading-pulse { animation: pulse 1.5s infinite ease-in-out; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+        
+        /* Message Popup */
+        .message-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #222;
+            border: 1px solid #333;
+            padding: 15px 20px;
+            border-radius: 6px;
+            z-index: 2000;
+            animation: slideInAndOut 3s ease-in-out forwards;
+        }
+        .message-popup.info { border-color: #00dd77; }
+        .message-popup.error { border-color: #ff4444; color: #ff6666; }
+        
+        @keyframes slideInAndOut {
+            0% { transform: translateX(120%); opacity: 0; }
+            15%, 85% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(120%); opacity: 0; }
+        }
+        
+        .api-status {
+            display: flex;
             align-items: center;
-        }
-
-        .suggestion-item:hover {
-            background: #3949ab;
-        }
-
-        .suggestion-symbol {
-            font-weight: 600;
-            color: #5c6bc0;
-        }
-
-        .suggestion-name {
+            gap: 8px;
             font-size: 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+        
+        .status-dot.connected {
+            background: #00dd77;
+        }
+        
+        /* Chart period info */
+        .chart-period-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .period-change {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .period-label {
             color: #888;
-            margin-left: 10px;
-        }
-
-        .suggestion-provider {
-            font-size: 11px;
-            padding: 2px 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .search-container {
-                flex-direction: column;
-            }
-            
-            .results-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .provider-filter {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Universal Search</h1>
-            <p>Search across all economic data providers in one place</p>
-            <div class="providers-list">
-                <span class="provider-badge">FRED</span>
-                <span class="provider-badge">ECB</span>
-                <span class="provider-badge">NY Fed</span>
-                <span class="provider-badge">Treasury</span>
-                <span class="provider-badge">OFR</span>
-                <span class="provider-badge">BLS</span>
-                <span class="provider-badge">FMP</span>
-                <span class="provider-badge">Polygon</span>
-                <span class="provider-badge">Yahoo Finance</span>
-                <span class="provider-badge">Intrinio</span>
-                <span class="provider-badge">Benzinga</span>
-                <span class="provider-badge">Tiingo</span>
+    <div class="header">
+        <div class="logo">📊 OPENBB FINANCIAL INTELLIGENCE</div>
+        <div class="header-controls">
+            <div class="api-status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="apiStatusText">Checking connection...</span>
             </div>
+            <button class="control-btn" onclick="addNewChart()">+ New Chart</button>
+            <span id="clock" style="color: #888; font-size: 14px;"></span>
         </div>
+    </div>
 
+    <div class="main-container">
         <div class="search-section">
             <div class="search-container">
-                <div class="search-input-wrapper">
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        class="search-input" 
-                        placeholder="Search for any economic indicator, stock symbol, or keyword..."
-                        autocomplete="off"
-                        oninput="getSuggestions(this.value)"
-                    >
-                    <span class="search-icon">🔍</span>
-                    <div id="suggestionsDropdown" class="suggestions-dropdown"></div>
+                <div class="provider-pills">
+                    <div class="provider-pill active" onclick="setSearchProvider('all')">All Sources</div>
+                    <div class="provider-pill" onclick="setSearchProvider('fred')">FRED</div>
+                    <div class="provider-pill" onclick="setSearchProvider('ecb')">ECB</div>
+                    <div class="provider-pill" onclick="setSearchProvider('newyorkfed')">NY Fed</div>
+                    <div class="provider-pill" onclick="setSearchProvider('ofr')">OFR</div>
+                    <div class="provider-pill" onclick="setSearchProvider('treasury')">Treasury</div>
+                    <div class="provider-pill" onclick="setSearchProvider('polygon')">Polygon</div>
+                    <div class="provider-pill" onclick="setSearchProvider('fmp')">FMP</div>
                 </div>
-                <button id="searchBtn" class="search-btn" onclick="performUniversalSearch()">
-                    <span>Search All</span>
-                    <span id="searchSpinner" style="display: none;">⏳</span>
-                </button>
+                <input type="text" class="search-box" id="searchBox" 
+                       placeholder="Search financial data across all sources (e.g., GDP, SOFR, AAPL, ECB rates, Treasury auctions)..." 
+                       onkeyup="performSearch(this.value)"
+                       autocomplete="off">
+                <span class="search-icon">🔍</span>
+                <div class="search-results" id="searchResults" style="display: none;"></div>
             </div>
+        </div>
 
-            <div class="filters">
-                <div class="filter-group">
-                    <span class="filter-label">Filter by Provider:</span>
-                    <div class="provider-filter" id="providerFilters">
-                        <label class="provider-checkbox active" data-provider="all">
-                            <input type="checkbox" checked onchange="toggleAllProviders(this)">
-                            <span>All Providers</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="fred">
-                            <input type="checkbox" checked onchange="toggleProvider('fred')">
-                            <span>FRED</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="ecb">
-                            <input type="checkbox" checked onchange="toggleProvider('ecb')">
-                            <span>ECB</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="treasury">
-                            <input type="checkbox" checked onchange="toggleProvider('treasury')">
-                            <span>Treasury</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="nyfed">
-                            <input type="checkbox" checked onchange="toggleProvider('nyfed')">
-                            <span>NY Fed</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="ofr">
-                            <input type="checkbox" checked onchange="toggleProvider('ofr')">
-                            <span>OFR</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="bls">
-                            <input type="checkbox" checked onchange="toggleProvider('bls')">
-                            <span>BLS</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="fmp">
-                            <input type="checkbox" checked onchange="toggleProvider('fmp')">
-                            <span>FMP</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="polygon">
-                            <input type="checkbox" checked onchange="toggleProvider('polygon')">
-                            <span>Polygon</span>
-                        </label>
-                        <label class="provider-checkbox active" data-provider="yfinance">
-                            <input type="checkbox" checked onchange="toggleProvider('yfinance')">
-                            <span>Yahoo</span>
-                        </label>
+        <div class="content">
+            <div class="charts-area" style="display: none;" id="chartsArea">
+                <div class="chart-grid" id="chartGrid"></div>
+            </div>
+            
+            <div class="watchlist-section" style="flex: 1;">
+                <div class="watchlist-header">
+                    <div class="watchlist-title">
+                        <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
+                            <option value="MAIN">MAIN</option>
+                            <option value="CENTRAL_BANKS">CENTRAL BANKS</option>
+                            <option value="TREASURY">TREASURY</option>
+                            <option value="STOCKS">STOCKS</option>
+                            <option value="LIQUIDITY">LIQUIDITY</option>
+                        </select>
+                    </div>
+                    <div class="watchlist-controls">
+                        <button class="sort-button" onclick="changeSortOrder('default')" id="sortDefault">Default</button>
+                        <button class="sort-button" onclick="changeSortOrder('increase')" id="sortIncrease">↑ Largest Increase</button>
+                        <button class="sort-button" onclick="changeSortOrder('decrease')" id="sortDecrease">↓ Largest Decrease</button>
+                        <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
+                        <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
                     </div>
                 </div>
+                <table class="watchlist-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th class="text-right">Price</th>
+                            <th class="text-right sortable" onclick="sortByColumn('1d')" style="cursor: pointer;">
+                                1D % <span class="sort-indicator" id="sort-1d"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1w')" style="cursor: pointer;">
+                                1W % <span class="sort-indicator" id="sort-1w"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1m')" style="cursor: pointer;">
+                                1M % <span class="sort-indicator" id="sort-1m"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('3m')" style="cursor: pointer;">
+                                3M % <span class="sort-indicator" id="sort-3m"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1y')" style="cursor: pointer;">
+                                1Y % <span class="sort-indicator" id="sort-1y"></span>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="watchlistBody">
+                        <!-- Watchlist items will be populated here -->
+                    </tbody>
+                </table>
             </div>
-        </div>
-
-        <div id="watchlistSection" class="watchlist-section">
-            <div class="watchlist-header">
-                <div class="watchlist-title">📌 My Watchlist</div>
-                <button class="action-btn" onclick="toggleWatchlist()">Hide</button>
-            </div>
-            <div id="watchlistGrid" class="watchlist-grid"></div>
-        </div>
-
-        <div id="statsSection" class="stats-section">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="totalResults">0</div>
-                    <div class="stat-label">Total Results</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="providersCount">0</div>
-                    <div class="stat-label">Providers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="searchTime">0s</div>
-                    <div class="stat-label">Search Time</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="uniqueSeries">0</div>
-                    <div class="stat-label">Unique Series</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="resultsSection" style="display: none;">
-            <div class="results-info">
-                <div class="results-count" id="resultsCount"></div>
-                <div class="results-actions">
-                    <button class="action-btn" onclick="showWatchlist()">📌 Watchlist</button>
-                    <button class="action-btn" onclick="exportResults()">📥 Export CSV</button>
-                    <button class="action-btn" onclick="clearSearch()">🔄 Clear</button>
-                </div>
-            </div>
-            <div id="resultsGrid" class="results-grid"></div>
-        </div>
-
-        <div id="loadingSection" class="loading" style="display: none;">
-            <div class="loading-spinner"></div>
-            <div>Searching across all data providers...</div>
-            <div id="searchProgress" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
         </div>
     </div>
 
-    <div id="chartModal" class="chart-modal">
-        <div class="chart-content">
-            <button class="close-btn" onclick="closeChart()">×</button>
-            <h2 id="chartTitle" style="margin-bottom: 20px; color: #5c6bc0;"></h2>
-            <canvas id="chartCanvas" style="max-height: 400px;"></canvas>
-            <div id="chartInfo" style="margin-top: 20px;"></div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Configuration
         const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
         
-        let allResults = [];
-        let filteredResults = [];
-        let activeProviders = new Set(['all', 'fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls', 'fmp', 'polygon', 'yfinance']);
-        let searchStartTime = 0;
-        let currentChart = null;
-        let watchlist = [];
-        let suggestionsTimeout = null;
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load watchlist
-            loadWatchlist();
-            
-            // Enter key triggers search
-            document.getElementById('searchInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performUniversalSearch();
-                }
-            });
-            
-            // Load last search from session
-            const lastSearch = sessionStorage.getItem('lastUniversalSearch');
-            if (lastSearch) {
-                document.getElementById('searchInput').value = lastSearch;
+        const charts = {};
+        let chartIdCounter = 0;
+        let activeChartId = null;
+        let searchTimeout = null;
+        let currentSearchProvider = 'all';
+        
+        // Multiple watchlists configuration with multi-source data
+        const watchlists = {
+            'MAIN': {
+                symbols: [
+                    {symbol: 'GDP', provider: 'fred'},
+                    {symbol: 'UNRATE', provider: 'fred'},
+                    {symbol: 'DGS10', provider: 'fred'},
+                    {symbol: 'CPIAUCSL', provider: 'fred'},
+                    {symbol: 'DFF', provider: 'fred'},
+                    {symbol: 'VIXCLS', provider: 'fred'},
+                    {symbol: 'SOFR', provider: 'fred'},
+                    {symbol: 'AAPL', provider: 'polygon'},
+                    {symbol: 'SPY', provider: 'polygon'}
+                ],
+                active: true
+            },
+            'CENTRAL_BANKS': {
+                symbols: [
+                    {symbol: 'DFF', provider: 'fred'},
+                    {symbol: 'SOFR', provider: 'fred'},
+                    {symbol: 'ECBDFR', provider: 'ecb'},
+                    {symbol: 'ECBMLFR', provider: 'ecb'},
+                    {symbol: 'ECBMRRFR', provider: 'ecb'},
+                    {symbol: 'IORB', provider: 'newyorkfed'},
+                    {symbol: 'EFFR', provider: 'newyorkfed'}
+                ],
+                active: false
+            },
+            'TREASURY': {
+                symbols: [
+                    {symbol: 'DGS1MO', provider: 'treasury'},
+                    {symbol: 'DGS3MO', provider: 'treasury'},
+                    {symbol: 'DGS6MO', provider: 'treasury'},
+                    {symbol: 'DGS1', provider: 'treasury'},
+                    {symbol: 'DGS2', provider: 'treasury'},
+                    {symbol: 'DGS5', provider: 'treasury'},
+                    {symbol: 'DGS10', provider: 'treasury'},
+                    {symbol: 'DGS30', provider: 'treasury'}
+                ],
+                active: false
+            },
+            'STOCKS': {
+                symbols: [
+                    {symbol: 'AAPL', provider: 'polygon'},
+                    {symbol: 'MSFT', provider: 'polygon'},
+                    {symbol: 'GOOGL', provider: 'polygon'},
+                    {symbol: 'AMZN', provider: 'polygon'},
+                    {symbol: 'TSLA', provider: 'polygon'},
+                    {symbol: 'META', provider: 'polygon'},
+                    {symbol: 'NVDA', provider: 'polygon'}
+                ],
+                active: false
+            },
+            'LIQUIDITY': {
+                symbols: [
+                    {symbol: 'STLFSI3', provider: 'ofr'},
+                    {symbol: 'NFCI', provider: 'ofr'},
+                    {symbol: 'TEDRATE', provider: 'ofr'},
+                    {symbol: 'VIXCLS', provider: 'fred'},
+                    {symbol: 'RRPONTSYD', provider: 'newyorkfed'},
+                    {symbol: 'RESBALNS', provider: 'newyorkfed'}
+                ],
+                active: false
             }
-        });
-
-        async function getSuggestions(query) {
-            if (!query || query.length < 2) {
-                document.getElementById('suggestionsDropdown').style.display = 'none';
+        };
+        
+        let currentWatchlist = 'MAIN';
+        let watchlistSymbols = [];
+        let watchlistData = {};
+        let sortOrder = 'default';
+        let columnSort = { column: null, direction: null };
+        
+        // Color palette for charts
+        const colorPalette = [
+            '#00AEEF', '#FF4444', '#F4D03F', '#58D68D', '#FF7043',
+            '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
+        ];
+        
+        // Load saved watchlists
+        function loadWatchlists() {
+            const saved = localStorage.getItem('openbbWatchlists');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    Object.keys(savedData).forEach(name => {
+                        if (watchlists[name]) {
+                            watchlists[name].symbols = savedData[name].symbols || watchlists[name].symbols;
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading saved watchlists:', e);
+                }
+            }
+            
+            // Set current watchlist symbols
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+        }
+        
+        // Save watchlists
+        function saveWatchlists() {
+            const toSave = {};
+            Object.keys(watchlists).forEach(name => {
+                toSave[name] = { symbols: watchlists[name].symbols };
+            });
+            localStorage.setItem('openbbWatchlists', JSON.stringify(toSave));
+        }
+        
+        // Initialize the dashboard
+        async function init() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            loadWatchlists();
+            await checkAPIConnection();
+            loadWatchlistData();
+            setInterval(loadWatchlistData, 60000); // Update every minute
+            
+            // Set initial sort button state
+            updateSortButtons();
+            
+            // Focus on search box
+            document.getElementById('searchBox').focus();
+        }
+        
+        // Check API connection
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/providers`);
+                
+                if (response.ok) {
+                    document.getElementById('apiStatus').classList.add('connected');
+                    document.getElementById('apiStatusText').textContent = 'API Connected';
+                    showTemporaryMessage('Connected to OpenBB API', 'info');
+                } else {
+                    throw new Error(`API returned ${response.status}`);
+                }
+            } catch (error) {
+                console.error('API connection failed:', error);
+                document.getElementById('apiStatusText').textContent = 'API Disconnected';
+                showTemporaryMessage('API connection failed', 'error');
+            }
+        }
+        
+        // Update clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+        }
+        
+        // Set search provider
+        function setSearchProvider(provider) {
+            currentSearchProvider = provider;
+            
+            // Update pill states
+            document.querySelectorAll('.provider-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update search placeholder
+            const searchBox = document.getElementById('searchBox');
+            const placeholders = {
+                'all': 'Search financial data across all sources...',
+                'fred': 'Search FRED economic data (GDP, CPI, unemployment)...',
+                'ecb': 'Search ECB data (interest rates, CISS, monetary policy)...',
+                'newyorkfed': 'Search NY Fed data (SOFR, EFFR, repo rates)...',
+                'ofr': 'Search OFR data (financial stress, systemic risk)...',
+                'treasury': 'Search Treasury data (yields, auctions)...',
+                'polygon': 'Search stock data (AAPL, MSFT, SPY)...',
+                'fmp': 'Search stock quotes and fundamentals...'
+            };
+            searchBox.placeholder = placeholders[provider] || placeholders['all'];
+            
+            // Re-run search if there's a query
+            if (searchBox.value) {
+                performSearch(searchBox.value);
+            }
+        }
+        
+        // Enhanced search function with multi-source support
+        async function performSearch(query) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (!query || query.trim().length < 1) {
+                resultsDiv.style.display = 'none';
                 return;
             }
-
-            clearTimeout(suggestionsTimeout);
-            suggestionsTimeout = setTimeout(async () => {
+            
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                resultsDiv.innerHTML = '<div class="search-loading">Searching...</div>';
+                resultsDiv.style.display = 'block';
+                
                 try {
-                    const response = await fetch(`${API_BASE}/api/v1/interactive/search-suggestions?query=${encodeURIComponent(query)}&limit=10`);
-                    if (!response.ok) return;
+                    let allResults = [];
                     
-                    const data = await response.json();
-                    displaySuggestions(data.suggestions || []);
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'fred') {
+                        // Universal search endpoint
+                        const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(query)}&provider=fred`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.results && data.results.fred) {
+                                allResults = allResults.concat(data.results.fred.map(item => ({
+                                    ...item,
+                                    provider: 'fred',
+                                    symbol: item.series_id || item.symbol
+                                })));
+                            }
+                        }
+                    }
+                    
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'ecb') {
+                        // ECB search
+                        const response = await fetch(`${API_BASE}/api/v1/economy/ecb_search?query=${encodeURIComponent(query)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.results) {
+                                allResults = allResults.concat(data.results.map(item => ({
+                                    ...item,
+                                    provider: 'ecb',
+                                    symbol: item.series_id
+                                })));
+                            }
+                        }
+                    }
+                    
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'newyorkfed') {
+                        // NY Fed search
+                        const response = await fetch(`${API_BASE}/api/v1/economy/ny_fed_search?query=${encodeURIComponent(query)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.results) {
+                                allResults = allResults.concat(data.results.map(item => ({
+                                    ...item,
+                                    provider: 'newyorkfed',
+                                    symbol: item.series_id
+                                })));
+                            }
+                        }
+                    }
+                    
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'ofr') {
+                        // OFR search
+                        const response = await fetch(`${API_BASE}/api/v1/economy/ofr_search?query=${encodeURIComponent(query)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.results) {
+                                allResults = allResults.concat(data.results.map(item => ({
+                                    ...item,
+                                    provider: 'ofr',
+                                    symbol: item.series_id
+                                })));
+                            }
+                        }
+                    }
+                    
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'treasury') {
+                        // Treasury search
+                        const response = await fetch(`${API_BASE}/api/v1/economy/treasury_search?query=${encodeURIComponent(query)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.results) {
+                                allResults = allResults.concat(data.results.map(item => ({
+                                    ...item,
+                                    provider: 'treasury',
+                                    symbol: item.series_id
+                                })));
+                            }
+                        }
+                    }
+                    
+                    if (currentSearchProvider === 'all' || currentSearchProvider === 'polygon' || currentSearchProvider === 'fmp') {
+                        // Add common stocks for polygon/fmp
+                        const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM', 'V', 'JNJ', 'SPY', 'QQQ', 'DIA', 'IWM'];
+                        const upperQuery = query.toUpperCase();
+                        
+                        stockSymbols.forEach(symbol => {
+                            if (symbol.includes(upperQuery)) {
+                                allResults.push({
+                                    symbol: symbol,
+                                    title: `${symbol} - Stock Price`,
+                                    provider: currentSearchProvider === 'fmp' ? 'fmp' : 'polygon',
+                                    units: 'USD',
+                                    frequency: 'Real-time'
+                                });
+                            }
+                        });
+                    }
+                    
+                    displaySearchResults(allResults, query);
+                    
                 } catch (error) {
-                    console.error('Error getting suggestions:', error);
+                    console.error('Search error:', error);
+                    resultsDiv.innerHTML = `
+                        <div class="search-item" style="text-align:center; color:#888;">
+                            Error searching. Please try again.
+                        </div>
+                    `;
                 }
             }, 300);
         }
-
-        function displaySuggestions(suggestions) {
-            const dropdown = document.getElementById('suggestionsDropdown');
+        
+        // Display search results
+        function displaySearchResults(results, query) {
+            const resultsDiv = document.getElementById('searchResults');
             
-            if (!suggestions || suggestions.length === 0) {
-                dropdown.style.display = 'none';
-                return;
-            }
-            
-            dropdown.innerHTML = suggestions.map(s => `
-                <div class="suggestion-item" onclick="selectSuggestion('${s.symbol}', '${s.provider}')">
-                    <div>
-                        <span class="suggestion-symbol">${s.symbol}</span>
-                        <span class="suggestion-name">${s.title}</span>
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
+                        No results found for "${query}"
+                        <div style="margin-top: 10px; font-size: 12px;">
+                            Try searching for:<br>
+                            FRED: GDP, UNRATE, CPI, DGS10<br>
+                            ECB: ECBDFR, CISS, EURIBOR<br>
+                            NY Fed: SOFR, EFFR, OBFR<br>
+                            Treasury: DGS2, DGS10, T10YIE<br>
+                            Stocks: AAPL, MSFT, SPY
+                        </div>
                     </div>
-                    <span class="suggestion-provider">${s.provider.toUpperCase()}</span>
-                </div>
-            `).join('');
-            
-            dropdown.style.display = 'block';
-        }
-
-        function selectSuggestion(symbol, provider) {
-            document.getElementById('searchInput').value = symbol;
-            document.getElementById('suggestionsDropdown').style.display = 'none';
-            performUniversalSearch();
-        }
-
-        async function performUniversalSearch() {
-            const searchText = document.getElementById('searchInput').value.trim();
-            if (!searchText) {
-                alert('Please enter a search term');
+                `;
                 return;
             }
             
-            searchStartTime = Date.now();
-            sessionStorage.setItem('lastUniversalSearch', searchText);
-            document.getElementById('suggestionsDropdown').style.display = 'none';
+            // Sort and limit results
+            const displayResults = results.slice(0, 50);
             
-            showLoading(true);
-            updateSearchProgress('Initializing search...');
-            
-            allResults = [];
-            const searchPromises = [];
-            
-            // Use the universal search endpoint
-            updateSearchProgress('Searching all providers...');
-            try {
-                const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=all`);
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Process results from different providers
-                    if (data.results) {
-                        // FRED results
-                        if (data.results.fred && Array.isArray(data.results.fred)) {
-                            data.results.fred.forEach(item => {
-                                allResults.push({
-                                    symbol: item.id || item.symbol || item.series_id,
-                                    name: item.title || item.name || 'Unnamed Series',
-                                    provider: 'fred',
-                                    units: item.units || item.units_short || '',
-                                    frequency: item.frequency || item.frequency_short || '',
-                                    lastUpdated: item.last_updated || '',
-                                    source: 'FRED'
-                                });
-                            });
-                        }
-                        
-                        // Add results from other providers when they're implemented
-                        // For now, if no FRED results, search stocks
-                        if (allResults.length === 0) {
-                            await searchStocks(searchText);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-            }
-            
-            // If still no results, add common series
-            if (allResults.length === 0) {
-                addCommonSeries(searchText);
-                await searchStocks(searchText);
-            }
-            
-            // Update stats and display
-            const searchTime = ((Date.now() - searchStartTime) / 1000).toFixed(1);
-            updateStats(searchTime);
-            filterAndDisplayResults();
-            
-            showLoading(false);
-        }
-
-        async function searchStocks(query) {
-            // Check if query looks like a stock symbol
-            if (query.length >= 1 && query.length <= 5 && /^[A-Z]+$/i.test(query)) {
-                const stockProviders = ['fmp', 'polygon', 'yfinance'];
+            let html = '';
+            displayResults.forEach(result => {
+                const symbol = result.symbol || result.series_id || 'N/A';
+                const name = result.title || result.name || result.description || symbol;
+                const provider = result.provider || 'unknown';
+                const units = result.units || '';
+                const frequency = result.frequency || '';
                 
-                for (const provider of stockProviders) {
-                    if (activeProviders.has(provider) || activeProviders.has('all')) {
-                        allResults.push({
-                            symbol: query.toUpperCase(),
-                            name: `${query.toUpperCase()} Stock Price`,
-                            provider: provider,
-                            units: 'USD',
-                            frequency: 'Daily',
-                            source: provider.toUpperCase()
-                        });
-                    }
+                // Provider color coding
+                const providerColors = {
+                    'fred': '#4B8BF5',
+                    'ecb': '#003399',
+                    'newyorkfed': '#0066CC',
+                    'ofr': '#FF6B35',
+                    'treasury': '#006847',
+                    'polygon': '#5C2E91',
+                    'fmp': '#00C896'
+                };
+                
+                const providerColor = providerColors[provider] || '#888';
+                
+                html += `
+                    <div class="search-item" onclick="addToWatchlistFromSearch('${symbol}', '${provider}', '${name.replace(/'/g, "\\'")}')">
+                        <div class="search-item-left">
+                            <div class="search-item-symbol">${symbol}</div>
+                            <div class="search-item-name">${name}</div>
+                            ${units || frequency ? `<div class="search-item-description">${[units, frequency].filter(Boolean).join(' • ')}</div>` : ''}
+                        </div>
+                        <div class="search-item-source" style="background-color: ${providerColor}; color: white;">${provider}</div>
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+        
+        // Add to watchlist from search results
+        function addToWatchlistFromSearch(symbol, provider, name) {
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            
+            const symbolExists = currentSymbols.some(s => s.symbol === symbol && s.provider === provider);
+            
+            if (!symbolExists) {
+                currentSymbols.push({symbol, provider});
+                watchlistSymbols = [...currentSymbols];
+                saveWatchlists();
+                
+                // Immediately add to watchlist data
+                watchlistData[`${symbol}_${provider}`] = {
+                    symbol: symbol,
+                    provider: provider,
+                    name: name || symbol,
+                    price: 0,
+                    changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
+                    hasData: false
+                };
+                
+                renderWatchlist();
+                
+                // Load the actual data
+                loadSingleWatchlistItem(symbol, provider);
+                
+                showTemporaryMessage(`Added ${symbol} to ${currentWatchlist} watchlist`, 'info');
+            } else {
+                showTemporaryMessage(`${symbol} is already in ${currentWatchlist} watchlist`, 'info');
+            }
+            
+            // Clear search
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchBox').value = '';
+        }
+        
+        // Load single watchlist item using universal data endpoint
+        async function loadSingleWatchlistItem(symbol, provider) {
+            const key = `${symbol}_${provider}`;
+            
+            try {
+                console.log(`Loading ${symbol} from ${provider}`);
+                
+                // Use universal data endpoint
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=auto`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
                 }
+                
+                const result = await response.json();
+                
+                if (result.data && result.data.length > 0) {
+                    // Process the data
+                    processWatchlistData(symbol, provider, result.data);
+                } else if (result.error) {
+                    throw new Error(result.error);
+                } else {
+                    throw new Error('No data received');
+                }
+                
+            } catch (error) {
+                console.error(`Error loading ${symbol}:`, error);
+                
+                watchlistData[key] = {
+                    symbol: symbol,
+                    provider: provider,
+                    name: watchlistData[key]?.name || symbol,
+                    price: 0,
+                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                    hasData: false,
+                    error: error.message
+                };
+                renderWatchlist();
             }
         }
-
-        function addCommonSeries(searchText) {
-            const searchLower = searchText.toLowerCase();
-            const commonSeries = [];
+        
+        // Process watchlist data
+        function processWatchlistData(symbol, provider, data) {
+            const key = `${symbol}_${provider}`;
             
-            // Economic indicators
-            if (searchLower.includes('gdp')) {
-                commonSeries.push(
-                    { symbol: 'GDP', name: 'Gross Domestic Product', provider: 'fred', units: 'Billions of Dollars', frequency: 'Quarterly' },
-                    { symbol: 'GDPC1', name: 'Real Gross Domestic Product', provider: 'fred', units: 'Billions of Chained 2017 Dollars', frequency: 'Quarterly' }
-                );
-            }
+            // Sort data by date
+            data.sort((a, b) => new Date(a.date || a.index) - new Date(b.date || b.index));
             
-            if (searchLower.includes('inflation') || searchLower.includes('cpi')) {
-                commonSeries.push(
-                    { symbol: 'CPIAUCSL', name: 'Consumer Price Index for All Urban Consumers', provider: 'fred', units: 'Index 1982-1984=100', frequency: 'Monthly' },
-                    { symbol: 'CPILFESL', name: 'Core CPI', provider: 'fred', units: 'Index 1982-1984=100', frequency: 'Monthly' }
-                );
-            }
+            console.log(`Processing ${data.length} data points for ${symbol}`);
             
-            if (searchLower.includes('unemployment') || searchLower.includes('jobs')) {
-                commonSeries.push(
-                    { symbol: 'UNRATE', name: 'Unemployment Rate', provider: 'fred', units: 'Percent', frequency: 'Monthly' },
-                    { symbol: 'PAYEMS', name: 'All Employees: Total Nonfarm', provider: 'fred', units: 'Thousands of Persons', frequency: 'Monthly' }
-                );
-            }
-            
-            if (searchLower.includes('interest') || searchLower.includes('rate')) {
-                commonSeries.push(
-                    { symbol: 'DFF', name: 'Federal Funds Effective Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' },
-                    { symbol: 'DGS10', name: '10-Year Treasury Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' },
-                    { symbol: 'SOFR', name: 'Secured Overnight Financing Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' }
-                );
-            }
-            
-            // ECB rates
-            if (searchLower.includes('ecb') || searchLower.includes('euro')) {
-                commonSeries.push(
-                    { symbol: 'ECBDFR', name: 'ECB Deposit Facility Rate', provider: 'ecb', units: 'Percent', frequency: 'Daily' },
-                    { symbol: 'ECBMRRFR', name: 'ECB Main Refinancing Rate', provider: 'ecb', units: 'Percent', frequency: 'Daily' }
-                );
-            }
-            
-            // Treasury
-            if (searchLower.includes('treasury') || searchLower.includes('bond')) {
-                commonSeries.push(
-                    { symbol: 'DGS2', name: '2-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' },
-                    { symbol: 'DGS5', name: '5-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' },
-                    { symbol: 'DGS30', name: '30-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' }
-                );
-            }
-            
-            // NY Fed
-            if (searchLower.includes('ny fed') || searchLower.includes('dealer')) {
-                commonSeries.push(
-                    { symbol: 'PPDCTR', name: 'Primary Dealer Positions: Treasury Securities', provider: 'nyfed', units: 'Millions of Dollars', frequency: 'Weekly' },
-                    { symbol: 'RRPONTSYD', name: 'Overnight Reverse Repurchase Agreements', provider: 'nyfed', units: 'Billions of Dollars', frequency: 'Daily' }
-                );
-            }
-            
-            // OFR
-            if (searchLower.includes('stress') || searchLower.includes('risk')) {
-                commonSeries.push(
-                    { symbol: 'STLFSI4', name: 'St. Louis Fed Financial Stress Index', provider: 'ofr', units: 'Index', frequency: 'Weekly' },
-                    { symbol: 'VIXCLS', name: 'CBOE Volatility Index: VIX', provider: 'fred', units: 'Index', frequency: 'Daily' }
-                );
-            }
-            
-            // Filter by active providers
-            allResults.push(...commonSeries.filter(s => 
-                activeProviders.has('all') || activeProviders.has(s.provider)
-            ));
-        }
-
-        function updateSearchProgress(message) {
-            document.getElementById('searchProgress').textContent = message;
-        }
-
-        function updateStats(searchTime) {
-            const statsSection = document.getElementById('statsSection');
-            statsSection.style.display = 'block';
-            
-            const providers = new Set(allResults.map(r => r.provider));
-            const uniqueSymbols = new Set(allResults.map(r => r.symbol));
-            
-            document.getElementById('totalResults').textContent = allResults.length;
-            document.getElementById('providersCount').textContent = providers.size;
-            document.getElementById('searchTime').textContent = searchTime + 's';
-            document.getElementById('uniqueSeries').textContent = uniqueSymbols.size;
-        }
-
-        function filterAndDisplayResults() {
-            // Filter by active providers
-            filteredResults = allResults.filter(result => 
-                activeProviders.has('all') || activeProviders.has(result.provider)
+            // Get the latest value
+            const latestItem = data[data.length - 1];
+            let latestValue = parseFloat(
+                latestItem.value || 
+                latestItem[symbol] || 
+                latestItem.close || 
+                latestItem.price ||
+                latestItem.rate ||
+                latestItem.last ||
+                0
             );
             
-            // Remove duplicates based on symbol-provider combination
-            const seen = new Set();
-            filteredResults = filteredResults.filter(result => {
-                const key = `${result.symbol}-${result.provider}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
+            // Calculate changes
+            const changes = calculatePercentageChanges(data, symbol);
             
-            displayResults();
+            watchlistData[key] = {
+                symbol: symbol,
+                provider: provider,
+                name: watchlistData[key]?.name || symbol,
+                price: latestValue,
+                changes: changes,
+                hasData: true,
+                fullData: data,
+                latestDate: latestItem.date || latestItem.index
+            };
+            
+            renderWatchlist();
         }
-
-        function displayResults() {
-            const resultsSection = document.getElementById('resultsSection');
-            const resultsGrid = document.getElementById('resultsGrid');
-            const resultsCount = document.getElementById('resultsCount');
+        
+        // Calculate percentage changes
+        function calculatePercentageChanges(data, symbol) {
+            if (!data || data.length < 2) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
             
-            if (filteredResults.length === 0) {
-                resultsGrid.innerHTML = '<div class="loading">No results found. Try different search terms or check provider filters.</div>';
-                resultsCount.textContent = 'No results';
-                resultsSection.style.display = 'block';
+            const now = new Date();
+            const latestItem = data[data.length - 1];
+            let latestValue = parseFloat(
+                latestItem.value || 
+                latestItem[symbol] || 
+                latestItem.close || 
+                latestItem.price ||
+                latestItem.rate ||
+                latestItem.last ||
+                0
+            );
+            
+            if (latestValue === 0) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
+            
+            const changes = {};
+            const periods = {
+                '1d': 1,
+                '1w': 7,
+                '1m': 30,
+                '3m': 90,
+                '1y': 365
+            };
+            
+            for (const [period, days] of Object.entries(periods)) {
+                const targetDate = new Date(now);
+                targetDate.setDate(targetDate.getDate() - days);
+                
+                // Find closest data point
+                let closestItem = null;
+                let minDiff = Infinity;
+                
+                for (const item of data) {
+                    const itemDate = new Date(item.date || item.index);
+                    const diff = Math.abs(itemDate - targetDate);
+                    
+                    if (diff < minDiff && itemDate <= targetDate) {
+                        minDiff = diff;
+                        closestItem = item;
+                    }
+                }
+                
+                if (closestItem && minDiff <= days * 24 * 60 * 60 * 1000) {
+                    let historicalValue = parseFloat(
+                        closestItem.value || 
+                        closestItem[symbol] || 
+                        closestItem.close || 
+                        closestItem.price ||
+                        closestItem.rate ||
+                        closestItem.last ||
+                        0
+                    );
+                    
+                    if (historicalValue !== 0) {
+                        changes[period] = ((latestValue - historicalValue) / historicalValue * 100);
+                    } else {
+                        changes[period] = null;
+                    }
+                } else {
+                    changes[period] = null;
+                }
+            }
+            
+            return changes;
+        }
+        
+        // Switch watchlist
+        function switchWatchlist(name) {
+            currentWatchlist = name;
+            watchlistSymbols = [...watchlists[name].symbols];
+            loadWatchlistData();
+        }
+        
+        // Load watchlist data
+        async function loadWatchlistData() {
+            const tbody = document.getElementById('watchlistBody');
+            
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
                 return;
             }
             
-            resultsCount.textContent = `Found ${filteredResults.length} series`;
-            resultsSection.style.display = 'block';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
             
-            // Sort by provider and name
-            filteredResults.sort((a, b) => {
-                if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
-                return a.name.localeCompare(b.name);
-            });
-            
-            resultsGrid.innerHTML = filteredResults.map(result => {
-                const isInWatchlist = watchlist.some(w => w.symbol === result.symbol && w.provider === result.provider);
-                return `
-                    <div class="result-card">
-                        <div class="result-header">
-                            <div class="result-title">${result.name}</div>
-                            <span class="provider-tag provider-${result.provider}">${result.provider.toUpperCase()}</span>
-                        </div>
-                        <div class="result-id">${result.symbol}</div>
-                        <div class="result-meta">
-                            ${result.units ? `<div class="meta-item"><span class="meta-icon">📊</span> ${result.units}</div>` : ''}
-                            ${result.frequency ? `<div class="meta-item"><span class="meta-icon">📅</span> ${result.frequency}</div>` : ''}
-                            ${result.source ? `<div class="meta-item"><span class="meta-icon">🏢</span> ${result.source}</div>` : ''}
-                            ${result.lastUpdated ? `<div class="meta-item"><span class="meta-icon">🔄</span> ${result.lastUpdated}</div>` : ''}
-                        </div>
-                        <div class="result-actions">
-                            <button class="result-btn primary" onclick="viewChart('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
-                                📈 View Chart
-                            </button>
-                            <button class="result-btn" onclick="getData('${result.symbol}', '${result.provider}')">
-                                📊 Get Data
-                            </button>
-                            <button class="result-btn ${isInWatchlist ? 'added' : ''}" 
-                                    id="watchlist-btn-${result.symbol}-${result.provider}"
-                                    onclick="toggleWatchlistItem('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
-                                ${isInWatchlist ? '✓ In Watchlist' : '⭐ Add to List'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            for (const item of watchlistSymbols) {
+                await loadSingleWatchlistItem(item.symbol, item.provider);
+            }
         }
-
-        function toggleProvider(provider) {
-            const checkbox = document.querySelector(`[data-provider="${provider}"] input`);
-            const label = document.querySelector(`[data-provider="${provider}"]`);
+        
+        // Render watchlist
+        function renderWatchlist() {
+            const tbody = document.getElementById('watchlistBody');
             
-            if (checkbox.checked) {
-                activeProviders.add(provider);
-                label.classList.add('active');
-            } else {
-                activeProviders.delete(provider);
-                label.classList.remove('active');
-                // Remove 'all' if unchecking individual provider
-                activeProviders.delete('all');
-                document.querySelector('[data-provider="all"] input').checked = false;
-                document.querySelector('[data-provider="all"]').classList.remove('active');
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No symbols in this watchlist. Use search to add symbols.</td></tr>';
+                return;
             }
             
-            filterAndDisplayResults();
-        }
-
-        function toggleAllProviders(checkbox) {
-            const allCheckboxes = document.querySelectorAll('.provider-checkbox input');
-            const allLabels = document.querySelectorAll('.provider-checkbox');
-            
-            allCheckboxes.forEach((cb, index) => {
-                cb.checked = checkbox.checked;
-                if (checkbox.checked) {
-                    allLabels[index].classList.add('active');
-                } else {
-                    allLabels[index].classList.remove('active');
-                }
-            });
-            
-            if (checkbox.checked) {
-                activeProviders = new Set(['all', 'fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls', 'fmp', 'polygon', 'yfinance']);
-            } else {
-                activeProviders = new Set();
-            }
-            
-            filterAndDisplayResults();
-        }
-
-        async function viewChart(symbol, provider, name) {
-            const modal = document.getElementById('chartModal');
-            const chartTitle = document.getElementById('chartTitle');
-            const chartInfo = document.getElementById('chartInfo');
-            
-            chartTitle.textContent = `${name} (${symbol})`;
-            chartInfo.innerHTML = '<div class="loading">Loading chart data...</div>';
-            modal.style.display = 'flex';
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
-                if (!response.ok) throw new Error('Failed to fetch data');
+            // Create array with symbol data for sorting
+            let symbolsToRender = watchlistSymbols.map(item => {
+                const key = `${item.symbol}_${item.provider}`;
+                const data = watchlistData[key];
+                if (!data) return null;
                 
-                const result = await response.json();
-                let data = result.data || result.results || result;
-                
-                if (!Array.isArray(data)) {
-                    throw new Error('Invalid data format');
+                // Calculate max absolute change for sorting
+                let maxChange = 0;
+                if (data.changes) {
+                    const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v));
+                    if (changes.length > 0) {
+                        maxChange = changes.reduce((max, change) => {
+                            return Math.abs(change) > Math.abs(max) ? change : max;
+                        }, 0);
+                    }
                 }
                 
-                // Prepare chart data
-                const chartData = data.map(point => ({
-                    x: new Date(point.date || point.Date || point.timestamp),
-                    y: point.value || point.close || point.price || point.rate || point[symbol]
-                })).filter(point => !isNaN(point.y) && point.y !== null);
-                
-                if (chartData.length === 0) {
-                    throw new Error('No valid data points');
-                }
-                
-                // Create chart
-                const ctx = document.getElementById('chartCanvas').getContext('2d');
-                
-                if (currentChart) {
-                    currentChart.destroy();
-                }
-                
-                currentChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        datasets: [{
-                            label: symbol,
-                            data: chartData,
-                            borderColor: '#5c6bc0',
-                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
-                            tension: 0.1,
-                            pointRadius: 0,
-                            pointHoverRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `${name} - ${provider.toUpperCase()}`
-                            },
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            x: {
-                                type: 'time',
-                                time: {
-                                    unit: 'month'
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Value'
-                                }
-                            }
-                        }
+                return {
+                    symbol: item.symbol,
+                    provider: item.provider,
+                    data,
+                    maxChange,
+                    key
+                };
+            }).filter(item => item !== null);
+            
+            // Sort based on current sort order
+            if (columnSort.column && columnSort.direction) {
+                symbolsToRender.sort((a, b) => {
+                    const aValue = a.data.changes[columnSort.column];
+                    const bValue = b.data.changes[columnSort.column];
+                    
+                    if (aValue === null || aValue === undefined) return 1;
+                    if (bValue === null || bValue === undefined) return -1;
+                    
+                    if (columnSort.direction === 'asc') {
+                        return aValue - bValue;
+                    } else {
+                        return bValue - aValue;
                     }
                 });
+            } else if (sortOrder === 'increase') {
+                symbolsToRender.sort((a, b) => b.maxChange - a.maxChange);
+            } else if (sortOrder === 'decrease') {
+                symbolsToRender.sort((a, b) => a.maxChange - b.maxChange);
+            }
+            
+            const formatPrice = (price) => {
+                if (price === 0) return 'Loading...';
+                if (price >= 1000) return price.toFixed(0);
+                if (price >= 1) return price.toFixed(2);
+                return price.toFixed(4);
+            };
+            
+            const formatChange = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return '—';
+                const val = parseFloat(change);
+                return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+            };
+            
+            const getChangeClass = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return 'neutral';
+                return parseFloat(change) >= 0 ? 'positive' : 'negative';
+            };
+            
+            const html = symbolsToRender.map(({ symbol, provider, data, key }) => {
+                const providerBadge = {
+                    'fred': '🏛️',
+                    'ecb': '🇪🇺',
+                    'newyorkfed': '🗽',
+                    'ofr': '📊',
+                    'treasury': '💵',
+                    'polygon': '📈',
+                    'fmp': '📊'
+                }[provider] || '📊';
                 
-                // Update info
-                const latest = chartData[chartData.length - 1];
-                const first = chartData[0];
-                const change = latest.y - first.y;
-                const changePercent = ((change / first.y) * 100).toFixed(2);
-                
-                chartInfo.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <div class="stat-card">
-                            <div class="stat-label">Latest Value</div>
-                            <div class="stat-value" style="font-size: 1.5em;">${latest.y.toFixed(2)}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Date</div>
-                            <div class="stat-value" style="font-size: 1.5em;">${latest.x.toLocaleDateString()}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Change</div>
-                            <div class="stat-value" style="font-size: 1.5em; color: ${change >= 0 ? '#4caf50' : '#f44336'}">
-                                ${change >= 0 ? '+' : ''}${changePercent}%
+                return `
+                    <tr ondblclick="openChartForSymbol('${symbol}', '${provider}')" 
+                        style="cursor: pointer;" 
+                        title="Double-click to view chart">
+                        <td>
+                            <div class="symbol-cell">
+                                <div class="symbol-icon">${providerBadge}</div>
+                                <div class="symbol-info">
+                                    <div class="symbol-name">
+                                        ${symbol}
+                                        <span style="font-size: 10px; color: #888;">[${provider.toUpperCase()}]</span>
+                                    </div>
+                                    <div class="symbol-fullname">${data.name}</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Data Points</div>
-                            <div class="stat-value" style="font-size: 1.5em;">${chartData.length}</div>
-                        </div>
-                    </div>
+                        </td>
+                        <td class="price-cell">${formatPrice(data.price)}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['3m'])}">${formatChange(data.changes['3m'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
+                        <td style="padding: 5px;">
+                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px; background: #f5f5f5; color: #333; border: 1px solid #ddd;" 
+                                    onclick="removeFromWatchlist(event, '${symbol}', '${provider}')">×</button>
+                        </td>
+                    </tr>
                 `;
+            }).join('');
+            
+            tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
+            
+            updateSortIndicators();
+        }
+        
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol, provider) {
+            event.stopPropagation();
+            
+            const symbols = watchlists[currentWatchlist].symbols;
+            const index = symbols.findIndex(s => s.symbol === symbol && s.provider === provider);
+            
+            if (index > -1) {
+                symbols.splice(index, 1);
+                watchlistSymbols = [...symbols];
+                saveWatchlists();
                 
-            } catch (error) {
-                chartInfo.innerHTML = `<div style="color: #f44336;">Error loading chart: ${error.message}</div>`;
-                console.error('Chart error:', error);
+                delete watchlistData[`${symbol}_${provider}`];
+                renderWatchlist();
+                
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
             }
         }
-
-        async function getData(symbol, provider) {
+        
+        // Create a new chart window
+        function addNewChart() {
+            const chartId = `chart_${chartIdCounter++}`;
+            
+            const chartHtml = `
+                <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
+                    <div class="chart-header">
+                        <div class="chart-title-section">
+                            <div class="chart-title" id="${chartId}_title">Chart ${chartIdCounter}</div>
+                            <div class="chart-symbols" id="${chartId}_symbols"></div>
+                            <div class="chart-period-info" id="${chartId}_period_info"></div>
+                        </div>
+                        <div class="chart-controls">
+                            <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','MAX'].map(tf => 
+                                    `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}" 
+                                             onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
+                                ).join('')}
+                            </div>
+                            <button class="close-btn" onclick="removeChart(event, '${chartId}')">×</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas" id="${chartId}_canvas">
+                        <div class="chart-message">Search for a financial indicator to add to this chart</div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
+            charts[chartId] = {
+                symbols: [], 
+                data: {}, 
+                timeframe: '1Y', 
+                chartInstance: null
+            };
+            setActiveChart(chartId);
+            
+            // Show charts area when first chart is created
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+            
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+        }
+        
+        // Set active chart
+        function setActiveChart(chartId) {
+            if (activeChartId === chartId) return;
+            activeChartId = chartId;
+            document.querySelectorAll('.chart-window').forEach(c => c.classList.remove('active-chart'));
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.classList.add('active-chart');
+            }
+        }
+        
+        // Remove chart
+        function removeChart(event, chartIdToRemove) {
+            event.stopPropagation();
+            if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
+                Plotly.purge(`${chartIdToRemove}_canvas`);
+            }
+            delete charts[chartIdToRemove];
+            document.getElementById(chartIdToRemove)?.remove();
+            
+            if (activeChartId === chartIdToRemove) {
+                const chartKeys = Object.keys(charts);
+                activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
+                if(activeChartId) setActiveChart(activeChartId);
+            }
+            
+            // If no more charts, hide chart area
+            if (Object.keys(charts).length === 0) {
+                const chartsArea = document.getElementById('chartsArea');
+                const watchlistSection = document.querySelector('.watchlist-section');
+                const chartViewBtn = document.getElementById('chartViewBtn');
+                
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+                chartViewBtn.style.display = 'none';
+            }
+        }
+        
+        // Open chart for symbol
+        function openChartForSymbol(symbol, provider) {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+            
+            // Show charts area
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+            
+            // Create new chart if none exists
+            if (Object.keys(charts).length === 0) {
+                addNewChart();
+            }
+            
+            // Add symbol to active chart
+            if (activeChartId) {
+                const key = `${symbol}_${provider}`;
+                const data = watchlistData[key];
+                addToChart(activeChartId, symbol, provider, data?.name || symbol);
+            }
+        }
+        
+        // Add symbol to chart
+        function addToChart(chartId, symbol, provider, name) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            
+            const symbolKey = `${symbol}_${provider}`;
+            if (!chart.symbols.find(s => s.key === symbolKey)) {
+                chart.symbols.push({ symbol, provider, name, key: symbolKey });
+                loadChartData(chartId, symbol, provider);
+            }
+            setActiveChart(chartId);
+        }
+        
+        // Load chart data
+        async function loadChartData(chartId, symbol, provider) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            
+            const canvasDiv = document.getElementById(`${chartId}_canvas`);
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
+            
             try {
-                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
-                if (!response.ok) throw new Error('Failed to fetch data');
+                console.log(`Loading chart data for ${symbol} from ${provider}`);
+                
+                // Use universal data endpoint with more data points
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=auto&limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
                 
                 const result = await response.json();
-                let data = result.data || result.results || result;
+                console.log(`Chart data received for ${symbol}:`, result);
                 
-                if (Array.isArray(data) && data.length > 0) {
-                    const latest = data[data.length - 1];
-                    const value = latest.value || latest.close || latest.price || latest.rate || latest[symbol];
-                    const date = latest.date || latest.Date || latest.timestamp;
+                if (result.data && result.data.length > 0) {
+                    // Process data
+                    const processedData = result.data
+                        .map(item => {
+                            let value = item.value || 
+                                       item[symbol] || 
+                                       item.close || 
+                                       item.price ||
+                                       item.rate ||
+                                       item.last ||
+                                       null;
+                            
+                            if (typeof value === 'string') {
+                                value = parseFloat(value);
+                            }
+                            
+                            return {
+                                date: item.date || item.index || item.time || item.period,
+                                value: value
+                            };
+                        })
+                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
                     
-                    // Create a more detailed popup
-                    const details = `Latest data for ${symbol}:
+                    if (processedData.length === 0) {
+                        throw new Error('No valid data points found');
+                    }
                     
-Date: ${date}
-Value: ${value}
-Provider: ${provider.toUpperCase()}
-Data Points: ${data.length}
-
-API Endpoint:
-${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
+                    console.log(`Processed ${processedData.length} data points for ${symbol}`);
                     
-                    alert(details);
+                    const symbolKey = `${symbol}_${provider}`;
+                    chart.data[symbolKey] = processedData;
+                    
+                    updateChartRender(chartId);
+                    updateChartSymbols(chartId);
                 } else {
-                    alert('No data available for this series');
+                    throw new Error('No data available');
                 }
-            } catch (error) {
-                alert(`Error fetching data: ${error.message}`);
-            }
-        }
-
-        function loadWatchlist() {
-            watchlist = JSON.parse(localStorage.getItem('universalWatchlist') || '[]');
-            if (watchlist.length > 0) {
-                showWatchlist();
-            }
-        }
-
-        function saveWatchlist() {
-            localStorage.setItem('universalWatchlist', JSON.stringify(watchlist));
-        }
-
-        function toggleWatchlistItem(symbol, provider, name) {
-            const index = watchlist.findIndex(w => w.symbol === symbol && w.provider === provider);
-            const btn = document.getElementById(`watchlist-btn-${symbol}-${provider}`);
-            
-            if (index >= 0) {
-                // Remove from watchlist
-                watchlist.splice(index, 1);
-                if (btn) {
-                    btn.classList.remove('added');
-                    btn.innerHTML = '⭐ Add to List';
-                }
-            } else {
-                // Add to watchlist
-                watchlist.push({
-                    symbol,
-                    provider,
-                    name,
-                    addedAt: new Date().toISOString()
-                });
-                if (btn) {
-                    btn.classList.add('added');
-                    btn.innerHTML = '✓ In Watchlist';
-                }
-            }
-            
-            saveWatchlist();
-            updateWatchlistDisplay();
-        }
-
-        function showWatchlist() {
-            const section = document.getElementById('watchlistSection');
-            section.style.display = 'block';
-            updateWatchlistDisplay();
-        }
-
-        function toggleWatchlist() {
-            const section = document.getElementById('watchlistSection');
-            section.style.display = section.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function updateWatchlistDisplay() {
-            const grid = document.getElementById('watchlistGrid');
-            
-            if (watchlist.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No items in watchlist</div>';
-                return;
-            }
-            
-            grid.innerHTML = watchlist.map(item => `
-                <div class="watchlist-item">
-                    <div class="watchlist-info">
-                        <div class="watchlist-symbol">${item.symbol}</div>
-                        <div class="watchlist-name">${item.name}</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="result-btn" onclick="viewChart('${item.symbol}', '${item.provider}', '${item.name.replace(/'/g, "\\'")}')">
-                            📈
-                        </button>
-                        <button class="result-btn" onclick="removeFromWatchlist('${item.symbol}', '${item.provider}')">
-                            ❌
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function removeFromWatchlist(symbol, provider) {
-            const index = watchlist.findIndex(w => w.symbol === symbol && w.provider === provider);
-            if (index >= 0) {
-                watchlist.splice(index, 1);
-                saveWatchlist();
-                updateWatchlistDisplay();
                 
-                // Update button if visible
-                const btn = document.getElementById(`watchlist-btn-${symbol}-${provider}`);
-                if (btn) {
-                    btn.classList.remove('added');
-                    btn.innerHTML = '⭐ Add to List';
+            } catch (error) {
+                console.error(`Error loading ${symbol}:`, error);
+                if (canvasDiv) {
+                    canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
                 }
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol || s.provider !== provider);
+                updateChartSymbols(chartId);
             }
         }
+        
+        // Update chart symbols display
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            const symbolsDiv = document.getElementById(`${chartId}_symbols`);
+            if (!symbolsDiv) return;
+            
+            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag">
+                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
+                    ${s.symbol} [${s.provider}]
+                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}', '${s.provider}')">×</span>
+                </div>`).join('');
+        }
+        
+        // Remove symbol from chart
+        function removeSymbolFromChart(event, chartId, symbol, provider) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
 
-        function exportResults() {
-            if (filteredResults.length === 0) {
-                alert('No results to export');
+            const symbolKey = `${symbol}_${provider}`;
+            chart.symbols = chart.symbols.filter(s => s.key !== symbolKey);
+            delete chart.data[symbolKey];
+            
+            updateChartRender(chartId);
+            updateChartSymbols(chartId);
+            
+            if (chart.symbols.length === 0) {
+                document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                document.getElementById(`${chartId}_period_info`).innerHTML = '';
+            }
+        }
+        
+        // Change timeframe
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            chart.timeframe = timeframe;
+            
+            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (buttonContainer) {
+                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
+            updateChartRender(chartId);
+        }
+        
+        // Filter data by timeframe
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+            
+            const now = new Date();
+            let cutoffDate = new Date();
+            
+            switch(timeframe) {
+                case '1D': 
+                    cutoffDate.setDate(now.getDate() - 1); 
+                    break;
+                case '1W': 
+                    cutoffDate.setDate(now.getDate() - 7); 
+                    break;
+                case '1M': 
+                    cutoffDate.setMonth(now.getMonth() - 1); 
+                    break;
+                case '3M': 
+                    cutoffDate.setMonth(now.getMonth() - 3); 
+                    break;
+                case '6M': 
+                    cutoffDate.setMonth(now.getMonth() - 6); 
+                    break;
+                case '1Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 1); 
+                    break;
+                case '2Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 2); 
+                    break;
+                case '5Y': 
+                    cutoffDate.setFullYear(now.getFullYear() - 5); 
+                    break;
+                case 'MAX': 
+                    return data;
+            }
+            
+            return data.filter(item => new Date(item.date) >= cutoffDate);
+        }
+        
+        // Render chart with Plotly
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            const periodInfoElement = document.getElementById(`${chartId}_period_info`);
+            if (!canvasElement || !chart) return;
+            
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
                 return;
             }
             
-            let csv = 'Symbol,Name,Provider,Units,Frequency,Source,Last Updated\n';
+            const traces = [];
+            let yAxisCounter = 1;
+            const yAxes = {};
+            const periodChanges = [];
+            let hasMultipleScales = false;
             
-            filteredResults.forEach(result => {
-                csv += `"${result.symbol}","${result.name}","${result.provider}","${result.units || ''}","${result.frequency || ''}","${result.source || ''}","${result.lastUpdated || ''}"\n`;
+            // First pass: determine scale ranges
+            const scaleRanges = [];
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.key];
+                if (!symbolData || symbolData.length === 0) return;
+                
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+                
+                const values = filteredData.map(d => d.value);
+                scaleRanges.push({
+                    min: Math.min(...values),
+                    max: Math.max(...values),
+                    symbol: s.symbol
+                });
             });
             
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `universal_search_results_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            // Create traces for each symbol
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.key];
+                if (!symbolData || symbolData.length === 0) return;
+                
+                // Filter data by timeframe
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+                
+                const lineColor = colorPalette[index % colorPalette.length];
+                
+                // Calculate percentage change
+                const firstValue = filteredData[0].value;
+                const lastValue = filteredData[filteredData.length - 1].value;
+                const percentChange = ((lastValue - firstValue) / firstValue * 100).toFixed(2);
+                
+                // Store period changes for display
+                const watchlistKey = s.key;
+                const watchlistInfo = watchlistData[watchlistKey];
+                if (watchlistInfo && watchlistInfo.changes) {
+                    periodChanges.push({
+                        symbol: s.symbol,
+                        provider: s.provider,
+                        color: lineColor,
+                        changes: watchlistInfo.changes,
+                        currentPrice: lastValue
+                    });
+                }
+                
+                // Determine if we need separate y-axis
+                const values = filteredData.map(d => d.value);
+                const maxValue = Math.max(...values);
+                
+                let yaxis = 'y';
+                if (index > 0 && scaleRanges.length > 1) {
+                    const firstRange = scaleRanges[0];
+                    const currentRange = scaleRanges[index];
+                    
+                    // Check if scales are very different
+                    const scaleRatio = currentRange.max / firstRange.max;
+                    const rangeRatio = (currentRange.max - currentRange.min) / (firstRange.max - firstRange.min);
+                    
+                    if (scaleRatio > 10 || scaleRatio < 0.1 || rangeRatio > 10 || rangeRatio < 0.1) {
+                        hasMultipleScales = true;
+                        yaxis = `y${index + 1}`;
+                        
+                        const axisConfig = {
+                            overlaying: index === 1 ? 'y' : undefined,
+                            side: index % 2 === 0 ? 'left' : 'right',
+                            showgrid: index === 0,
+                            gridcolor: '#22222250',
+                            tickfont: { color: lineColor, size: 10 },
+                            titlefont: { color: lineColor, size: 12 },
+                            tickformat: maxValue < 1 ? '.4f' : (maxValue < 100 ? '.2f' : '.0f'),
+                            zeroline: false
+                        };
+                        
+                        // Position axes properly
+                        if (index > 1) {
+                            const offset = index % 2 === 0 ? -(index * 0.08) : 1 + ((index - 1) * 0.08);
+                            axisConfig.position = Math.max(0, Math.min(1, offset));
+                        }
+                        
+                        yAxes[yaxis] = axisConfig;
+                    }
+                }
+                
+                traces.push({
+                    x: filteredData.map(d => d.date),
+                    y: filteredData.map(d => d.value),
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: `${s.symbol} [${s.provider}] (${percentChange >= 0 ? '+' : ''}${percentChange}%)`,
+                    line: { color: lineColor, width: 2 },
+                    yaxis: yaxis,
+                    hovertemplate: `<b>${s.symbol}</b><br>Provider: ${s.provider}<br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`
+                });
+            });
+            
+            if (traces.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
+                return;
+            }
+            
+            // Update period info display
+            if (periodInfoElement && periodChanges.length > 0) {
+                periodInfoElement.innerHTML = periodChanges.map(info => {
+                    const periods = ['1d', '1w', '1m', '3m', '1y'];
+                    const periodDisplay = periods.map(period => {
+                        const change = info.changes[period];
+                        if (change === null || change === undefined) return '';
+                        const changeClass = change >= 0 ? 'positive' : 'negative';
+                        const changeText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                        return `
+                            <div class="period-change">
+                                <span class="period-label">${period.toUpperCase()}:</span>
+                                <span class="${changeClass}">${changeText}</span>
+                            </div>
+                        `;
+                    }).filter(Boolean).join('');
+                    
+                    return `
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 5px; background: #1a1a1a; border-radius: 6px;">
+                            <span class="symbol-color-dot" style="background-color: ${info.color};"></span>
+                            <strong style="color: ${info.color};">${info.symbol}</strong>
+                            <span style="font-size: 10px; color: #888;">[${info.provider}]</span>
+                            ${periodDisplay}
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Calculate margins based on number of axes
+            const leftMargin = hasMultipleScales ? 80 + (Math.floor(traces.length / 2) * 60) : 80;
+            const rightMargin = hasMultipleScales ? 80 + (Math.floor((traces.length - 1) / 2) * 60) : 80;
+            
+            const layout = {
+                paper_bgcolor: '#0a0a0a',
+                plot_bgcolor: '#0a0a0a',
+                font: { color: '#aaa', size: 12 },
+                margin: { 
+                    t: 40, 
+                    r: rightMargin, 
+                    b: 60, 
+                    l: leftMargin 
+                },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    rangeslider: { visible: false },
+                    tickformat: '%Y-%m-%d'
+                },
+                yaxis: {
+                    gridcolor: '#22222250',
+                    tickfont: { color: traces.length === 1 ? '#888' : colorPalette[0], size: 10 },
+                    title: traces.length === 1 ? '' : traces[0].name.split(' ')[0],
+                    titlefont: { color: colorPalette[0], size: 12 },
+                    side: 'left',
+                    tickformat: scaleRanges[0]?.max < 1 ? '.4f' : (scaleRanges[0]?.max < 100 ? '.2f' : '.0f'),
+                    zeroline: false
+                },
+                ...yAxes,
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    yanchor: 'bottom',
+                    y: 1.02,
+                    xanchor: 'right',
+                    x: 1,
+                    bgcolor: 'rgba(10,10,10,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1,
+                    font: { size: 11 }
+                },
+                height: 500,
+                autosize: true
+            };
+            
+            const config = {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+                displayModeBar: true,
+                modeBarButtonsToAdd: [{
+                    name: 'Reset axes',
+                    icon: Plotly.Icons.home,
+                    click: function(gd) {
+                        Plotly.relayout(gd, {
+                            'xaxis.autorange': true,
+                            'yaxis.autorange': true
+                        });
+                    }
+                }]
+            };
+            
+            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
+            
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => { 
+                    charts[chartId].chartInstance = gd;
+                })
+                .catch(err => {
+                    console.error("Plotly error:", err);
+                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
+                });
         }
-
-        function clearSearch() {
-            document.getElementById('searchInput').value = '';
-            allResults = [];
-            filteredResults = [];
-            document.getElementById('resultsSection').style.display = 'none';
-            document.getElementById('statsSection').style.display = 'none';
-            document.getElementById('suggestionsDropdown').style.display = 'none';
-            sessionStorage.removeItem('lastUniversalSearch');
+        
+        // Sort by column
+        function sortByColumn(period) {
+            if (columnSort.column === period) {
+                columnSort.direction = columnSort.direction === 'desc' ? 'asc' : 'desc';
+            } else {
+                columnSort.column = period;
+                columnSort.direction = 'desc';
+            }
+            
+            sortOrder = 'default';
+            updateSortButtons();
+            renderWatchlist();
         }
-
-        function closeChart() {
-            document.getElementById('chartModal').style.display = 'none';
-            if (currentChart) {
-                currentChart.destroy();
-                currentChart = null;
+        
+        // Update sort indicators
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.className = 'sort-indicator';
+            });
+            
+            if (columnSort.column && columnSort.direction) {
+                const indicator = document.getElementById(`sort-${columnSort.column}`);
+                if (indicator) {
+                    indicator.className = `sort-indicator ${columnSort.direction}`;
+                }
             }
         }
-
-        function showLoading(show) {
-            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
-            document.getElementById('searchBtn').disabled = show;
-            document.getElementById('searchSpinner').style.display = show ? 'inline' : 'none';
+        
+        // Change sort order
+        function changeSortOrder(order) {
+            sortOrder = order;
+            columnSort = { column: null, direction: null };
+            updateSortButtons();
+            renderWatchlist();
         }
-
-        // Click outside to close suggestions
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-input-wrapper')) {
-                document.getElementById('suggestionsDropdown').style.display = 'none';
+        
+        // Update sort button states
+        function updateSortButtons() {
+            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default');
+            document.getElementById('sortIncrease').classList.toggle('active', sortOrder === 'increase');
+            document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
+        }
+        
+        // Show chart view
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block';
+                watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+            }
+        }
+        
+        // Show temporary message
+        function showTemporaryMessage(text, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = text;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => popup.remove(), 3000);
+        }
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox');
+            const searchResults = document.getElementById('searchResults');
+            
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
             }
         });
-    </script>
-</body>
-</html>
+        
+        // Initialize on page load
+        window.onload = init;
