@@ -1,773 +1,1415 @@
-import os
-import json
-import asyncio
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List
-import uvicorn
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
-from scipy import stats
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Search - Macro Intelligence Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-# Set up environment variables in the expected format
-env_mapping = {
-    "OPENBB_API_FRED_KEY": os.getenv("OPENBB_FRED_KEY"),
-    "OPENBB_API_FMP_KEY": os.getenv("OPENBB_FMP_KEY"),
-    "OPENBB_API_POLYGON_KEY": os.getenv("OPENBB_POLYGON_KEY"),
-    "OPENBB_API_BLS_KEY": os.getenv("OPENBB_BLS_KEY"),
-    "OPENBB_API_BENZINGA_KEY": os.getenv("OPENBB_BENZINGA_KEY"),
-    "OPENBB_API_TIINGO_KEY": os.getenv("OPENBB_TIINGO_KEY"),
-    "OPENBB_API_EIA_KEY": os.getenv("OPENBB_EIA_KEY"),
-    "OPENBB_API_BEA_KEY": os.getenv("OPENBB_BEA_KEY"),
-    "OPENBB_API_CENSUS_KEY": os.getenv("OPENBB_CENSUS_KEY"),
-    "OPENBB_API_ECONDB_KEY": os.getenv("OPENBB_ECONDB_KEY"),
-    "OPENBB_API_NASDAQ_KEY": os.getenv("OPENBB_NASDAQ_KEY"),
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1b;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
 
-# Update environment
-for key, value in env_mapping.items():
-    if value:
-        os.environ[key] = value
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-# Create user settings
-user_settings = {
-    "credentials": {}
-}
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
 
-for key, value in env_mapping.items():
-    if value and key.startswith("OPENBB_API_"):
-        provider_key = key.replace("OPENBB_API_", "").replace("_KEY", "").lower()
-        user_settings["credentials"][provider_key] = value
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
 
-# Write settings file
-with open("/app/.openbb_platform/user_settings.json", "w") as f:
-    json.dump(user_settings, f)
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
 
-# Import OpenBB after setting up credentials
-from openbb import obb
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+        }
 
-app = FastAPI(title="OpenBB Platform API")
+        .header p {
+            font-size: 1.2em;
+            color: #b3c5ff;
+            position: relative;
+            z-index: 1;
+        }
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        .providers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
 
-def process_response(response):
-    """Process OpenBB response into consistent format."""
-    if hasattr(response, 'to_dict'):
-        return response.to_dict()
-    elif hasattr(response, 'results'):
-        if isinstance(response.results, list):
-            return {"data": response.results}
-        elif hasattr(response.results, 'to_dict'):
-            return response.results.to_dict()
-        else:
-            return {"data": response.results}
-    elif isinstance(response, dict):
-        return response
-    else:
-        return {"data": str(response)}
+        .provider-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
 
-# Root endpoint
-@app.get("/")
-async def root():
-    return {"message": "OpenBB Platform API", "status": "operational"}
+        .search-section {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
 
-# Providers endpoint
-@app.get("/api/v1/universal/providers")
-async def get_providers():
-    return {"providers": ["fred", "fmp", "polygon", "bls", "benzinga", "tiingo"]}
+        .search-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
 
-# Economy endpoints
-@app.get("/api/v1/economy/fred_series")
-async def fred_series(symbol: str, provider: str = "fred"):
-    try:
-        response = await obb.economy.fred_series(symbol=symbol, provider=provider)
-        return process_response(response)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
 
-@app.get("/api/v1/economy/unemployment")
-async def unemployment(provider: str = "bls"):
-    try:
-        response = await obb.economy.unemployment(provider=provider)
-        return process_response(response)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            background: #2a3142;
+            color: #fff;
+            border: 2px solid #3949ab;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
 
-# Equity endpoints
-@app.get("/api/v1/equity/price/quote")
-async def equity_quote(symbol: str, provider: str = "fmp"):
-    try:
-        response = await obb.equity.price.quote(symbol=symbol, provider=provider)
-        return process_response(response)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        .search-input:focus {
+            outline: none;
+            border-color: #5c6bc0;
+            box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.2);
+        }
 
-# Universal data endpoint - Enhanced to handle multiple providers
-@app.get("/api/v1/universal/data")
-async def universal_data(
-    symbol: str,
-    provider: str = "fred",
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    limit: Optional[int] = None
-):
-    try:
-        kwargs = {"symbol": symbol, "provider": provider}
-        if start_date:
-            kwargs["start_date"] = start_date
-        if end_date:
-            kwargs["end_date"] = end_date
-        if limit:
-            kwargs["limit"] = limit
-        
-        # Route to appropriate endpoint based on provider
-        if provider == "ecb":
-            # ECB data through OpenBB
-            response = await obb.economy.european_central_bank_interest_rates(**kwargs)
-        elif provider == "newyorkfed":
-            # NY Fed data through OpenBB
-            if symbol in ["SOFR", "EFFR", "OBFR", "TGCR", "BGCR"]:
-                response = await obb.fixedincome.rate.sofr(**kwargs)
-            else:
-                response = await obb.economy.fred_series(**kwargs)
-        elif provider == "ofr":
-            # OFR data through OpenBB
-            response = await obb.economy.fred_series(**kwargs)
-        elif provider == "treasury":
-            # Treasury data through OpenBB
-            response = await obb.fixedincome.government.treasury_rates(**kwargs)
-        elif provider == "polygon":
-            # Polygon for equity data
-            response = await obb.equity.price.historical(**kwargs)
-        elif provider in ["fmp", "polygon"]:
-            response = await obb.equity.price.historical(**kwargs)
-        else:
-            # Default to FRED
-            response = await obb.economy.fred_series(**kwargs)
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5c6bc0;
+            font-size: 20px;
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: #3949ab;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-btn:hover {
+            background: #5c6bc0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(57, 73, 171, 0.3);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .provider-filter {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .provider-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            background: #2a3142;
+            border: 1px solid #444;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+
+        .provider-checkbox:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .provider-checkbox input {
+            cursor: pointer;
+        }
+
+        .provider-checkbox.active {
+            background: #3949ab;
+            border-color: #5c6bc0;
+        }
+
+        .watchlist-section {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .watchlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .watchlist-title {
+            font-size: 1.5em;
+            color: #5c6bc0;
+            font-weight: 600;
+        }
+
+        .watchlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .watchlist-item {
+            background: #2a3142;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .watchlist-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .watchlist-info {
+            flex: 1;
+        }
+
+        .watchlist-symbol {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5c6bc0;
+        }
+
+        .watchlist-name {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .results-info {
+            background: #2a3142;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            font-size: 18px;
+            color: #5c6bc0;
+            font-weight: 600;
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: #2a3142;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .result-card {
+            background: #1a1f2e;
+            border: 1px solid #2a3142;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3949ab, #5c6bc0);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .result-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border-color: #3949ab;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #5c6bc0;
+            margin-bottom: 5px;
+            flex: 1;
+        }
+
+        .provider-tag {
+            padding: 4px 10px;
+            background: #2a3142;
+            border-radius: 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .provider-fred { background: #4caf50; color: white; }
+        .provider-ecb { background: #2196f3; color: white; }
+        .provider-treasury { background: #ff9800; color: white; }
+        .provider-nyfed { background: #9c27b0; color: white; }
+        .provider-ofr { background: #f44336; color: white; }
+        .provider-bls { background: #795548; color: white; }
+        .provider-fmp { background: #607d8b; color: white; }
+        .provider-polygon { background: #00bcd4; color: white; }
+        .provider-yfinance { background: #673ab7; color: white; }
+        .provider-intrinio { background: #3f51b5; color: white; }
+        .provider-benzinga { background: #ff5722; color: white; }
+        .provider-tiingo { background: #009688; color: white; }
+
+        .result-id {
+            font-family: monospace;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .result-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .meta-icon {
+            font-size: 16px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .result-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: #2a3142;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .result-btn:hover {
+            background: #3949ab;
+            border-color: #3949ab;
+            transform: translateY(-1px);
+        }
+
+        .result-btn.primary {
+            background: #3949ab;
+            border-color: #3949ab;
+        }
+
+        .result-btn.primary:hover {
+            background: #5c6bc0;
+            border-color: #5c6bc0;
+        }
+
+        .result-btn.added {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid #333;
+            border-top-color: #5c6bc0;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-section {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #2a3142;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #5c6bc0;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .chart-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 40px;
+        }
+
+        .chart-content {
+            background: #1a1f2e;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1200px;
+            max-height: 90vh;
+            margin: auto;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #2a3142;
+            border: 1px solid #3949ab;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 100;
+        }
+
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-item:hover {
+            background: #3949ab;
+        }
+
+        .suggestion-symbol {
+            font-weight: 600;
+            color: #5c6bc0;
+        }
+
+        .suggestion-name {
+            font-size: 12px;
+            color: #888;
+            margin-left: 10px;
+        }
+
+        .suggestion-provider {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
             
-        return process_response(response)
-    except Exception as e:
-        # Log the actual error for debugging
-        print(f"Error in universal_data for {symbol} from {provider}: {str(e)}")
-        return {"error": str(e), "data": []}
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .provider-filter {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Universal Search</h1>
+            <p>Search across all economic data providers in one place</p>
+            <div class="providers-list">
+                <span class="provider-badge">FRED</span>
+                <span class="provider-badge">ECB</span>
+                <span class="provider-badge">NY Fed</span>
+                <span class="provider-badge">Treasury</span>
+                <span class="provider-badge">OFR</span>
+                <span class="provider-badge">BLS</span>
+                <span class="provider-badge">FMP</span>
+                <span class="provider-badge">Polygon</span>
+                <span class="provider-badge">Yahoo Finance</span>
+                <span class="provider-badge">Intrinio</span>
+                <span class="provider-badge">Benzinga</span>
+                <span class="provider-badge">Tiingo</span>
+            </div>
+        </div>
 
-# Universal search endpoint - Enhanced for all providers
-@app.get("/api/v1/universal/search")
-async def universal_search(query: str, provider: Optional[str] = None):
-    try:
-        all_results = []
-        
-        if provider:
-            # Search specific provider
-            if provider == "ecb":
-                ecb_response = await ecb_search(query)
-                all_results.extend(ecb_response.get("results", []))
-            elif provider == "newyorkfed":
-                nyf_response = await ny_fed_search(query)
-                all_results.extend(nyf_response.get("results", []))
-            elif provider == "ofr":
-                ofr_response = await ofr_search(query)
-                all_results.extend(ofr_response.get("results", []))
-            elif provider == "treasury":
-                treasury_response = await treasury_search(query)
-                all_results.extend(treasury_response.get("results", []))
-            else:
-                # Default FRED search
-                response = await obb.economy.fred_search(query=query, provider="fred")
-                if hasattr(response, 'results'):
-                    for item in response.results:
-                        all_results.append({
-                            "series_id": item.get("series_id", ""),
-                            "title": item.get("title", ""),
-                            "units": item.get("units", ""),
-                            "frequency": item.get("frequency", ""),
-                            "provider": "fred"
-                        })
-        else:
-            # Search all providers
-            # FRED search
-            try:
-                response = await obb.economy.fred_search(query=query, provider="fred")
-                if hasattr(response, 'results'):
-                    for item in response.results:
-                        all_results.append({
-                            "series_id": item.get("series_id", ""),
-                            "title": item.get("title", ""),
-                            "units": item.get("units", ""),
-                            "frequency": item.get("frequency", ""),
-                            "provider": "fred"
-                        })
-            except:
-                pass
-            
-            # ECB search
-            try:
-                ecb_response = await ecb_search(query)
-                all_results.extend(ecb_response.get("results", []))
-            except:
-                pass
-            
-            # NY Fed search
-            try:
-                nyf_response = await ny_fed_search(query)
-                all_results.extend(nyf_response.get("results", []))
-            except:
-                pass
-            
-            # OFR search
-            try:
-                ofr_response = await ofr_search(query)
-                all_results.extend(ofr_response.get("results", []))
-            except:
-                pass
-            
-            # Treasury search
-            try:
-                treasury_response = await treasury_search(query)
-                all_results.extend(treasury_response.get("results", []))
-            except:
-                pass
-        
-        # Remove duplicates
-        seen = set()
-        unique_results = []
-        for result in all_results:
-            key = f"{result['series_id']}_{result['provider']}"
-            if key not in seen:
-                seen.add(key)
-                unique_results.append(result)
-        
-        return {"results": unique_results[:100]}
-    except Exception as e:
-        print(f"Error in universal_search: {str(e)}")
-        return {"error": str(e), "results": []}
+        <div class="search-section">
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Search for any economic indicator, stock symbol, or keyword..."
+                        autocomplete="off"
+                        oninput="getSuggestions(this.value)"
+                    >
+                    <span class="search-icon">🔍</span>
+                    <div id="suggestionsDropdown" class="suggestions-dropdown"></div>
+                </div>
+                <button id="searchBtn" class="search-btn" onclick="performUniversalSearch()">
+                    <span>Search All</span>
+                    <span id="searchSpinner" style="display: none;">⏳</span>
+                </button>
+            </div>
 
-# Analytics endpoints
-@app.get("/api/v1/analytics/trend")
-async def trend_analysis(
-    symbol: str,
-    provider: str = "fred",
-    window: int = Query(7, description="Rolling window for calculations")
-):
-    try:
-        # Fetch data
-        response = await obb.economy.fred_series(symbol=symbol, provider=provider)
+            <div class="filters">
+                <div class="filter-group">
+                    <span class="filter-label">Filter by Provider:</span>
+                    <div class="provider-filter" id="providerFilters">
+                        <label class="provider-checkbox active" data-provider="all">
+                            <input type="checkbox" checked onchange="toggleAllProviders(this)">
+                            <span>All Providers</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="fred">
+                            <input type="checkbox" checked onchange="toggleProvider('fred')">
+                            <span>FRED</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="ecb">
+                            <input type="checkbox" checked onchange="toggleProvider('ecb')">
+                            <span>ECB</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="treasury">
+                            <input type="checkbox" checked onchange="toggleProvider('treasury')">
+                            <span>Treasury</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="nyfed">
+                            <input type="checkbox" checked onchange="toggleProvider('nyfed')">
+                            <span>NY Fed</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="ofr">
+                            <input type="checkbox" checked onchange="toggleProvider('ofr')">
+                            <span>OFR</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="bls">
+                            <input type="checkbox" checked onchange="toggleProvider('bls')">
+                            <span>BLS</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="fmp">
+                            <input type="checkbox" checked onchange="toggleProvider('fmp')">
+                            <span>FMP</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="polygon">
+                            <input type="checkbox" checked onchange="toggleProvider('polygon')">
+                            <span>Polygon</span>
+                        </label>
+                        <label class="provider-checkbox active" data-provider="yfinance">
+                            <input type="checkbox" checked onchange="toggleProvider('yfinance')">
+                            <span>Yahoo</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="watchlistSection" class="watchlist-section">
+            <div class="watchlist-header">
+                <div class="watchlist-title">📌 My Watchlist</div>
+                <button class="action-btn" onclick="toggleWatchlist()">Hide</button>
+            </div>
+            <div id="watchlistGrid" class="watchlist-grid"></div>
+        </div>
+
+        <div id="statsSection" class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalResults">0</div>
+                    <div class="stat-label">Total Results</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="providersCount">0</div>
+                    <div class="stat-label">Providers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="searchTime">0s</div>
+                    <div class="stat-label">Search Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uniqueSeries">0</div>
+                    <div class="stat-label">Unique Series</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsSection" style="display: none;">
+            <div class="results-info">
+                <div class="results-count" id="resultsCount"></div>
+                <div class="results-actions">
+                    <button class="action-btn" onclick="showWatchlist()">📌 Watchlist</button>
+                    <button class="action-btn" onclick="exportResults()">📥 Export CSV</button>
+                    <button class="action-btn" onclick="clearSearch()">🔄 Clear</button>
+                </div>
+            </div>
+            <div id="resultsGrid" class="results-grid"></div>
+        </div>
+
+        <div id="loadingSection" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div>Searching across all data providers...</div>
+            <div id="searchProgress" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+        </div>
+    </div>
+
+    <div id="chartModal" class="chart-modal">
+        <div class="chart-content">
+            <button class="close-btn" onclick="closeChart()">×</button>
+            <h2 id="chartTitle" style="margin-bottom: 20px; color: #5c6bc0;"></h2>
+            <canvas id="chartCanvas" style="max-height: 400px;"></canvas>
+            <div id="chartInfo" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
         
-        if hasattr(response, 'results'):
-            data = response.results
-            if isinstance(data, list) and len(data) > 0:
-                # Convert to DataFrame
-                df = pd.DataFrame(data)
-                df['date'] = pd.to_datetime(df['date'])
-                df = df.sort_values('date')
-                df['value'] = pd.to_numeric(df.get('value', df.get(symbol, 0)), errors='coerce')
-                
-                # Calculate analytics
-                df['ma'] = df['value'].rolling(window=window).mean()
-                df['std'] = df['value'].rolling(window=window).std()
-                df['roc'] = df['value'].pct_change(periods=window) * 100
-                
-                # Calculate rolling regression slope
-                def calc_slope(x):
-                    if len(x) < 2:
-                        return np.nan
-                    indices = np.arange(len(x))
-                    if np.all(np.isnan(x)):
-                        return np.nan
-                    mask = ~np.isnan(x)
-                    if np.sum(mask) < 2:
-                        return np.nan
-                    slope, _, _, _, _ = stats.linregress(indices[mask], x[mask])
-                    return slope
-                
-                df['slope'] = df['value'].rolling(window=window).apply(calc_slope)
-                
-                # Prepare response
-                results = df.tail(100).to_dict('records')
-                
-                return {
-                    "data": results,
-                    "metadata": {
-                        "symbol": symbol,
-                        "window": window,
-                        "latest_value": float(df['value'].iloc[-1]),
-                        "latest_ma": float(df['ma'].iloc[-1]) if not np.isnan(df['ma'].iloc[-1]) else None,
-                        "latest_roc": float(df['roc'].iloc[-1]) if not np.isnan(df['roc'].iloc[-1]) else None,
-                        "latest_slope": float(df['slope'].iloc[-1]) if not np.isnan(df['slope'].iloc[-1]) else None
+        let allResults = [];
+        let filteredResults = [];
+        let activeProviders = new Set(['all', 'fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls', 'fmp', 'polygon', 'yfinance']);
+        let searchStartTime = 0;
+        let currentChart = null;
+        let watchlist = [];
+        let suggestionsTimeout = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load watchlist
+            loadWatchlist();
+            
+            // Enter key triggers search
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performUniversalSearch();
+                }
+            });
+            
+            // Load last search from session
+            const lastSearch = sessionStorage.getItem('lastUniversalSearch');
+            if (lastSearch) {
+                document.getElementById('searchInput').value = lastSearch;
+            }
+        });
+
+        async function getSuggestions(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('suggestionsDropdown').style.display = 'none';
+                return;
+            }
+
+            clearTimeout(suggestionsTimeout);
+            suggestionsTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/v1/interactive/search-suggestions?query=${encodeURIComponent(query)}&limit=10`);
+                    if (!response.ok) return;
+                    
+                    const data = await response.json();
+                    displaySuggestions(data.suggestions || []);
+                } catch (error) {
+                    console.error('Error getting suggestions:', error);
+                }
+            }, 300);
+        }
+
+        function displaySuggestions(suggestions) {
+            const dropdown = document.getElementById('suggestionsDropdown');
+            
+            if (!suggestions || suggestions.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            dropdown.innerHTML = suggestions.map(s => `
+                <div class="suggestion-item" onclick="selectSuggestion('${s.symbol}', '${s.provider}')">
+                    <div>
+                        <span class="suggestion-symbol">${s.symbol}</span>
+                        <span class="suggestion-name">${s.title}</span>
+                    </div>
+                    <span class="suggestion-provider">${s.provider.toUpperCase()}</span>
+                </div>
+            `).join('');
+            
+            dropdown.style.display = 'block';
+        }
+
+        function selectSuggestion(symbol, provider) {
+            document.getElementById('searchInput').value = symbol;
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+            performUniversalSearch();
+        }
+
+        async function performUniversalSearch() {
+            const searchText = document.getElementById('searchInput').value.trim();
+            if (!searchText) {
+                alert('Please enter a search term');
+                return;
+            }
+            
+            searchStartTime = Date.now();
+            sessionStorage.setItem('lastUniversalSearch', searchText);
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+            
+            showLoading(true);
+            updateSearchProgress('Initializing search...');
+            
+            allResults = [];
+            const searchPromises = [];
+            
+            // Use the universal search endpoint
+            updateSearchProgress('Searching all providers...');
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/search?query=${encodeURIComponent(searchText)}&provider=all`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Process results from different providers
+                    if (data.results) {
+                        // FRED results
+                        if (data.results.fred && Array.isArray(data.results.fred)) {
+                            data.results.fred.forEach(item => {
+                                allResults.push({
+                                    symbol: item.id || item.symbol || item.series_id,
+                                    name: item.title || item.name || 'Unnamed Series',
+                                    provider: 'fred',
+                                    units: item.units || item.units_short || '',
+                                    frequency: item.frequency || item.frequency_short || '',
+                                    lastUpdated: item.last_updated || '',
+                                    source: 'FRED'
+                                });
+                            });
+                        }
+                        
+                        // Add results from other providers when they're implemented
+                        // For now, if no FRED results, search stocks
+                        if (allResults.length === 0) {
+                            await searchStocks(searchText);
+                        }
                     }
                 }
-        
-        return {"data": [], "error": "No data available"}
-        
-    except Exception as e:
-        return {"error": str(e), "data": []}
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+            
+            // If still no results, add common series
+            if (allResults.length === 0) {
+                addCommonSeries(searchText);
+                await searchStocks(searchText);
+            }
+            
+            // Update stats and display
+            const searchTime = ((Date.now() - searchStartTime) / 1000).toFixed(1);
+            updateStats(searchTime);
+            filterAndDisplayResults();
+            
+            showLoading(false);
+        }
 
-@app.get("/api/v1/analytics/composite")
-async def composite_analysis(
-    symbols: List[str] = Query(..., description="List of symbols to analyze"),
-    provider: str = "fred",
-    formula: Optional[str] = Query(None, description="Formula to apply (e.g., 'spread', 'ratio')")
-):
-    try:
-        all_data = {}
-        
-        # Fetch data for each symbol
-        for symbol in symbols:
-            response = await obb.economy.fred_series(symbol=symbol, provider=provider)
-            if hasattr(response, 'results'):
-                df = pd.DataFrame(response.results)
-                df['date'] = pd.to_datetime(df['date'])
-                df = df.sort_values('date')
-                df['value'] = pd.to_numeric(df.get('value', df.get(symbol, 0)), errors='coerce')
-                all_data[symbol] = df.set_index('date')['value']
-        
-        if len(all_data) > 0:
-            # Combine all series
-            combined = pd.DataFrame(all_data)
-            
-            # Apply formula if specified
-            if formula == "spread" and len(symbols) == 2:
-                combined['spread'] = combined[symbols[0]] - combined[symbols[1]]
-            elif formula == "ratio" and len(symbols) == 2:
-                combined['ratio'] = combined[symbols[0]] / combined[symbols[1]]
-            
-            # Calculate changes
-            for col in combined.columns:
-                combined[f'{col}_pct_change'] = combined[col].pct_change() * 100
-                combined[f'{col}_7d_change'] = combined[col].pct_change(periods=7) * 100
-            
-            # Prepare response
-            results = combined.tail(100).reset_index().to_dict('records')
-            
-            return {
-                "data": results,
-                "metadata": {
-                    "symbols": symbols,
-                    "formula": formula,
-                    "latest_values": {col: float(combined[col].iloc[-1]) for col in symbols if col in combined.columns and not np.isnan(combined[col].iloc[-1])}
+        async function searchStocks(query) {
+            // Check if query looks like a stock symbol
+            if (query.length >= 1 && query.length <= 5 && /^[A-Z]+$/i.test(query)) {
+                const stockProviders = ['fmp', 'polygon', 'yfinance'];
+                
+                for (const provider of stockProviders) {
+                    if (activeProviders.has(provider) || activeProviders.has('all')) {
+                        allResults.push({
+                            symbol: query.toUpperCase(),
+                            name: `${query.toUpperCase()} Stock Price`,
+                            provider: provider,
+                            units: 'USD',
+                            frequency: 'Daily',
+                            source: provider.toUpperCase()
+                        });
+                    }
                 }
             }
-        
-        return {"data": [], "error": "No data available"}
-        
-    except Exception as e:
-        return {"error": str(e), "data": []}
+        }
 
-@app.get("/api/v1/analytics/liquidity_stress")
-async def liquidity_stress():
-    try:
-        # Fetch VIX data as stress indicator
-        response = await obb.economy.fred_series(symbol="VIXCLS", provider="fred")
-        
-        if hasattr(response, 'results'):
-            df = pd.DataFrame(response.results)
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.sort_values('date')
-            df['value'] = pd.to_numeric(df.get('value', df.get('VIXCLS', 0)), errors='coerce')
+        function addCommonSeries(searchText) {
+            const searchLower = searchText.toLowerCase();
+            const commonSeries = [];
             
-            # Calculate stress levels
-            latest_vix = df['value'].iloc[-1]
-            ma_20 = df['value'].tail(20).mean()
-            ma_60 = df['value'].tail(60).mean()
-            
-            # Determine stress level
-            if latest_vix < 20:
-                stress_level = "Low"
-            elif latest_vix < 30:
-                stress_level = "Moderate"
-            elif latest_vix < 40:
-                stress_level = "High"
-            else:
-                stress_level = "Extreme"
-            
-            return {
-                "data": {
-                    "current_vix": float(latest_vix),
-                    "ma_20": float(ma_20),
-                    "ma_60": float(ma_60),
-                    "stress_level": stress_level,
-                    "timestamp": df['date'].iloc[-1].isoformat()
-                },
-                "historical": df.tail(30).to_dict('records')
+            // Economic indicators
+            if (searchLower.includes('gdp')) {
+                commonSeries.push(
+                    { symbol: 'GDP', name: 'Gross Domestic Product', provider: 'fred', units: 'Billions of Dollars', frequency: 'Quarterly' },
+                    { symbol: 'GDPC1', name: 'Real Gross Domestic Product', provider: 'fred', units: 'Billions of Chained 2017 Dollars', frequency: 'Quarterly' }
+                );
             }
-        
-        return {"data": {}, "error": "No data available"}
-        
-    except Exception as e:
-        return {"error": str(e), "data": {}}
-
-# NEW ENDPOINTS FOR ECB, NY FED, OFR, AND TREASURY DATA
-
-@app.get("/api/v1/economy/ecb_search")
-async def ecb_search(query: str):
-    """Search ECB data series."""
-    try:
-        # First, try searching FRED for ECB-related series
-        results = []
-        
-        # Search FRED for ECB data
-        response = await obb.economy.fred_search(
-            query=f"ECB {query}",
-            provider="fred"
-        )
-        
-        if response and hasattr(response, 'results'):
-            for item in response.results:
-                series_id = str(item.get('series_id', '')).upper()
-                title = str(item.get('title', '')).upper()
-                if any(prefix in series_id or prefix in title 
-                      for prefix in ['ECB', 'EUR', 'EU', 'EUROPEAN']):
-                    results.append({
-                        "series_id": item.get("series_id", ""),
-                        "title": item.get("title", ""),
-                        "units": item.get("units", ""),
-                        "frequency": item.get("frequency", ""),
-                        "provider": "ecb"
-                    })
-        
-        # Add common ECB indicators if they match the query
-        ecb_common_series = {
-            "CISS": "Composite Indicator of Systemic Stress",
-            "ECBDFR": "ECB Deposit Facility Rate",
-            "ECBMLFR": "ECB Marginal Lending Facility Rate", 
-            "ECBMRRFR": "ECB Main Refinancing Operations Rate",
-            "EURONTD": "Euro Area Overnight Deposits",
-            "EONIA": "Euro Overnight Index Average",
-            "EURIBOR3M": "3-Month EURIBOR",
-            "EURR002W": "ECB Euro Short-Term Rate",
-            "CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX": "CISS - China Systemic Stress"
-        }
-        
-        query_lower = query.lower()
-        for series_id, description in ecb_common_series.items():
-            if query_lower in series_id.lower() or query_lower in description.lower():
-                results.append({
-                    "series_id": series_id,
-                    "title": description,
-                    "units": "Index" if "CISS" in series_id else "Percent",
-                    "frequency": "D",
-                    "provider": "ecb"
-                })
-        
-        return {"results": results[:50]}
-    except Exception as e:
-        return {"error": str(e), "results": []}
-
-@app.get("/api/v1/economy/ny_fed_search")
-async def ny_fed_search(query: str):
-    """Search New York Fed data series."""
-    try:
-        results = []
-        
-        # Common NY Fed series
-        ny_fed_series = {
-            "SOFR": "Secured Overnight Financing Rate",
-            "EFFR": "Effective Federal Funds Rate",
-            "OBFR": "Overnight Bank Funding Rate",
-            "TGCR": "Tri-Party General Collateral Rate",
-            "BGCR": "Broad General Collateral Rate",
-            "SOFR30DAVG": "30-Day Average SOFR",
-            "SOFR90DAVG": "90-Day Average SOFR",
-            "SOFR180DAVG": "180-Day Average SOFR",
-            "IORB": "Interest on Reserve Balances",
-            "RRPONTSYD": "Overnight Reverse Repurchase Agreements",
-            "RESBALNS": "Reserve Balances at Federal Reserve Banks",
-            "WRESBAL": "Reserve Balances Wednesday Level",
-            "RESPPLLOPNWW": "Central Bank Liquidity Swaps",
-            "H41RESPPLLBNWW": "Central Bank Liquidity Swap Operations"
-        }
-        
-        query_lower = query.lower()
-        
-        # Add matching NY Fed series
-        for series_id, description in ny_fed_series.items():
-            if query_lower in series_id.lower() or query_lower in description.lower():
-                results.append({
-                    "series_id": series_id,
-                    "title": description,
-                    "units": "Percent" if "Rate" in description else "Billions of Dollars",
-                    "frequency": "D",
-                    "provider": "newyorkfed"
-                })
-        
-        # Also search FRED for NY Fed data
-        response = await obb.economy.fred_search(
-            query=query,
-            provider="fred"
-        )
-        
-        if response and hasattr(response, 'results'):
-            ny_fed_keywords = ["SOFR", "EFFR", "OBFR", "TGCR", "BGCR", "RRP", "RESERVE", "IORB", "REPO", "FED"]
             
-            for item in response.results:
-                series_id = str(item.get('series_id', '')).upper()
-                title = str(item.get('title', '')).upper()
-                
-                if any(keyword in series_id or keyword in title for keyword in ny_fed_keywords):
-                    result = {
-                        "series_id": item.get("series_id", ""),
-                        "title": item.get("title", ""),
-                        "units": item.get("units", ""),
-                        "frequency": item.get("frequency", ""),
-                        "provider": "newyorkfed"
-                    }
-                    
-                    # Avoid duplicates
-                    if not any(r['series_id'] == result['series_id'] for r in results):
-                        results.append(result)
-                        
-        return {"results": results[:50]}
-    except Exception as e:
-        return {"error": str(e), "results": []}
-
-@app.get("/api/v1/economy/ofr_search")
-async def ofr_search(query: str):
-    """Search Office of Financial Research data series."""
-    try:
-        results = []
-        
-        # OFR specific series from their datasets
-        ofr_series = {
-            "NYPD-PD_AFtR_T-A": "NY Prime Dealers - After Rate Total Amount",
-            "STFM": "Short-term Funding Monitor",
-            "BANKSTRESS": "Bank Systemic Risk Monitor",
-            "FINLEVERAGE": "Financial Sector Leverage",
-            "STLFSI3": "St. Louis Fed Financial Stress Index",
-            "NFCI": "National Financial Conditions Index",
-            "ANFCI": "Adjusted National Financial Conditions Index",
-            "NFCILEVERAGE": "NFCI Leverage Subindex",
-            "NFCIRISK": "NFCI Risk Subindex",
-            "NFCICREDIT": "NFCI Credit Subindex",
-            "TEDRATE": "TED Spread",
-            "T10Y3M": "10-Year Treasury Constant Maturity Minus 3-Month Treasury",
-            "BAMLH0A0HYM2": "ICE BofA US High Yield Index Option-Adjusted Spread",
-            "DEXCHUS": "China / U.S. Foreign Exchange Rate"
-        }
-        
-        query_lower = query.lower()
-        
-        # Add matching OFR series
-        for series_id, description in ofr_series.items():
-            if query_lower in series_id.lower() or query_lower in description.lower():
-                results.append({
-                    "series_id": series_id,
-                    "title": description,
-                    "units": "Index" if "Index" in description else "Percent",
-                    "frequency": "D",
-                    "provider": "ofr"
-                })
-        
-        # Search FRED for financial stress indicators
-        response = await obb.economy.fred_search(
-            query=f"{query} stress financial systemic",
-            provider="fred"
-        )
-        
-        if response and hasattr(response, 'results'):
-            ofr_keywords = ['OFR', 'STRESS', 'SPREAD', 'FINANCIAL', 'SYSTEMIC', 'LEVERAGE', 'NFCI', 'TED']
+            if (searchLower.includes('inflation') || searchLower.includes('cpi')) {
+                commonSeries.push(
+                    { symbol: 'CPIAUCSL', name: 'Consumer Price Index for All Urban Consumers', provider: 'fred', units: 'Index 1982-1984=100', frequency: 'Monthly' },
+                    { symbol: 'CPILFESL', name: 'Core CPI', provider: 'fred', units: 'Index 1982-1984=100', frequency: 'Monthly' }
+                );
+            }
             
-            for item in response.results:
-                title = str(item.get('title', '')).upper()
-                series_id = str(item.get('series_id', '')).upper()
-                
-                if any(term in title or term in series_id for term in ofr_keywords):
-                    result = {
-                        "series_id": item.get("series_id", ""),
-                        "title": item.get("title", ""),
-                        "units": item.get("units", ""),
-                        "frequency": item.get("frequency", ""),
-                        "provider": "ofr"
-                    }
-                    
-                    # Avoid duplicates
-                    if not any(r['series_id'] == result['series_id'] for r in results):
-                        results.append(result)
-                        
-        return {"results": results[:50]}
-    except Exception as e:
-        return {"error": str(e), "results": []}
-
-@app.get("/api/v1/economy/treasury_search")
-async def treasury_search(query: str):
-    """Search Treasury auction data."""
-    try:
-        results = []
-        
-        # Treasury auction series
-        treasury_series = {
-            "DGS1MO": "Market Yield on U.S. Treasury Securities at 1-Month Constant Maturity",
-            "DGS3MO": "Market Yield on U.S. Treasury Securities at 3-Month Constant Maturity",
-            "DGS6MO": "Market Yield on U.S. Treasury Securities at 6-Month Constant Maturity",
-            "DGS1": "Market Yield on U.S. Treasury Securities at 1-Year Constant Maturity",
-            "DGS2": "Market Yield on U.S. Treasury Securities at 2-Year Constant Maturity",
-            "DGS3": "Market Yield on U.S. Treasury Securities at 3-Year Constant Maturity",
-            "DGS5": "Market Yield on U.S. Treasury Securities at 5-Year Constant Maturity",
-            "DGS7": "Market Yield on U.S. Treasury Securities at 7-Year Constant Maturity",
-            "DGS10": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity",
-            "DGS20": "Market Yield on U.S. Treasury Securities at 20-Year Constant Maturity",
-            "DGS30": "Market Yield on U.S. Treasury Securities at 30-Year Constant Maturity",
-            "DFII5": "Market Yield on U.S. Treasury Inflation-Indexed Securities at 5-Year Constant Maturity",
-            "DFII10": "Market Yield on U.S. Treasury Inflation-Indexed Securities at 10-Year Constant Maturity",
-            "DFII20": "Market Yield on U.S. Treasury Inflation-Indexed Securities at 20-Year Constant Maturity",
-            "DFII30": "Market Yield on U.S. Treasury Inflation-Indexed Securities at 30-Year Constant Maturity",
-            "T5YIE": "5-Year Breakeven Inflation Rate",
-            "T10YIE": "10-Year Breakeven Inflation Rate",
-            "TB3MS": "3-Month Treasury Bill Secondary Market Rate",
-            "TB6MS": "6-Month Treasury Bill Secondary Market Rate",
-            "TB1YR": "1-Year Treasury Bill Secondary Market Rate"
+            if (searchLower.includes('unemployment') || searchLower.includes('jobs')) {
+                commonSeries.push(
+                    { symbol: 'UNRATE', name: 'Unemployment Rate', provider: 'fred', units: 'Percent', frequency: 'Monthly' },
+                    { symbol: 'PAYEMS', name: 'All Employees: Total Nonfarm', provider: 'fred', units: 'Thousands of Persons', frequency: 'Monthly' }
+                );
+            }
+            
+            if (searchLower.includes('interest') || searchLower.includes('rate')) {
+                commonSeries.push(
+                    { symbol: 'DFF', name: 'Federal Funds Effective Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' },
+                    { symbol: 'DGS10', name: '10-Year Treasury Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' },
+                    { symbol: 'SOFR', name: 'Secured Overnight Financing Rate', provider: 'fred', units: 'Percent', frequency: 'Daily' }
+                );
+            }
+            
+            // ECB rates
+            if (searchLower.includes('ecb') || searchLower.includes('euro')) {
+                commonSeries.push(
+                    { symbol: 'ECBDFR', name: 'ECB Deposit Facility Rate', provider: 'ecb', units: 'Percent', frequency: 'Daily' },
+                    { symbol: 'ECBMRRFR', name: 'ECB Main Refinancing Rate', provider: 'ecb', units: 'Percent', frequency: 'Daily' }
+                );
+            }
+            
+            // Treasury
+            if (searchLower.includes('treasury') || searchLower.includes('bond')) {
+                commonSeries.push(
+                    { symbol: 'DGS2', name: '2-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' },
+                    { symbol: 'DGS5', name: '5-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' },
+                    { symbol: 'DGS30', name: '30-Year Treasury Rate', provider: 'treasury', units: 'Percent', frequency: 'Daily' }
+                );
+            }
+            
+            // NY Fed
+            if (searchLower.includes('ny fed') || searchLower.includes('dealer')) {
+                commonSeries.push(
+                    { symbol: 'PPDCTR', name: 'Primary Dealer Positions: Treasury Securities', provider: 'nyfed', units: 'Millions of Dollars', frequency: 'Weekly' },
+                    { symbol: 'RRPONTSYD', name: 'Overnight Reverse Repurchase Agreements', provider: 'nyfed', units: 'Billions of Dollars', frequency: 'Daily' }
+                );
+            }
+            
+            // OFR
+            if (searchLower.includes('stress') || searchLower.includes('risk')) {
+                commonSeries.push(
+                    { symbol: 'STLFSI4', name: 'St. Louis Fed Financial Stress Index', provider: 'ofr', units: 'Index', frequency: 'Weekly' },
+                    { symbol: 'VIXCLS', name: 'CBOE Volatility Index: VIX', provider: 'fred', units: 'Index', frequency: 'Daily' }
+                );
+            }
+            
+            // Filter by active providers
+            allResults.push(...commonSeries.filter(s => 
+                activeProviders.has('all') || activeProviders.has(s.provider)
+            ));
         }
-        
-        query_lower = query.lower()
-        
-        # Add matching Treasury series
-        for series_id, description in treasury_series.items():
-            if query_lower in series_id.lower() or query_lower in description.lower():
-                results.append({
-                    "series_id": series_id,
-                    "title": description,
-                    "units": "Percent",
-                    "frequency": "D",
-                    "provider": "treasury"
-                })
-        
-        # Search FRED for treasury data
-        treasury_terms = ["BILL", "NOTE", "BOND", "TREASURY", "AUCTION", "DGS", "TIPS", "YIELD", "T-BILL"]
-        
-        response = await obb.economy.fred_search(
-            query=f"treasury {query}",
-            provider="fred"
-        )
-        
-        if response and hasattr(response, 'results'):
-            for item in response.results:
-                series_id = str(item.get('series_id', '')).upper()
-                title = str(item.get('title', '')).upper()
+
+        function updateSearchProgress(message) {
+            document.getElementById('searchProgress').textContent = message;
+        }
+
+        function updateStats(searchTime) {
+            const statsSection = document.getElementById('statsSection');
+            statsSection.style.display = 'block';
+            
+            const providers = new Set(allResults.map(r => r.provider));
+            const uniqueSymbols = new Set(allResults.map(r => r.symbol));
+            
+            document.getElementById('totalResults').textContent = allResults.length;
+            document.getElementById('providersCount').textContent = providers.size;
+            document.getElementById('searchTime').textContent = searchTime + 's';
+            document.getElementById('uniqueSeries').textContent = uniqueSymbols.size;
+        }
+
+        function filterAndDisplayResults() {
+            // Filter by active providers
+            filteredResults = allResults.filter(result => 
+                activeProviders.has('all') || activeProviders.has(result.provider)
+            );
+            
+            // Remove duplicates based on symbol-provider combination
+            const seen = new Set();
+            filteredResults = filteredResults.filter(result => {
+                const key = `${result.symbol}-${result.provider}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            
+            displayResults();
+        }
+
+        function displayResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            if (filteredResults.length === 0) {
+                resultsGrid.innerHTML = '<div class="loading">No results found. Try different search terms or check provider filters.</div>';
+                resultsCount.textContent = 'No results';
+                resultsSection.style.display = 'block';
+                return;
+            }
+            
+            resultsCount.textContent = `Found ${filteredResults.length} series`;
+            resultsSection.style.display = 'block';
+            
+            // Sort by provider and name
+            filteredResults.sort((a, b) => {
+                if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
+                return a.name.localeCompare(b.name);
+            });
+            
+            resultsGrid.innerHTML = filteredResults.map(result => {
+                const isInWatchlist = watchlist.some(w => w.symbol === result.symbol && w.provider === result.provider);
+                return `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="result-title">${result.name}</div>
+                            <span class="provider-tag provider-${result.provider}">${result.provider.toUpperCase()}</span>
+                        </div>
+                        <div class="result-id">${result.symbol}</div>
+                        <div class="result-meta">
+                            ${result.units ? `<div class="meta-item"><span class="meta-icon">📊</span> ${result.units}</div>` : ''}
+                            ${result.frequency ? `<div class="meta-item"><span class="meta-icon">📅</span> ${result.frequency}</div>` : ''}
+                            ${result.source ? `<div class="meta-item"><span class="meta-icon">🏢</span> ${result.source}</div>` : ''}
+                            ${result.lastUpdated ? `<div class="meta-item"><span class="meta-icon">🔄</span> ${result.lastUpdated}</div>` : ''}
+                        </div>
+                        <div class="result-actions">
+                            <button class="result-btn primary" onclick="viewChart('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
+                                📈 View Chart
+                            </button>
+                            <button class="result-btn" onclick="getData('${result.symbol}', '${result.provider}')">
+                                📊 Get Data
+                            </button>
+                            <button class="result-btn ${isInWatchlist ? 'added' : ''}" 
+                                    id="watchlist-btn-${result.symbol}-${result.provider}"
+                                    onclick="toggleWatchlistItem('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
+                                ${isInWatchlist ? '✓ In Watchlist' : '⭐ Add to List'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleProvider(provider) {
+            const checkbox = document.querySelector(`[data-provider="${provider}"] input`);
+            const label = document.querySelector(`[data-provider="${provider}"]`);
+            
+            if (checkbox.checked) {
+                activeProviders.add(provider);
+                label.classList.add('active');
+            } else {
+                activeProviders.delete(provider);
+                label.classList.remove('active');
+                // Remove 'all' if unchecking individual provider
+                activeProviders.delete('all');
+                document.querySelector('[data-provider="all"] input').checked = false;
+                document.querySelector('[data-provider="all"]').classList.remove('active');
+            }
+            
+            filterAndDisplayResults();
+        }
+
+        function toggleAllProviders(checkbox) {
+            const allCheckboxes = document.querySelectorAll('.provider-checkbox input');
+            const allLabels = document.querySelectorAll('.provider-checkbox');
+            
+            allCheckboxes.forEach((cb, index) => {
+                cb.checked = checkbox.checked;
+                if (checkbox.checked) {
+                    allLabels[index].classList.add('active');
+                } else {
+                    allLabels[index].classList.remove('active');
+                }
+            });
+            
+            if (checkbox.checked) {
+                activeProviders = new Set(['all', 'fred', 'ecb', 'treasury', 'nyfed', 'ofr', 'bls', 'fmp', 'polygon', 'yfinance']);
+            } else {
+                activeProviders = new Set();
+            }
+            
+            filterAndDisplayResults();
+        }
+
+        async function viewChart(symbol, provider, name) {
+            const modal = document.getElementById('chartModal');
+            const chartTitle = document.getElementById('chartTitle');
+            const chartInfo = document.getElementById('chartInfo');
+            
+            chartTitle.textContent = `${name} (${symbol})`;
+            chartInfo.innerHTML = '<div class="loading">Loading chart data...</div>';
+            modal.style.display = 'flex';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                if (!response.ok) throw new Error('Failed to fetch data');
                 
-                if any(term in series_id or term in title for term in treasury_terms):
-                    result = {
-                        "series_id": item.get("series_id", ""),
-                        "title": item.get("title", ""),
-                        "units": item.get("units", ""),
-                        "frequency": item.get("frequency", ""),
-                        "provider": "treasury"
+                const result = await response.json();
+                let data = result.data || result.results || result;
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Invalid data format');
+                }
+                
+                // Prepare chart data
+                const chartData = data.map(point => ({
+                    x: new Date(point.date || point.Date || point.timestamp),
+                    y: point.value || point.close || point.price || point.rate || point[symbol]
+                })).filter(point => !isNaN(point.y) && point.y !== null);
+                
+                if (chartData.length === 0) {
+                    throw new Error('No valid data points');
+                }
+                
+                // Create chart
+                const ctx = document.getElementById('chartCanvas').getContext('2d');
+                
+                if (currentChart) {
+                    currentChart.destroy();
+                }
+                
+                currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: symbol,
+                            data: chartData,
+                            borderColor: '#5c6bc0',
+                            backgroundColor: 'rgba(92, 107, 192, 0.1)',
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${name} - ${provider.toUpperCase()}`
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'month'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value'
+                                }
+                            }
+                        }
                     }
+                });
+                
+                // Update info
+                const latest = chartData[chartData.length - 1];
+                const first = chartData[0];
+                const change = latest.y - first.y;
+                const changePercent = ((change / first.y) * 100).toFixed(2);
+                
+                chartInfo.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="stat-card">
+                            <div class="stat-label">Latest Value</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${latest.y.toFixed(2)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Date</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${latest.x.toLocaleDateString()}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Change</div>
+                            <div class="stat-value" style="font-size: 1.5em; color: ${change >= 0 ? '#4caf50' : '#f44336'}">
+                                ${change >= 0 ? '+' : ''}${changePercent}%
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Data Points</div>
+                            <div class="stat-value" style="font-size: 1.5em;">${chartData.length}</div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                chartInfo.innerHTML = `<div style="color: #f44336;">Error loading chart: ${error.message}</div>`;
+                console.error('Chart error:', error);
+            }
+        }
+
+        async function getData(symbol, provider) {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const result = await response.json();
+                let data = result.data || result.results || result;
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    const latest = data[data.length - 1];
+                    const value = latest.value || latest.close || latest.price || latest.rate || latest[symbol];
+                    const date = latest.date || latest.Date || latest.timestamp;
                     
-                    # Avoid duplicates
-                    if not any(r['series_id'] == result['series_id'] for r in results):
-                        results.append(result)
-                        
-        return {"results": results[:50]}
-    except Exception as e:
-        return {"error": str(e), "results": []}
+                    // Create a more detailed popup
+                    const details = `Latest data for ${symbol}:
+                    
+Date: ${date}
+Value: ${value}
+Provider: ${provider.toUpperCase()}
+Data Points: ${data.length}
 
-# Data retrieval endpoints
+API Endpoint:
+${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
+                    
+                    alert(details);
+                } else {
+                    alert('No data available for this series');
+                }
+            } catch (error) {
+                alert(`Error fetching data: ${error.message}`);
+            }
+        }
 
-@app.get("/api/v1/economy/ecb_series")
-async def ecb_series(symbol: str, provider: str = "ecb", limit: Optional[int] = None):
-    """Get ECB data series."""
-    try:
-        # Use ECB provider directly
-        kwargs = {"symbol": symbol, "provider": "ecb"}
-        if limit:
-            kwargs["limit"] = limit
-        
-        # Try ECB-specific endpoint first
-        try:
-            response = await obb.economy.european_central_bank(symbol=symbol)
-            return process_response(response)
-        except:
-            # Fallback to generic economy data with ECB provider
-            response = await obb.economy.fred_series(**kwargs)
-            return process_response(response)
-    except Exception as e:
-        return {"error": str(e), "data": []}
+        function loadWatchlist() {
+            watchlist = JSON.parse(localStorage.getItem('universalWatchlist') || '[]');
+            if (watchlist.length > 0) {
+                showWatchlist();
+            }
+        }
 
-@app.get("/api/v1/economy/ny_fed_series")
-async def ny_fed_series(symbol: str, provider: str = "newyorkfed", limit: Optional[int] = None):
-    """Get New York Fed data series."""
-    try:
-        # Use NY Fed provider directly
-        kwargs = {"symbol": symbol, "provider": "newyorkfed"}
-        if limit:
-            kwargs["limit"] = limit
-        
-        # Try NY Fed specific endpoints
-        try:
-            # For SOFR and related rates
-            if symbol in ["SOFR", "EFFR", "OBFR", "TGCR", "BGCR"]:
-                response = await obb.fixedincome.rate(symbol=symbol, provider="newyorkfed")
-                return process_response(response)
-            else:
-                # For other NY Fed data
-                response = await obb.economy.fred_series(symbol=symbol, provider="newyorkfed")
-                return process_response(response)
-        except:
-            # Fallback to FRED if NY Fed provider fails
-            response = await obb.economy.fred_series(symbol=symbol, provider="fred")
-            return process_response(response)
-    except Exception as e:
-        return {"error": str(e), "data": []}
+        function saveWatchlist() {
+            localStorage.setItem('universalWatchlist', JSON.stringify(watchlist));
+        }
 
-@app.get("/api/v1/economy/ofr_series")
-async def ofr_series(symbol: str, provider: str = "ofr", limit: Optional[int] = None):
-    """Get OFR data series."""
-    try:
-        # Use OFR provider directly
-        kwargs = {"symbol": symbol, "provider": "ofr"}
-        if limit:
-            kwargs["limit"] = limit
-        
-        # Try OFR specific endpoint
-        try:
-            response = await obb.economy.fred_series(**kwargs)
-            return process_response(response)
-        except:
-            # If OFR provider fails, the symbol might be in FRED
-            response = await obb.economy.fred_series(symbol=symbol, provider="fred")
-            return process_response(response)
-    except Exception as e:
-        return {"error": str(e), "data": []}
+        function toggleWatchlistItem(symbol, provider, name) {
+            const index = watchlist.findIndex(w => w.symbol === symbol && w.provider === provider);
+            const btn = document.getElementById(`watchlist-btn-${symbol}-${provider}`);
+            
+            if (index >= 0) {
+                // Remove from watchlist
+                watchlist.splice(index, 1);
+                if (btn) {
+                    btn.classList.remove('added');
+                    btn.innerHTML = '⭐ Add to List';
+                }
+            } else {
+                // Add to watchlist
+                watchlist.push({
+                    symbol,
+                    provider,
+                    name,
+                    addedAt: new Date().toISOString()
+                });
+                if (btn) {
+                    btn.classList.add('added');
+                    btn.innerHTML = '✓ In Watchlist';
+                }
+            }
+            
+            saveWatchlist();
+            updateWatchlistDisplay();
+        }
 
-@app.get("/api/v1/economy/treasury_auctions")
-async def treasury_auctions(
-    cusip: Optional[str] = None,
-    symbol: Optional[str] = None,
-    provider: str = "treasury",
-    limit: Optional[int] = None
-):
-    """Get Treasury auction data."""
-    try:
-        series_id = cusip or symbol
-        if not series_id:
-            return {"error": "Either cusip or symbol required", "data": []}
-        
-        # Try treasury-specific endpoints
-        try:
-            # For treasury yields
-            if series_id.startswith("DGS") or series_id.startswith("TB"):
-                response = await obb.fixedincome.government.treasury_rates(provider="treasury")
-                return process_response(response)
-            else:
-                # For treasury auction data
-                response = await obb.fixedincome.government.treasury_auctions(provider="treasury")
-                return process_response(response)
-        except:
-            # Fallback to FRED for treasury data
-            kwargs = {"symbol": series_id, "provider": "fred"}
-            if limit:
-                kwargs["limit"] = limit
-            response = await obb.economy.fred_series(**kwargs)
-            return process_response(response)
-    except Exception as e:
-        return {"error": str(e), "data": []}
+        function showWatchlist() {
+            const section = document.getElementById('watchlistSection');
+            section.style.display = 'block';
+            updateWatchlistDisplay();
+        }
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        function toggleWatchlist() {
+            const section = document.getElementById('watchlistSection');
+            section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function updateWatchlistDisplay() {
+            const grid = document.getElementById('watchlistGrid');
+            
+            if (watchlist.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No items in watchlist</div>';
+                return;
+            }
+            
+            grid.innerHTML = watchlist.map(item => `
+                <div class="watchlist-item">
+                    <div class="watchlist-info">
+                        <div class="watchlist-symbol">${item.symbol}</div>
+                        <div class="watchlist-name">${item.name}</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="result-btn" onclick="viewChart('${item.symbol}', '${item.provider}', '${item.name.replace(/'/g, "\\'")}')">
+                            📈
+                        </button>
+                        <button class="result-btn" onclick="removeFromWatchlist('${item.symbol}', '${item.provider}')">
+                            ❌
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeFromWatchlist(symbol, provider) {
+            const index = watchlist.findIndex(w => w.symbol === symbol && w.provider === provider);
+            if (index >= 0) {
+                watchlist.splice(index, 1);
+                saveWatchlist();
+                updateWatchlistDisplay();
+                
+                // Update button if visible
+                const btn = document.getElementById(`watchlist-btn-${symbol}-${provider}`);
+                if (btn) {
+                    btn.classList.remove('added');
+                    btn.innerHTML = '⭐ Add to List';
+                }
+            }
+        }
+
+        function exportResults() {
+            if (filteredResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            let csv = 'Symbol,Name,Provider,Units,Frequency,Source,Last Updated\n';
+            
+            filteredResults.forEach(result => {
+                csv += `"${result.symbol}","${result.name}","${result.provider}","${result.units || ''}","${result.frequency || ''}","${result.source || ''}","${result.lastUpdated || ''}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `universal_search_results_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            allResults = [];
+            filteredResults = [];
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('statsSection').style.display = 'none';
+            document.getElementById('suggestionsDropdown').style.display = 'none';
+            sessionStorage.removeItem('lastUniversalSearch');
+        }
+
+        function closeChart() {
+            document.getElementById('chartModal').style.display = 'none';
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingSection').style.display = show ? 'block' : 'none';
+            document.getElementById('searchBtn').disabled = show;
+            document.getElementById('searchSpinner').style.display = show ? 'inline' : 'none';
+        }
+
+        // Click outside to close suggestions
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-input-wrapper')) {
+                document.getElementById('suggestionsDropdown').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
