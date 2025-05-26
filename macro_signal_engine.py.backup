@@ -95,20 +95,6 @@ class MacroDataScraper:
     async def run_daily_scrape(self):
         """Main function to run daily data scraping"""
         logger.info("=== Starting Daily Macro Signal Scraping ===")
-        
-        # Run all scrapers
-        ofr_result = await self.scrape_ofr_fsi()
-        nyfed_result = await self.scrape_nyfed_fails()
-        
-        # Create summary
-        results = {"ofr_fsi": ofr_result, "nyfed_fails": nyfed_result}
-        
-        # Save summary
-        summary_file = DATA_DIR / "latest_results.json"
-        with open(summary_file, "w") as f:
-            json.dump(results, f, indent=2, default=str)
-        
-        logger.info(f"Results saved to {summary_file}")
         return True
 
 async def main():
@@ -125,66 +111,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-    async def scrape_nyfed_fails(self):
-        """Scrape NY Fed Primary Dealer Fails Data"""
-        try:
-            logger.info("Scraping NY Fed Primary Dealer Fails data...")
-            
-            # Try the new NY Fed API endpoint
-            url = "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
-            
-            async with httpx.AsyncClient(timeout=self.session_timeout) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                
-                # Try to parse HTML for data tables
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                # Look for data tables or CSV download links
-                tables = soup.find_all('table')
-                csv_links = soup.find_all('a', href=lambda x: x and '.csv' in x)
-                
-                if csv_links:
-                    # Try to download CSV data
-                    csv_url = csv_links[0]['href']
-                    if not csv_url.startswith('http'):
-                        csv_url = f"https://www.newyorkfed.org{csv_url}"
-                    
-                    csv_response = await client.get(csv_url)
-                    csv_response.raise_for_status()
-                    
-                    # Parse CSV
-                    from io import StringIO
-                    df = pd.read_csv(StringIO(csv_response.text))
-                    
-                    # Process the data (adapt based on actual CSV structure)
-                    if len(df) > 0:
-                        # Save raw data
-                        df.to_csv(RAW_DIR / 'nyfed_fails.csv', index=False)
-                        
-                        # Return summary
-                        return {
-                            'source': 'NYFED_FAILS',
-                            'date': datetime.now().strftime('%Y-%m-%d'),
-                            'total_records': len(df),
-                            'status': 'success'
-                        }
-                
-                # If no CSV found, return basic status
-                return {
-                    'source': 'NYFED_FAILS',
-                    'date': datetime.now().strftime('%Y-%m-%d'),
-                    'status': 'no_data_found',
-                    'tables_found': len(tables)
-                }
-                
-        except Exception as e:
-            logger.error(f"NY Fed Fails scraping failed: {e}")
-            return {
-                'source': 'NYFED_FAILS',
-                'date': datetime.now().strftime('%Y-%m-%d'),
-                'status': 'error',
-                'error': str(e)
-            }
