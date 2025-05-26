@@ -699,6 +699,14 @@
                     <span class="source-indicator" id="ecb-indicator"></span>
                     ECB
                 </button>
+                <button class="source-toggle active" data-source="ofr" onclick="toggleDataSource('ofr')">
+                    <span class="source-indicator" id="ofr-indicator"></span>
+                    OFR
+                </button>
+                <button class="source-toggle active" data-source="treasury" onclick="toggleDataSource('treasury')">
+                    <span class="source-indicator" id="treasury-indicator"></span>
+                    Treasury
+                </button>
             </div>
         </div>
 
@@ -720,6 +728,8 @@
                             <option value="BLACK SWAN INDICATORS">BLACK SWAN INDICATORS</option>
                             <option value="ECONOMIC INDICATORS">ECONOMIC INDICATORS</option>
                             <option value="RATES & MONETARY">RATES & MONETARY</option>
+                            <option value="OFR FUNDING MONITOR">OFR FUNDING MONITOR</option>
+                            <option value="TREASURY AUCTIONS">TREASURY AUCTIONS</option>
                         </select>
                     </div>
                     <div class="watchlist-controls">
@@ -765,13 +775,13 @@
         // Configuration matching your exact backend
         const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
         
-        // Data source configurations matching your backend
+        // Enhanced data source configurations for all APIs
         const DATA_SOURCES = {
             polygon: {
                 name: 'Polygon Financial Data',
                 provider: 'polygon_direct',
                 active: true,
-                searchSymbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ', 'IWM', 'VTI', 'VOO']
+                searchSymbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD']
             },
             fred: {
                 name: 'Federal Reserve Economic Data',
@@ -798,15 +808,46 @@
             },
             ny_fed: {
                 name: 'New York Federal Reserve',
-                provider: 'fred_direct', // Use FRED for NY Fed rates
+                provider: 'ny_fed_direct',
                 active: true,
-                searchSymbols: ['SOFR', 'EFFR', 'OBFR', 'TGCR', 'BGCR'] // Use FRED symbols
+                searchSymbols: ['sofr', 'effr', 'obfr', 'tgcr', 'bgcr']
             },
             ecb: {
                 name: 'European Central Bank',
                 provider: 'ecb_direct',
                 active: true,
-                searchSymbols: ['EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A']
+                searchSymbols: [
+                    // Exchange Rates
+                    'EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A',
+                    // CISS - Composite Indicator of Systemic Stress
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX',
+                    // Country-specific Sovereign CISS
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX',
+                    // CLIFS - Country-Level Index of Financial Stress
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX',
+                    // ILM - Interest Rate and Liquidity Measures
+                    'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR'
+                ]
+            },
+            ofr: {
+                name: 'Office of Financial Research',
+                provider: 'ofr_direct',
+                active: true,
+                searchSymbols: [
+                    'NYPD-PD_AFtR_T-A', 'NYPD-PD_AFtD_TOT-A', 'REPO_OV_TOT_P75', 'REPO_OV_TOT_P25',
+                    'MMF_OV_TOT', 'DEALER_OV_TOT', 'BANK_OV_TOT', 'TGCR_VOL', 'SOFR_VOL'
+                ]
+            },
+            treasury: {
+                name: 'US Treasury Direct',
+                provider: 'treasury_direct',
+                active: true,
+                searchSymbols: [
+                    'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_17W', 'BILLS_26W', 'BILLS_52W',
+                    'NOTES_2Y', 'NOTES_3Y', 'NOTES_5Y', 'NOTES_7Y', 'NOTES_10Y',
+                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y'
+                ]
             }
         };
         
@@ -814,18 +855,20 @@
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
-        let activeSources = ['polygon', 'fred', 'ny_fed', 'ecb'];
+        let activeSources = ['polygon', 'fred', 'ny_fed', 'ecb', 'ofr', 'treasury'];
         
-        // Updated watchlists with your exact working backend symbols
+        // Enhanced watchlists with comprehensive coverage
         const watchlists = {
             'MAIN': {
                 symbols: [
                     { symbol: 'AAPL', provider: 'polygon_direct' },
                     { symbol: 'FEDFUNDS', provider: 'fred_direct' },
                     { symbol: 'UNRATE', provider: 'fred_direct' },
-                    { symbol: 'sofr', provider: 'ny_fed_direct' }, // lowercase as per your backend
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
                     { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
-                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' }
                 ],
                 active: true
             },
@@ -838,46 +881,47 @@
                     { symbol: 'TSLA', provider: 'polygon_direct' },
                     { symbol: 'SPY', provider: 'polygon_direct' },
                     { symbol: 'QQQ', provider: 'polygon_direct' },
-                    { symbol: 'NVDA', provider: 'polygon_direct' }
+                    { symbol: 'NVDA', provider: 'polygon_direct' },
+                    { symbol: 'META', provider: 'polygon_direct' },
+                    { symbol: 'NFLX', provider: 'polygon_direct' }
                 ],
                 active: false
             },
             'NY FED RATES': {
                 symbols: [
-                    { symbol: 'sofr', provider: 'ny_fed_direct' }, // ✅ Working per your backend
-                    { symbol: 'effr', provider: 'ny_fed_direct' }, // ✅ Working per your backend  
-                    { symbol: 'obfr', provider: 'ny_fed_direct' }, // ✅ Working per your backend
-                    { symbol: 'tgcr', provider: 'ny_fed_direct' }, // ✅ Available per your backend
-                    { symbol: 'bgcr', provider: 'ny_fed_direct' }  // ✅ Available per your backend
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
+                    { symbol: 'obfr', provider: 'ny_fed_direct' },
+                    { symbol: 'tgcr', provider: 'ny_fed_direct' },
+                    { symbol: 'bgcr', provider: 'ny_fed_direct' }
                 ],
                 active: false
             },
             'ECB SYSTEMIC STRESS': {
                 symbols: [
-                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }, // Euro Area CISS
-                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct' }, // US CISS
-                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' }, // China CISS
-                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // Sweden Sovereign
-                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // France Sovereign
-                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' }, // UK Sovereign
-                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb_direct' } // Germany Financial Stress
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb_direct' }
                 ],
                 active: false
             },
             'DOLLAR & EXCHANGE': {
                 symbols: [
-                    { symbol: 'DTWEXBGS', provider: 'fred_direct' }, // ✅ From your FRED list
-                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct' }, // ✅ From your FRED list
-                    { symbol: 'DTWEXEMEGS', provider: 'fred_direct' }, // ✅ From your FRED list
-                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' }, // EUR/USD
-                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb_direct' }, // EUR/GBP
-                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb_direct' } // EUR/JPY
+                    { symbol: 'DTWEXBGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXEMEGS', provider: 'fred_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb_direct' }
                 ],
                 active: false
             },
             'GLOBAL LIQUIDITY': {
                 symbols: [
-                    // ✅ All from your confirmed FRED URLs
                     { symbol: 'RESPPNTEPNWW', provider: 'fred_direct' },
                     { symbol: 'RESPPALGUOXAWXCH52NWW', provider: 'fred_direct' },
                     { symbol: 'RESPPALGUONNWW', provider: 'fred_direct' },
@@ -895,14 +939,14 @@
             },
             'BLACK SWAN INDICATORS': {
                 symbols: [
-                    // ✅ All from your confirmed FRED URLs
                     { symbol: 'NFCINONFINLEVERAGE', provider: 'fred_direct' },
                     { symbol: 'FRBKCLMCIM', provider: 'fred_direct' },
                     { symbol: 'AMTMUO', provider: 'fred_direct' },
                     { symbol: 'T10YIE', provider: 'fred_direct' },
                     { symbol: 'WLCFLPCL', provider: 'fred_direct' },
                     { symbol: 'CC4WSA', provider: 'fred_direct' },
-                    { symbol: 'VIXCLS', provider: 'fred_direct' }
+                    { symbol: 'VIXCLS', provider: 'fred_direct' },
+                    { symbol: 'TREAS1590', provider: 'fred_direct' }
                 ],
                 active: false
             },
@@ -925,9 +969,35 @@
                     { symbol: 'DGS10', provider: 'fred_direct' },
                     { symbol: 'DGS2', provider: 'fred_direct' },
                     { symbol: 'DGS30', provider: 'fred_direct' },
-                    { symbol: 'sofr', provider: 'ny_fed_direct' }, // NY Fed working
-                    { symbol: 'effr', provider: 'ny_fed_direct' }, // NY Fed working
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
                     { symbol: 'M2SL', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'OFR FUNDING MONITOR': {
+                symbols: [
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'NYPD-PD_AFtD_TOT-A', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P75', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P25', provider: 'ofr_direct' },
+                    { symbol: 'MMF_OV_TOT', provider: 'ofr_direct' },
+                    { symbol: 'DEALER_OV_TOT', provider: 'ofr_direct' }
+                ],
+                active: false
+            },
+            'TREASURY AUCTIONS': {
+                symbols: [
+                    { symbol: 'BILLS_4W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_26W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_52W', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_2Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_5Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_10Y', provider: 'treasury_direct' },
+                    { symbol: 'BONDS_30Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_10Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_30Y', provider: 'treasury_direct' }
                 ],
                 active: false
             }
@@ -959,7 +1029,7 @@
             document.getElementById('searchBox').focus();
         }
         
-        // Check API connections using your exact endpoints
+        // Enhanced API connection check for all providers
         async function checkAPIConnections() {
             let connectedCount = 0;
             const totalSources = Object.keys(DATA_SOURCES).length;
@@ -975,7 +1045,7 @@
                 console.warn('Health check failed:', error);
             }
             
-            // Test each provider with more lenient success criteria
+            // Test each provider with more comprehensive checks
             for (const [source, config] of Object.entries(DATA_SOURCES)) {
                 try {
                     const testSymbol = config.searchSymbols[0];
@@ -989,13 +1059,16 @@
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=ny_fed_direct&include_changes=false`;
                     } else if (source === 'ecb') {
                         testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                    } else if (source === 'ofr') {
+                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                    } else if (source === 'treasury') {
+                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
                     }
                     
                     const response = await fetch(testUrl);
                     
                     if (response.ok) {
                         const data = await response.json();
-                        // More lenient success check - any valid response structure indicates connection
                         if (data && (data.metrics || data.data || data.symbol)) {
                             document.getElementById(`${source}-indicator`).classList.add('connected');
                             connectedCount++;
@@ -1038,7 +1111,7 @@
             }
         }
         
-        // Enhanced search using your backend structure
+        // Enhanced search across all providers
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
             
@@ -1049,7 +1122,7 @@
             
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
-                resultsDiv.innerHTML = '<div class="search-loading">Searching across data sources...</div>';
+                resultsDiv.innerHTML = '<div class="search-loading">Searching across all data sources...</div>';
                 resultsDiv.style.display = 'block';
                 
                 try {
@@ -1090,7 +1163,7 @@
             }, 300);
         }
         
-        // Get symbol description
+        // Enhanced symbol descriptions for all providers
         function getSymbolDescription(symbol, source) {
             const descriptions = {
                 polygon: {
@@ -1103,7 +1176,10 @@
                     'QQQ': 'Invesco QQQ Trust',
                     'IWM': 'iShares Russell 2000 ETF',
                     'VTI': 'Vanguard Total Stock Market ETF',
-                    'VOO': 'Vanguard S&P 500 ETF'
+                    'VOO': 'Vanguard S&P 500 ETF',
+                    'NVDA': 'NVIDIA Corporation',
+                    'META': 'Meta Platforms Inc.',
+                    'NFLX': 'Netflix Inc.'
                 },
                 fred: {
                     'FEDFUNDS': 'Federal Funds Rate',
@@ -1114,7 +1190,30 @@
                     'M2SL': 'M2 Money Supply',
                     'PAYEMS': 'Total Nonfarm Payrolls',
                     'HOUST': 'Housing Starts',
-                    'INDPRO': 'Industrial Production Index'
+                    'INDPRO': 'Industrial Production Index',
+                    'DTWEXBGS': 'Trade Weighted U.S. Dollar Index: Broad, Goods and Services',
+                    'DTWEXAFEGS': 'Trade Weighted U.S. Dollar Index: Advanced Foreign Economies, Goods and Services',
+                    'DTWEXEMEGS': 'Trade Weighted U.S. Dollar Index: Emerging Market Economies, Goods and Services',
+                    'RESPPNTEPNWW': 'Central Bank Assets to GDP for World',
+                    'RESPPALGUOXAWXCH52NWW': 'Central Bank Assets for World',
+                    'RESPPALGUONNWW': 'Central Bank Assets for World (Narrow)',
+                    'SWP1690': 'Central Bank Liquidity Swaps',
+                    'OTHL1690': 'Other Liquid Assets',
+                    'RMFSL': 'Reserve Bank Credit',
+                    'BOGMBASE': 'Monetary Base',
+                    'WSHOSHO': 'Wholesale Short-Term Funding',
+                    'WRESBAL': 'Reserve Balances',
+                    'TOTRESNS': 'Total Reserves',
+                    'NONBORRES': 'Non-borrowed Reserves',
+                    'NFCINONFINLEVERAGE': 'National Financial Conditions Index: Nonfinancial Leverage Subindex',
+                    'FRBKCLMCIM': 'Bank Commercial and Industrial Loans',
+                    'AMTMUO': 'Margin Trading Outstanding',
+                    'T10YIE': '10-Year Breakeven Inflation Rate',
+                    'WLCFLPCL': 'Crude Oil Prices: West Texas Intermediate',
+                    'CC4WSA': 'Credit Card Charge-Off Rate',
+                    'VIXCLS': 'CBOE Volatility Index: VIX',
+                    'ISRATIO': 'Total Business Inventories to Sales Ratio',
+                    'MNFCTRIRSA': 'Manufacturers: Inventories to Sales Ratio'
                 },
                 ny_fed: {
                     'sofr': 'Secured Overnight Financing Rate',
@@ -1144,25 +1243,51 @@
                     // ILM - Interest Rate and Liquidity Measures
                     'ILM.W.U2.C.A030000.U2.Z06': 'Euro Area Weekly Liquidity Measures',
                     'ILM.W.U2.C.L060000.U4.EUR': 'Euro Area Weekly Interest Rate Measures'
-                ny_fed: {
-                    'sofr': 'Secured Overnight Financing Rate',
-                    'effr': 'Effective Federal Funds Rate', 
-                    'obfr': 'Overnight Bank Funding Rate',
-                    'tgcr': 'Tri-party General Collateral Rate',
-                    'bgcr': 'Broad General Collateral Rate'
                 },
+                ofr: {
+                    'NYPD-PD_AFtR_T-A': 'NY Primary Dealer After-Fed Total Amount',
+                    'NYPD-PD_AFtD_TOT-A': 'NY Primary Dealer After-Fed Total Daily Amount',
+                    'REPO_OV_TOT_P75': 'Repo Market Overall Total 75th Percentile',
+                    'REPO_OV_TOT_P25': 'Repo Market Overall Total 25th Percentile',
+                    'MMF_OV_TOT': 'Money Market Fund Overall Total',
+                    'DEALER_OV_TOT': 'Dealer Overall Total',
+                    'BANK_OV_TOT': 'Bank Overall Total',
+                    'TGCR_VOL': 'Tri-party General Collateral Rate Volume',
+                    'SOFR_VOL': 'SOFR Volume'
+                },
+                treasury: {
+                    'BILLS_4W': '4-Week Treasury Bills',
+                    'BILLS_8W': '8-Week Treasury Bills',
+                    'BILLS_13W': '13-Week Treasury Bills',
+                    'BILLS_17W': '17-Week Treasury Bills',
+                    'BILLS_26W': '26-Week Treasury Bills',
+                    'BILLS_52W': '52-Week Treasury Bills',
+                    'NOTES_2Y': '2-Year Treasury Notes',
+                    'NOTES_3Y': '3-Year Treasury Notes',
+                    'NOTES_5Y': '5-Year Treasury Notes',
+                    'NOTES_7Y': '7-Year Treasury Notes',
+                    'NOTES_10Y': '10-Year Treasury Notes',
+                    'BONDS_20Y': '20-Year Treasury Bonds',
+                    'BONDS_30Y': '30-Year Treasury Bonds',
+                    'TIPS_5Y': '5-Year TIPS',
+                    'TIPS_10Y': '10-Year TIPS',
+                    'TIPS_20Y': '20-Year TIPS',
+                    'TIPS_30Y': '30-Year TIPS'
+                }
             };
             
             return descriptions[source]?.[symbol] || symbol;
         }
         
-        // Get detailed description with all working sources
+        // Enhanced detailed descriptions
         function getDetailedDescription(symbol, source) {
             const details = {
                 polygon: 'Stock market data',
                 fred: 'Economic indicator',
                 ny_fed: 'Reference rate',
-                ecb: 'European financial indicator'
+                ecb: 'European financial indicator',
+                ofr: 'Financial research data',
+                treasury: 'Treasury auction data'
             };
             
             return details[source] || '';
@@ -1177,7 +1302,7 @@
                     <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
                         No results found for "${query}"
                         <div style="margin-top: 10px; font-size: 12px;">
-                            Try: AAPL, FEDFUNDS, sofr, EUR/USD
+                            Try: AAPL, FEDFUNDS, sofr, EUR/USD, CISS
                         </div>
                     </div>
                 `;
@@ -1201,7 +1326,7 @@
                 return 0;
             });
             
-            const displayResults = results.slice(0, 20);
+            const displayResults = results.slice(0, 30);
             
             let html = '';
             displayResults.forEach(result => {
@@ -1257,7 +1382,7 @@
             document.getElementById('searchBox').value = '';
         }
         
-        // Load single watchlist item using your exact API structure
+        // Enhanced data loading for all providers
         async function loadSingleWatchlistItem(symbol, provider, retryCount = 0) {
             const maxRetries = 2;
             
@@ -1266,7 +1391,7 @@
                 
                 let url;
                 
-                // Build URL based on provider type matching your backend
+                // Build URL based on provider type
                 if (provider === 'polygon_direct') {
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=quote`;
                 } else if (provider === 'fred_direct') {
@@ -1274,6 +1399,10 @@
                 } else if (provider === 'ny_fed_direct') {
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=false`;
                 } else if (provider === 'ecb_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=false`;
+                } else if (provider === 'ofr_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=false`;
+                } else if (provider === 'treasury_direct') {
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=false`;
                 } else {
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
@@ -1291,7 +1420,6 @@
                 if (data.metrics && data.metrics.latest_value !== undefined) {
                     processWatchlistData(symbol, data, provider);
                 } else if (data.data && Array.isArray(data.data) && data.data.length > 0) {
-                    // Handle raw data array
                     processWatchlistDataArray(symbol, data.data, provider);
                 } else {
                     throw new Error('No data available');
@@ -1670,7 +1798,7 @@
             document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
         }
         
-        // Chart functions (simplified for your backend)
+        // Enhanced chart functions
         function addNewChart() {
             const chartId = `chart_${chartIdCounter++}`;
             
@@ -1787,21 +1915,16 @@
             if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
             
             try {
-                // Use historical data endpoint for charts
                 let url;
                 
                 if (provider === 'polygon_direct') {
-                    // Get historical data for stocks
                     const endDate = new Date().toISOString().split('T')[0];
                     const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
+                } else if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=1000&sort_order=desc&include_pandas=false`;
                 } else {
-                    // For other providers, try to get raw historical data
-                    if (provider === 'fred_direct') {
-                        url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=1000&sort_order=desc&include_pandas=false`;
-                    } else {
-                        url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
-                    }
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
                 }
                 
                 const response = await fetch(url);
@@ -1816,7 +1939,6 @@
                 let processedData = [];
                 
                 if (result.data && Array.isArray(result.data)) {
-                    // Handle array data
                     processedData = result.data
                         .map(item => {
                             let value = item.value || item.close || item.price || item.rate || null;
@@ -1832,7 +1954,6 @@
                         .filter(item => item.value !== null && !isNaN(item.value) && item.date)
                         .sort((a, b) => new Date(a.date) - new Date(b.date));
                 } else if (result.observations && Array.isArray(result.observations)) {
-                    // Handle FRED raw data
                     processedData = result.observations
                         .map(obs => ({
                             date: obs.date,
