@@ -2047,5 +2047,578 @@
                                 <div class="color-tag" style="${colorStyle}" onclick="editSymbol(event, '${symbol}')"></div>
                                 <div class="symbol-icon">${symbol.charAt(0)}</div>
                                 <div class="symbol-info">
-                                    <div class="symbol-name"
-...
+                                    <div class="symbol-name">
+                                        ${displayName}
+                                        <span class="edit-icon" onclick="editSymbol(event, '${symbol}')">✏️</span>
+                                    </div>
+                                    <div class="symbol-fullname">${data.name} (${providerLabel})</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="price-cell">${formatPrice(data.price)}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">${formatUnits(data.changeUnits?.daily)}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.yearly)}">${formatUnits(data.changeUnits?.yearly)}</td>
+                        <td style="padding: 5px;">
+                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px; background: #f5f5f5; color: #333; border: 1px solid #ddd;"
+                                    onclick="removeFromWatchlist(event, '${symbol}')">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+           
+            tbody.innerHTML = html || '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
+           
+            updateSortIndicators();
+        }
+       
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol) {
+            event.stopPropagation();
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            const index = currentSymbols.findIndex(s => (s.symbol || s) === symbol);
+            if (index > -1) {
+                currentSymbols.splice(index, 1);
+                watchlistSymbols = [...currentSymbols];
+                delete watchlistData[symbol];
+               
+                // Clear flash timer if exists
+                if (flashTimers[symbol]) {
+                    delete flashTimers[symbol];
+                }
+               
+                saveWatchlists();
+                renderWatchlist();
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
+            }
+        }
+       
+        // Sort by column
+        function sortByColumn(period) {
+            if (columnSort.column === period) {
+                columnSort.direction = columnSort.direction === 'desc' ? 'asc' : 'desc';
+            } else {
+                columnSort.column = period;
+                columnSort.direction = 'desc';
+            }
+           
+            sortOrder = 'default';
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        // Update sort indicators
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.className = 'sort-indicator';
+            });
+           
+            if (columnSort.column && columnSort.direction) {
+                const indicator = document.getElementById(`sort-${columnSort.column}`);
+                if (indicator) {
+                    indicator.className = `sort-indicator ${columnSort.direction}`;
+                }
+            }
+        }
+       
+        // Change sort order
+        function changeSortOrder(order) {
+            sortOrder = order;
+            columnSort = { column: null, direction: null };
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        // Update sort buttons
+        function updateSortButtons() {
+            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default');
+            document.getElementById('sortIncrease').classList.toggle('active', sortOrder === 'increase');
+            document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
+        }
+       
+        // Enhanced chart functions with new data display options
+        function addNewChart() {
+            const chartId = `chart_${chartIdCounter++}`;
+           
+            const chartHtml = `
+                <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
+                    <div class="chart-header">
+                        <div class="chart-title-section">
+                            <div class="chart-title" id="${chartId}_title">Chart ${chartIdCounter}</div>
+                            <div class="chart-symbols" id="${chartId}_symbols"></div>
+                            <div class="chart-display-controls">
+                                <button class="display-toggle active" onclick="toggleChartDisplay(event, '${chartId}', 'raw')" data-display="raw">Raw Data</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'pct_change')" data-display="pct_change">% Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'unit_change')" data-display="unit_change">Unit Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'year_pct')" data-display="year_pct">Year % Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'year_units')" data-display="year_units">Year Unit Change</button>
+                            </div>
+                        </div>
+                        <div class="chart-controls">
+                            <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','MAX'].map(tf =>
+                                    `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}"
+                                             onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
+                                ).join('')}
+                            </div>
+                            <button class="close-btn" onclick="removeChart(event, '${chartId}')">×</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas" id="${chartId}_canvas">
+                        <div class="chart-message">Search for a financial indicator to add to this chart</div>
+                    </div>
+                </div>`;
+           
+            document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
+            charts[chartId] = {
+                symbols: [],
+                data: {},
+                timeframe: '1Y',
+                chartInstance: null,
+                displayMode: 'raw'
+            };
+            setActiveChart(chartId);
+           
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+           
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+        }
+       
+        // Toggle chart display mode
+        function toggleChartDisplay(event, chartId, displayMode) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            chart.displayMode = displayMode;
+           
+            // Update button states
+            const controlsDiv = event.target.parentElement;
+            controlsDiv.querySelectorAll('.display-toggle').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+           
+            updateChartRender(chartId);
+        }
+       
+        function setActiveChart(chartId) {
+            if (activeChartId === chartId) return;
+            activeChartId = chartId;
+            document.querySelectorAll('.chart-window').forEach(c => c.classList.remove('active-chart'));
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.classList.add('active-chart');
+            }
+        }
+       
+        function removeChart(event, chartIdToRemove) {
+            event.stopPropagation();
+            if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
+                Plotly.purge(`${chartIdToRemove}_canvas`);
+            }
+            delete charts[chartIdToRemove];
+            document.getElementById(chartIdToRemove)?.remove();
+           
+            if (activeChartId === chartIdToRemove) {
+                const chartKeys = Object.keys(charts);
+                activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
+                if(activeChartId) setActiveChart(activeChartId);
+            }
+           
+            if (Object.keys(charts).length === 0) {
+                const chartsArea = document.getElementById('chartsArea');
+                const watchlistSection = document.querySelector('.watchlist-section');
+                const chartViewBtn = document.getElementById('chartViewBtn');
+               
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+                chartViewBtn.style.display = 'none';
+            }
+        }
+       
+        function openChartForSymbol(symbol, provider) {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+           
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+           
+            if (Object.keys(charts).length === 0) {
+                addNewChart();
+            }
+           
+            if (activeChartId) {
+                const data = watchlistData[symbol];
+                addToChart(activeChartId, symbol, provider, data?.name || symbol);
+            }
+        }
+       
+        function addToChart(chartId, symbol, provider, name) {
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            if (!chart.symbols.find(s => s.symbol === symbol)) {
+                chart.symbols.push({ symbol, provider, name });
+                loadChartData(chartId, symbol, provider);
+            }
+            setActiveChart(chartId);
+        }
+       
+        // Enhanced chart data loading with liquidity intelligence support
+        async function loadChartData(chartId, symbol, provider) {
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            const canvasDiv = document.getElementById(`${chartId}_canvas`);
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
+           
+            try {
+                let url;
+               
+                if (provider === 'liquidity_intelligence') {
+                    // Handle liquidity intelligence endpoints for charts
+                    if (symbol === 'OFR_FSI') {
+                        url = `${API_BASE}/api/v1/ofr/fsi`;
+                    } else if (symbol === 'NYFED_FAILS') {
+                        url = `${API_BASE}/api/v1/nyfed/fails`;
+                    } else {
+                        throw new Error('Chart not available for this liquidity intelligence indicator');
+                    }
+                } else if (provider === 'polygon_direct') {
+                    const endDate = new Date().toISOString().split('T')[0];
+                    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
+                } else if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=1000&sort_order=desc&include_pandas=false`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                }
+               
+                const response = await fetch(url);
+               
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+               
+                const result = await response.json();
+                console.log(`Chart data received for ${symbol}:`, result);
+               
+                let processedData = [];
+               
+                if (result.data && Array.isArray(result.data)) {
+                    processedData = result.data
+                        .map(item => {
+                            let value = item.value || item.close || item.price || item.rate || null;
+                            if (typeof value === 'string') {
+                                value = parseFloat(value);
+                            }
+                           
+                            return {
+                                date: item.date || item.time || item.period,
+                                value: value,
+                                // Include unit changes if available
+                                daily_change_units: item.daily_change_units || null,
+                                weekly_change_units: item.weekly_change_units || null,
+                                yearly_change_units: item.yearly_change_units || null,
+                                // Include percentage changes
+                                daily_pct_change: item.daily_pct_change || null,
+                                weekly_pct_change: item.weekly_pct_change || null,
+                                yearly_pct_change: item.yearly_pct_change || null
+                            };
+                        })
+                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.observations && Array.isArray(result.observations)) {
+                    processedData = result.observations
+                        .map(obs => ({
+                            date: obs.date,
+                            value: obs.value !== '.' ? parseFloat(obs.value) : null
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
+               
+                if (processedData.length === 0) {
+                    throw new Error('No valid data points found');
+                }
+               
+                console.log(`Processed ${processedData.length} data points for ${symbol}`);
+               
+                chart.data[symbol] = processedData;
+                updateChartRender(chartId);
+                updateChartSymbols(chartId);
+               
+            } catch (error) {
+                console.error(`Error loading chart data for ${symbol}:`, error);
+                if (canvasDiv) {
+                    canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
+                }
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+                updateChartSymbols(chartId);
+            }
+        }
+       
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            const symbolsDiv = document.getElementById(`${chartId}_symbols`);
+            if (!symbolsDiv) return;
+           
+            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag">
+                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
+                    ${s.symbol}
+                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}')">×</span>
+                </div>`).join('');
+        }
+       
+        function removeSymbolFromChart(event, chartId, symbolToRemove) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+
+            chart.symbols = chart.symbols.filter(s => s.symbol !== symbolToRemove);
+            delete chart.data[symbolToRemove];
+           
+            updateChartRender(chartId);
+            updateChartSymbols(chartId);
+           
+            if (chart.symbols.length === 0) {
+                document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+            }
+        }
+       
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            chart.timeframe = timeframe;
+           
+            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (buttonContainer) {
+                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
+            updateChartRender(chartId);
+        }
+       
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+           
+            const now = new Date();
+            let cutoffDate = new Date();
+           
+            switch(timeframe) {
+                case '1D':
+                    cutoffDate.setDate(now.getDate() - 1);
+                    break;
+                case '1W':
+                    cutoffDate.setDate(now.getDate() - 7);
+                    break;
+                case '1M':
+                    cutoffDate.setMonth(now.getMonth() - 1);
+                    break;
+                case '3M':
+                    cutoffDate.setMonth(now.getMonth() - 3);
+                    break;
+                case '6M':
+                    cutoffDate.setMonth(now.getMonth() - 6);
+                    break;
+                case '1Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 1);
+                    break;
+                case '2Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 2);
+                    break;
+                case '5Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 5);
+                    break;
+                case 'MAX':
+                    return data;
+            }
+           
+            return data.filter(item => new Date(item.date) >= cutoffDate);
+        }
+       
+        // Enhanced chart rendering with new display modes
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            if (!canvasElement || !chart) return;
+           
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
+                return;
+            }
+           
+            const traces = [];
+            const displayMode = chart.displayMode || 'raw';
+           
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.symbol];
+                if (!symbolData || symbolData.length === 0) return;
+               
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+               
+                const lineColor = colorPalette[index % colorPalette.length];
+               
+                let yData, yLabel, hoverTemplate;
+               
+                // Determine what data to display based on mode
+                switch (displayMode) {
+                    case 'pct_change':
+                        yData = filteredData.map(d => d.daily_pct_change || 0);
+                        yLabel = '% Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>% Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'unit_change':
+                        yData = filteredData.map(d => d.daily_change_units || 0);
+                        yLabel = 'Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'year_pct':
+                        yData = filteredData.map(d => d.yearly_pct_change || 0);
+                        yLabel = 'Yearly % Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly % Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'year_units':
+                        yData = filteredData.map(d => d.yearly_change_units || 0);
+                        yLabel = 'Yearly Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    default: // 'raw'
+                        yData = filteredData.map(d => d.value);
+                        yLabel = 'Value';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`;
+                }
+               
+                traces.push({
+                    x: filteredData.map(d => d.date),
+                    y: yData,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: s.symbol,
+                    line: { color: lineColor, width: 2 },
+                    hovertemplate: hoverTemplate
+                });
+            });
+           
+            if (traces.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
+                return;
+            }
+           
+            const layout = {
+                title: {
+                    text: `${displayMode.replace('_', ' ').toUpperCase()} VIEW`,
+                    font: { color: '#fff', size: 14 },
+                    x: 0.5
+                },
+                paper_bgcolor: '#0a0a0a',
+                plot_bgcolor: '#0a0a0a',
+                font: { color: '#aaa', size: 12 },
+                margin: { t: 60, r: 80, b: 60, l: 80 },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    title: { text: yLabel, font: { color: '#aaa' } },
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    zeroline: true,
+                    zerolinecolor: '#444',
+                    zerolinewidth: 1
+                },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    yanchor: 'bottom',
+                    y: 1.02,
+                    xanchor: 'right',
+                    x: 1,
+                    bgcolor: 'rgba(10,10,10,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1,
+                    font: { size: 11 }
+                },
+                height: 500,
+                autosize: true
+            };
+           
+            const config = {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+                displayModeBar: true
+            };
+           
+            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
+           
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => {
+                    charts[chartId].chartInstance = gd;
+                })
+                .catch(err => {
+                    console.error("Plotly error:", err);
+                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
+                });
+        }
+       
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+           
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block';
+                watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+            }
+        }
+       
+        // Edit symbol function (placeholder)
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            showTemporaryMessage(`Edit functionality for ${symbol} - implement as needed`, 'info');
+        }
+       
+        // Utility functions
+        function showTemporaryMessage(text, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = text;
+            document.body.appendChild(popup);
+           
+            setTimeout(() => popup.remove(), 3000);
+        }
+       
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox');
+            const searchResults = document.getElementById('searchResults');
+           
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+       
+        // Initialize on page load
+        window.onload = init;
+    </script>
+</body>
+</html>
