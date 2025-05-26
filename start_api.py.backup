@@ -1,0 +1,840 @@
+import os
+import sys
+import json
+import uvicorn
+import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
+from typing import List, Optional, Dict, Any
+from fastapi import Query, HTTPException
+from pathlib import Path
+
+# Set up credentials (keep your existing setup)
+home = Path.home()
+openbb_dir = home / ".openbb_platform"
+openbb_dir.mkdir(exist_ok=True)
+
+credentials = {}
+credential_mappings = {
+    "OPENBB_FRED_KEY": "fred_api_key",
+    "OPENBB_FMP_KEY": "fmp_api_key",
+    "OPENBB_POLYGON_KEY": "polygon_api_key",
+    "OPENBB_BLS_KEY": "bls_api_key",
+    "OPENBB_BENZINGA_KEY": "benzinga_api_key",
+    "OPENBB_TIINGO_KEY": "tiingo_api_key",
+    "OPENBB_EIA_KEY": "eia_api_key",
+    "OPENBB_BEA_KEY": "bea_api_key",
+    "OPENBB_CENSUS_KEY": "census_api_key",
+    "OPENBB_ECONDB_KEY": "econdb_api_key",
+    "OPENBB_NASDAQ_KEY": "nasdaq_api_key",
+    "OPENBB_INTRINIO_KEY": "intrinio_api_key",
+    "OPENBB_ECB_KEY": "ecb_api_key",
+}
+
+for env_key, cred_key in credential_mappings.items():
+    if env_key in os.environ and os.environ[env_key]:
+        credentials[cred_key] = os.environ[env_key]
+
+if "OPENBB_HUB_TOKEN" in os.environ:
+    os.environ["OPENBB_PAT"] = os.environ["OPENBB_HUB_TOKEN"]
+
+user_settings = {
+    "credentials": credentials,
+    "preferences": {},
+    "defaults": {"provider": "fred"}
+}
+
+settings_file = openbb_dir / "user_settings.json"
+with open(settings_file, "w") as f:
+    json.dump(user_settings, f, indent=2)
+
+from openbb_core.api.rest_api import app
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from openbb import obb
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def clean_json_data(data):
+    if isinstance(data, dict):
+        return {k: clean_json_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_json_data(v) for v in data]
+    elif isinstance(data, float):
+        if np.isnan(data) or np.isinf(data):
+            return None
+        return data
+    return data
+
+# ============= UNIVERSAL DYNAMIC ENDPOINTS =============
+
+@app.get("/api/v1/universal/search")
+async def universal_search(
+    query: str,
+    provider: str = "all",
+    limit: int = 50
+):
+    """Search across all data providers"""
+    results = {
+        "query": query,
+        "results": {}
+    }
+    
+    # Search FRED (includes NY Fed data)
+    if provider in ["all", "fred", "nyfed"]:
+        try:
+            fred_results = obb.economy.fred_search(query=query)
+            fred_df = fred_results.to_dataframe()
+            results["results"]["fred"] = fred_df.head(limit).to_dict('records')
+        except:
+            results["results"]["fred"] = []
+    
+    # Add other provider searches as needed
+    
+    return results
+
+@app.get("/api/v1/universal/data")
+async def universal_data(
+    symbol: str,
+    provider: str,
+    data_type: str = "auto"
+):
+    """Get any data from any provider dynamically"""
+    try:
+        result = None
+        
+        # FRED Provider (includes NY Fed series)
+        if provider in ["fred", "nyfed"]:
+            result = obb.economy.fred_series(symbol=symbol, provider="fred")
+            
+        # ECB Provider for European Central Bank data
+        elif provider == "ecb":
+            if data_type == "rates":
+                result = obb.fixedincome.rate.ecb()
+            else:
+                # Try to get ECB series through FRED (many ECB series are in FRED)
+                result = obb.economy.fred_series(symbol=symbol, provider="fred")
+                
+        # OFR (Office of Financial Research) data
+        elif provider == "ofr":
+            if data_type == "stress_index":
+                # OFR Financial Stress Index is available through FRED
+                result = obb.economy.fred_series(symbol="STLFSI4", provider="fred")
+            else:
+                # Try generic FRED search for OFR data
+                result = obb.economy.fred_series(symbol=symbol, provider="fred")
+                
+        # Treasury Auctions
+        elif provider == "treasury" and data_type == "auctions":
+            result = obb.fixedincome.government.treasury_auctions()
+            
+        # Stock Quotes
+        elif provider in ["fmp", "yfinance", "intrinio", "polygon"] and data_type in ["quote", "auto"]:
+            result = obb.equity.price.quote(symbol=symbol, provider=provider)
+            
+        # Stock Historical
+        elif provider in ["fmp", "polygon", "yfinance"] and data_type == "historical":
+            result = obb.equity.price.historical(symbol=symbol, provider=provider)
+            
+        # Economic Data
+        elif provider == "bls":
+            result = obb.economy.unemployment(provider="bls")
+            
+        # Central Bank Rates
+        elif provider == "centralbanks" and data_type == "rates":
+            # Get multiple central bank rates
+            cb_data = {}
+            try:
+                # ECB rates
+                ecb_result = obb.fixedincome.rate.ecb()
+                cb_data["ecb"] = ecb_result.to_dict() if ecb_result else None
+            except:
+                cb_data["ecb"] = None
+                
+            # Fed rates through FRED
+            try:
+                fed_result = obb.economy.fred_series(symbol="DFF", provider="fred")  # Federal Funds Rate
+                cb_data["fed"] = fed_result.to_dict() if fed_result else None
+            except:
+                cb_data["fed"] = None
+                
+            return {"data": cb_data}
+            
+        # Add more provider/data_type combinations as needed
+        
+        if result:
+            # Try to convert to dataframe
+            try:
+                df = result.to_dataframe()
+                return {"data": clean_json_data(df.tail(100).reset_index().to_dict('records'))}
+            except:
+                # Return raw results if dataframe conversion fails
+                if hasattr(result, 'results'):
+                    return {"data": result.results}
+                else:
+                    return {"data": str(result)}
+        else:
+            return {"error": f"Unknown provider/data_type combination: {provider}/{data_type}"}
+            
+    except Exception as e:
+        return {"error": str(e), "symbol": symbol, "provider": provider}
+
+@app.get("/api/v1/universal/multi")
+async def universal_multi_data(
+    requests: str = Query(..., description="JSON array of requests")
+):
+    """Get multiple data points in one request
+    Example: [{"symbol":"GDP","provider":"fred"},{"symbol":"AAPL","provider":"fmp","data_type":"quote"}]
+    """
+    try:
+        request_list = json.loads(requests)
+        results = {}
+        
+        for req in request_list:
+            key = f"{req.get('symbol')}_{req.get('provider')}"
+            try:
+                data = await universal_data(
+                    symbol=req.get('symbol'),
+                    provider=req.get('provider'),
+                    data_type=req.get('data_type', 'auto')
+                )
+                results[key] = data
+            except Exception as e:
+                results[key] = {"error": str(e)}
+        
+        return results
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON in requests parameter"}
+
+@app.get("/api/v1/universal/providers")
+async def list_providers():
+    """List all available providers and their capabilities"""
+    return {
+        "providers": {
+            "fred": {
+                "name": "Federal Reserve Economic Data (includes NY Fed)",
+                "capabilities": ["economic_series", "search", "ny_fed_data"],
+                "example_symbols": ["GDP", "UNRATE", "DGS10", "CPIAUCSL", "PPDCTR", "SOFR"],
+                "data_types": ["time_series"],
+                "notes": "FRED includes many NY Fed series like Primary Dealer statistics"
+            },
+            "ecb": {
+                "name": "European Central Bank",
+                "capabilities": ["interest_rates", "monetary_policy", "exchange_rates"],
+                "example_symbols": ["ECBDFR", "ECBMLFR", "ECBMRFR"],
+                "data_types": ["rates", "time_series"],
+                "notes": "Many ECB series also available through FRED provider"
+            },
+            "treasury": {
+                "name": "US Treasury",
+                "capabilities": ["auctions", "treasury_rates", "treasury_prices"],
+                "example_symbols": ["auction_results"],
+                "data_types": ["auctions", "rates", "prices"]
+            },
+            "fmp": {
+                "name": "Financial Modeling Prep",
+                "capabilities": ["stock_quote", "historical", "fundamentals"],
+                "example_symbols": ["AAPL", "MSFT", "GOOGL"],
+                "data_types": ["quote", "historical", "fundamental"]
+            },
+            "polygon": {
+                "name": "Polygon.io",
+                "capabilities": ["stock_quote", "historical", "aggregates"],
+                "example_symbols": ["AAPL", "SPY", "TSLA"],
+                "data_types": ["quote", "historical"]
+            },
+            "yfinance": {
+                "name": "Yahoo Finance",
+                "capabilities": ["stock_quote", "historical", "options"],
+                "example_symbols": ["AAPL", "^GSPC", "BTC-USD"],
+                "data_types": ["quote", "historical"]
+            },
+            "bls": {
+                "name": "Bureau of Labor Statistics",
+                "capabilities": ["unemployment", "employment", "cpi"],
+                "example_symbols": ["UNRATE", "LNS14000000"],
+                "data_types": ["series"]
+            },
+            "centralbanks": {
+                "name": "Central Banks Aggregate",
+                "capabilities": ["interest_rates", "monetary_policy"],
+                "example_symbols": ["all_rates"],
+                "data_types": ["rates"]
+            },
+            "ofr": {
+                "name": "Office of Financial Research",
+                "capabilities": ["financial_stress_index", "systemic_risk", "market_monitors"],
+                "example_symbols": ["STLFSI4", "OFRFSI"],
+                "data_types": ["stress_index", "risk_metrics"],
+                "notes": "OFR Financial Stress Index available through FRED as STLFSI4"
+            }
+        }
+    }
+
+@app.get("/api/v1/universal/dashboard")
+async def universal_dashboard(
+    config: str = Query(..., description="Dashboard configuration as JSON")
+):
+    """Create a custom dashboard with any data
+    Example config: {"widgets":[{"symbol":"GDP","provider":"fred"},{"symbol":"AAPL","provider":"fmp"}]}
+    """
+    try:
+        dashboard_config = json.loads(config)
+        results = []
+        
+        for widget in dashboard_config.get("widgets", []):
+            try:
+                data = await universal_data(
+                    symbol=widget.get("symbol"),
+                    provider=widget.get("provider"),
+                    data_type=widget.get("data_type", "auto")
+                )
+                
+                # Extract key metrics
+                if "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
+                    latest = data["data"][-1]
+                    widget_result = {
+                        "symbol": widget.get("symbol"),
+                        "provider": widget.get("provider"),
+                        "latest_value": latest.get("value", latest.get("close", "N/A")),
+                        "latest_date": latest.get("date", "N/A"),
+                        "full_data": data["data"][-10:]  # Last 10 points
+                    }
+                    results.append(widget_result)
+            except Exception as e:
+                results.append({
+                    "symbol": widget.get("symbol"),
+                    "provider": widget.get("provider"),
+                    "error": str(e)
+                })
+        
+        return {"dashboard": results}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON configuration"}
+
+# ============= SPECIALIZED ENDPOINTS =============
+
+# ============= SPECIALIZED ENDPOINTS =============
+
+@app.get("/api/v1/ofr/financial_stress")
+async def ofr_financial_stress():
+    """Get OFR Financial Stress Index and related indicators"""
+    results = {}
+    
+    # St. Louis Fed Financial Stress Index (updated OFR methodology)
+    try:
+        stlfsi_data = obb.economy.fred_series(symbol="STLFSI4", provider="fred")
+        if stlfsi_data:
+            df = stlfsi_data.to_dataframe()
+            results["stlfsi"] = {
+                "latest_value": float(df["STLFSI4"].iloc[-1]) if "STLFSI4" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None,
+                "description": "St. Louis Fed Financial Stress Index",
+                "interpretation": "Above 0 = above-average stress, Below 0 = below-average stress"
+            }
+    except Exception as e:
+        results["stlfsi"] = {"error": str(e)}
+    
+    # Kansas City Financial Stress Index
+    try:
+        kcfsi_data = obb.economy.fred_series(symbol="KCFSI", provider="fred")
+        if kcfsi_data:
+            df = kcfsi_data.to_dataframe()
+            results["kcfsi"] = {
+                "latest_value": float(df["KCFSI"].iloc[-1]) if "KCFSI" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None,
+                "description": "Kansas City Financial Stress Index"
+            }
+    except Exception as e:
+        results["kcfsi"] = {"error": str(e)}
+    
+    # VIX as additional stress indicator
+    try:
+        vix_data = obb.economy.fred_series(symbol="VIXCLS", provider="fred")
+        if vix_data:
+            df = vix_data.to_dataframe()
+            results["vix"] = {
+                "latest_value": float(df["VIXCLS"].iloc[-1]) if "VIXCLS" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None,
+                "description": "CBOE Volatility Index (VIX)"
+            }
+    except Exception as e:
+        results["vix"] = {"error": str(e)}
+    
+    # TED Spread
+    try:
+        ted_data = obb.economy.fred_series(symbol="TEDRATE", provider="fred")
+        if ted_data:
+            df = ted_data.to_dataframe()
+            results["ted_spread"] = {
+                "latest_value": float(df["TEDRATE"].iloc[-1]) if "TEDRATE" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None,
+                "description": "TED Spread (3-Month LIBOR minus 3-Month Treasury)"
+            }
+    except Exception as e:
+        results["ted_spread"] = {"error": str(e)}
+    
+    return results
+
+@app.get("/api/v1/ofr/systemic_risk")
+async def ofr_systemic_risk_indicators():
+    """Get systemic risk indicators monitored by OFR"""
+    results = {}
+    
+    # Bank CDS Spreads (as proxy for banking sector stress)
+    bank_cds_symbols = {
+        "bank_cds_5y": "DBBPCKBCRPIUSD5Y",  # Bank CDS spread
+        "financial_conditions": "NFCI",       # Chicago Fed National Financial Conditions Index
+        "credit_subindex": "NFCICREDIT",     # Credit subindex
+        "leverage_subindex": "NFCILEVERAGE", # Leverage subindex
+        "risk_subindex": "NFCIRISK"          # Risk subindex
+    }
+    
+    for name, symbol in bank_cds_symbols.items():
+        try:
+            data = obb.economy.fred_series(symbol=symbol, provider="fred")
+            if data:
+                df = data.to_dataframe()
+                results[name] = {
+                    "latest_value": float(df[symbol].iloc[-1]) if symbol in df.columns else None,
+                    "date": str(df.index[-1]) if len(df) > 0 else None,
+                    "series_code": symbol
+                }
+        except Exception as e:
+            results[name] = {"error": str(e), "code": symbol}
+    
+    return results
+
+@app.get("/api/v1/centralbanks/dashboard")
+async def central_banks_dashboard():
+    """Get a dashboard of major central bank rates"""
+    results = {}
+    
+    # ECB Rates
+    try:
+        ecb_data = obb.fixedincome.rate.ecb()
+        if ecb_data:
+            df = ecb_data.to_dataframe()
+            results["ecb"] = {
+                "deposit_facility": float(df["deposit_facility_rate"].iloc[-1]) if "deposit_facility_rate" in df.columns else None,
+                "main_refinancing": float(df["main_refinancing_rate"].iloc[-1]) if "main_refinancing_rate" in df.columns else None,
+                "marginal_lending": float(df["marginal_lending_rate"].iloc[-1]) if "marginal_lending_rate" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None
+            }
+    except Exception as e:
+        results["ecb"] = {"error": str(e)}
+    
+    # Fed Funds Rate
+    try:
+        fed_data = obb.economy.fred_series(symbol="DFF", provider="fred")
+        if fed_data:
+            df = fed_data.to_dataframe()
+            results["fed"] = {
+                "federal_funds_rate": float(df["DFF"].iloc[-1]) if "DFF" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None
+            }
+    except Exception as e:
+        results["fed"] = {"error": str(e)}
+    
+    # SOFR (Secured Overnight Financing Rate)
+    try:
+        sofr_data = obb.economy.fred_series(symbol="SOFR", provider="fred")
+        if sofr_data:
+            df = sofr_data.to_dataframe()
+            results["sofr"] = {
+                "rate": float(df["SOFR"].iloc[-1]) if "SOFR" in df.columns else None,
+                "date": str(df.index[-1]) if len(df) > 0 else None
+            }
+    except Exception as e:
+        results["sofr"] = {"error": str(e)}
+    
+    return results
+
+@app.get("/api/v1/nyfed/primary_dealers")
+async def ny_fed_primary_dealers():
+    """Get NY Fed Primary Dealer Statistics"""
+    # Common NY Fed Primary Dealer series in FRED
+    series_codes = {
+        "treasury_positions": "PPDCTR",  # Primary Dealer Positions: Treasury Securities
+        "mbs_positions": "PPDMBS",       # Primary Dealer Positions: MBS
+        "corporate_positions": "PPDCCORP", # Primary Dealer Positions: Corporate Securities
+        "financing_repo": "PDFINRP",     # Primary Dealer Financing: Repo
+        "financing_reverse": "PDFINRR"   # Primary Dealer Financing: Reverse Repo
+    }
+    
+    results = {}
+    for name, code in series_codes.items():
+        try:
+            data = obb.economy.fred_series(symbol=code, provider="fred")
+            if data:
+                df = data.to_dataframe()
+                results[name] = {
+                    "latest_value": float(df[code].iloc[-1]) if code in df.columns else None,
+                    "date": str(df.index[-1]) if len(df) > 0 else None,
+                    "unit": "Millions of Dollars"
+                }
+        except Exception as e:
+            results[name] = {"error": str(e), "code": code}
+    
+    return results
+
+@app.get("/api/v1/treasury/latest_auctions")
+async def latest_treasury_auctions():
+    """Get latest Treasury auction results"""
+    try:
+        auctions = obb.fixedincome.government.treasury_auctions()
+        if auctions:
+            df = auctions.to_dataframe()
+            # Get the most recent auctions
+            recent = df.head(10).to_dict('records')
+            return {"auctions": clean_json_data(recent)}
+        else:
+            return {"error": "No auction data available"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# ============= PRESET DASHBOARDS =============
+
+@app.get("/api/v1/dashboards/economic")
+async def economic_dashboard():
+    """Pre-configured economic dashboard"""
+    config = {
+        "widgets": [
+            {"symbol": "GDP", "provider": "fred"},
+            {"symbol": "UNRATE", "provider": "fred"},
+            {"symbol": "CPIAUCSL", "provider": "fred"},
+            {"symbol": "DGS10", "provider": "fred"},
+            {"symbol": "VIXCLS", "provider": "fred"},
+            {"symbol": "M2SL", "provider": "fred"},
+            {"symbol": "DFF", "provider": "fred"},
+            {"symbol": "SOFR", "provider": "fred"}
+        ]
+    }
+    return await universal_dashboard(config=json.dumps(config))
+
+@app.get("/api/v1/dashboards/central_banks")
+async def central_banks_dashboard_preset():
+    """Pre-configured central banks dashboard"""
+    return await central_banks_dashboard()
+
+@app.get("/api/v1/dashboards/fixed_income")
+async def fixed_income_dashboard():
+    """Pre-configured fixed income dashboard"""
+    results = {}
+    
+    # Treasury rates
+    treasury_symbols = ["DGS2", "DGS5", "DGS10", "DGS30"]
+    for symbol in treasury_symbols:
+        try:
+            data = obb.economy.fred_series(symbol=symbol, provider="fred")
+            if data:
+                df = data.to_dataframe()
+                tenor = symbol.replace("DGS", "") + "Y"
+                results[f"treasury_{tenor}"] = {
+                    "rate": float(df[symbol].iloc[-1]) if symbol in df.columns else None,
+                    "date": str(df.index[-1]) if len(df) > 0 else None
+                }
+        except:
+            pass
+    
+    # Add central bank rates
+    cb_rates = await central_banks_dashboard()
+    results["central_banks"] = cb_rates
+    
+    # Add latest auction info
+    auction_info = await latest_treasury_auctions()
+    results["latest_auctions"] = auction_info
+    
+    return results
+
+@app.get("/api/v1/dashboards/financial_stability")
+async def financial_stability_dashboard():
+    """Comprehensive financial stability dashboard with OFR and systemic risk indicators"""
+    results = {}
+    
+    # Get OFR stress indicators
+    ofr_stress = await ofr_financial_stress()
+    results["stress_indicators"] = ofr_stress
+    
+    # Get systemic risk indicators
+    systemic_risk = await ofr_systemic_risk_indicators()
+    results["systemic_risk"] = systemic_risk
+    
+    # Add money market indicators
+    money_market_indicators = {
+        "repo_rate": "RRPONTSYD",           # Overnight Repo Rate
+        "reverse_repo": "RRPONTSYD",        # Reverse Repo Rate
+        "commercial_paper": "DCPN3M",       # 3-Month Commercial Paper Rate
+        "libor_ois_spread": "USD3MFSR",     # 3-Month LIBOR-OIS Spread
+    }
+    
+    money_market_data = {}
+    for name, symbol in money_market_indicators.items():
+        try:
+            data = obb.economy.fred_series(symbol=symbol, provider="fred")
+            if data:
+                df = data.to_dataframe()
+                money_market_data[name] = {
+                    "latest_value": float(df[symbol].iloc[-1]) if symbol in df.columns else None,
+                    "date": str(df.index[-1]) if len(df) > 0 else None
+                }
+        except:
+            money_market_data[name] = None
+    
+    results["money_markets"] = money_market_data
+    
+    # Add credit spreads
+    credit_spreads = {
+        "aaa_treasury": "AAA10Y",           # AAA Corporate Bond Yield Relative to 10-Year Treasury
+        "baa_treasury": "BAA10Y",           # BAA Corporate Bond Yield Relative to 10-Year Treasury
+        "high_yield": "BAMLH0A0HYM2",      # High Yield Spread
+    }
+    
+    credit_data = {}
+    for name, symbol in credit_spreads.items():
+        try:
+            data = obb.economy.fred_series(symbol=symbol, provider="fred")
+            if data:
+                df = data.to_dataframe()
+                credit_data[name] = {
+                    "latest_value": float(df[symbol].iloc[-1]) if symbol in df.columns else None,
+                    "date": str(df.index[-1]) if len(df) > 0 else None
+                }
+        except:
+            credit_data[name] = None
+    
+    results["credit_spreads"] = credit_data
+    
+    return results
+
+@app.get("/api/v1/dashboards/stocks")
+async def stocks_dashboard(symbols: str = "AAPL,MSFT,GOOGL,AMZN,TSLA"):
+    """Pre-configured stocks dashboard"""
+    symbol_list = symbols.split(",")
+    config = {
+        "widgets": [
+            {"symbol": symbol.strip(), "provider": "fmp", "data_type": "quote"}
+            for symbol in symbol_list
+        ]
+    }
+    return await universal_dashboard(config=json.dumps(config))
+
+# ============= WIDGET BUILDER =============
+
+@app.get("/api/v1/widget-builder")
+async def widget_builder():
+    """Generate widget URLs for OpenBB Workspace"""
+    base_url = "https://ped8gafyuz.us-east-1.awsapprunner.com"
+    
+    return {
+        "universal_widgets": {
+            "Universal_Data_Explorer": {
+                "description": "Query any data from any provider",
+                "url": f"{base_url}/api/v1/universal/data?symbol=SYMBOL&provider=PROVIDER",
+                "examples": [
+                    f"{base_url}/api/v1/universal/data?symbol=GDP&provider=fred",
+                    f"{base_url}/api/v1/universal/data?symbol=AAPL&provider=fmp&data_type=quote",
+                    f"{base_url}/api/v1/universal/data?symbol=SPY&provider=polygon&data_type=historical",
+                    f"{base_url}/api/v1/universal/data?symbol=ECBDFR&provider=ecb&data_type=rates",
+                    f"{base_url}/api/v1/universal/data?symbol=PPDCTR&provider=nyfed"
+                ]
+            },
+            "Multi_Data_Dashboard": {
+                "description": "Multiple data points in one widget",
+                "url": f"{base_url}/api/v1/universal/multi?requests=REQUESTS_JSON",
+                "example": f'{base_url}/api/v1/universal/multi?requests=[{{"symbol":"GDP","provider":"fred"}},{{"symbol":"AAPL","provider":"fmp","data_type":"quote"}}]'
+            },
+            "Economic_Dashboard": {
+                "description": "Pre-built economic indicators",
+                "url": f"{base_url}/api/v1/dashboards/economic"
+            },
+            "Central_Banks_Dashboard": {
+                "description": "Major central bank rates (ECB, Fed, etc)",
+                "url": f"{base_url}/api/v1/dashboards/central_banks"
+            },
+            "Fixed_Income_Dashboard": {
+                "description": "Treasury rates, auctions, and central bank rates",
+                "url": f"{base_url}/api/v1/dashboards/fixed_income"
+            },
+            "NY_Fed_Primary_Dealers": {
+                "description": "NY Fed Primary Dealer statistics",
+                "url": f"{base_url}/api/v1/nyfed/primary_dealers"
+            },
+            "Treasury_Auctions": {
+                "description": "Latest Treasury auction results",
+                "url": f"{base_url}/api/v1/treasury/latest_auctions"
+            },
+            "Financial_Stability_Dashboard": {
+                "description": "OFR-style financial stability monitoring",
+                "url": f"{base_url}/api/v1/dashboards/financial_stability"
+            },
+            "Stocks_Dashboard": {
+                "description": "Monitor multiple stocks",
+                "url": f"{base_url}/api/v1/dashboards/stocks?symbols=AAPL,MSFT,GOOGL,TSLA"
+            },
+            "OFR_Financial_Stress": {
+                "description": "Office of Financial Research stress indicators",
+                "url": f"{base_url}/api/v1/ofr/financial_stress"
+            },
+            "OFR_Systemic_Risk": {
+                "description": "Systemic risk indicators monitored by OFR",
+                "url": f"{base_url}/api/v1/ofr/systemic_risk"
+            },
+            "Provider_List": {
+                "description": "See all available data providers",
+                "url": f"{base_url}/api/v1/universal/providers"
+            }
+        },
+        "how_to_use": {
+            "1": "Copy any URL above",
+            "2": "In OpenBB Workspace, go to Add Data > Endpoint",
+            "3": "Paste the URL and set Data Key to 'data' or 'None'",
+            "4": "For dynamic widgets, just change the symbol/provider in the URL"
+        }
+    }
+
+# Keep all your existing endpoints...
+# (Copy your working analytics endpoints here)
+# Add this to your start_api.py file (before the if __name__ == "__main__": line)
+
+@app.get("/api/v1/interactive/search-and-chart")
+async def search_and_chart(
+    search_term: str = Query("GDP", description="Search term for data"),
+    provider: str = Query("fred", description="Data provider"),
+    chart_type: str = Query("line", description="Chart type: line, bar, area"),
+    periods: int = Query(100, description="Number of periods to display")
+):
+    """Search for data and return it in a chart-ready format"""
+    
+    # First, search for matching series
+    search_results = []
+    if provider in ["fred", "all"]:
+        try:
+            fred_search = obb.economy.fred_search(query=search_term)
+            search_df = fred_search.to_dataframe()
+            search_results = search_df.head(10).to_dict('records')
+        except:
+            pass
+    
+    # Get data for the first matching series
+    chart_data = None
+    if search_results:
+        first_symbol = search_results[0].get('symbol', search_term)
+        try:
+            data = obb.economy.fred_series(symbol=first_symbol, provider="fred")
+            df = data.to_dataframe()
+            
+            # Prepare chart-ready data
+            chart_data = {
+                "symbol": first_symbol,
+                "title": search_results[0].get('title', first_symbol),
+                "chart_type": chart_type,
+                "data": df.tail(periods).reset_index().to_dict('records'),
+                "x_axis": "date",
+                "y_axis": first_symbol,
+                "search_results": search_results[:5]  # Show top 5 matches
+            }
+        except:
+            pass
+    
+    return {
+        "search_term": search_term,
+        "chart_config": chart_data,
+        "available_symbols": [r.get('symbol') for r in search_results[:10]]
+    }
+
+@app.get("/api/v1/interactive/multi-search")
+async def multi_search_chart(
+    symbols: str = Query("GDP,UNRATE,DGS10", description="Comma-separated symbols"),
+    provider: str = Query("fred", description="Data provider"),
+    periods: int = Query(100, description="Number of periods")
+):
+    """Get multiple series for comparison charts"""
+    
+    symbol_list = [s.strip() for s in symbols.split(",")]
+    chart_data = []
+    
+    for symbol in symbol_list[:5]:  # Limit to 5 series
+        try:
+            if provider == "fred":
+                data = obb.economy.fred_series(symbol=symbol, provider="fred")
+            elif provider in ["fmp", "polygon", "yfinance"]:
+                data = obb.equity.price.historical(symbol=symbol, provider=provider)
+            else:
+                continue
+                
+            df = data.to_dataframe()
+            
+            # Standardize column names
+            value_col = symbol if symbol in df.columns else df.columns[0]
+            
+            series_data = {
+                "symbol": symbol,
+                "data": df.tail(periods).reset_index().to_dict('records'),
+                "latest_value": float(df[value_col].iloc[-1]),
+                "change": float(df[value_col].diff().iloc[-1]),
+                "change_pct": float(df[value_col].pct_change().iloc[-1] * 100)
+            }
+            chart_data.append(series_data)
+        except:
+            continue
+    
+    return {
+        "symbols": symbol_list,
+        "chart_data": chart_data,
+        "chart_config": {
+            "type": "multi-line",
+            "x_axis": "date",
+            "series": [{"name": d["symbol"], "data": d["data"]} for d in chart_data]
+        }
+    }
+
+@app.get("/api/v1/interactive/search-suggestions")
+async def search_suggestions(
+    query: str = Query(..., description="Partial search query"),
+    limit: int = Query(10, description="Number of suggestions")
+):
+    """Get search suggestions as you type"""
+    
+    suggestions = []
+    
+    # Search FRED
+    try:
+        fred_results = obb.economy.fred_search(query=query)
+        fred_df = fred_results.to_dataframe()
+        
+        for _, row in fred_df.head(limit).iterrows():
+            suggestions.append({
+                "symbol": row.get('symbol', ''),
+                "title": row.get('title', ''),
+                "provider": "fred",
+                "frequency": row.get('frequency', ''),
+                "units": row.get('units', '')
+            })
+    except:
+        pass
+    
+    # Add common stock symbols if they match
+    common_stocks = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "JPM", "V", "JNJ"]
+    for stock in common_stocks:
+        if query.upper() in stock:
+            suggestions.append({
+                "symbol": stock,
+                "title": f"{stock} Stock Price",
+                "provider": "fmp",
+                "frequency": "daily",
+                "units": "USD"
+            })
+    
+    return {"suggestions": suggestions[:limit]}
+
+if __name__ == "__main__":
+    print("=== Starting Enhanced Universal OpenBB API ===")
+    print("=== Now with ECB, NY Fed, and Treasury Support ===")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
