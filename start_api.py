@@ -300,7 +300,7 @@ async def get_ny_fed_fails_data():
     """Get NY Fed primary dealer fails data"""
     try:
         # Try to get fails data from NY Fed
-        url = "https://www.newyorkfed.org/markets/primarydealer-fails-data"
+        url = "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
         async with httpx.AsyncClient(timeout=30.0) as client:
             html = await client.get(url)
             html.raise_for_status()
