@@ -2047,5 +2047,135 @@
                                 <div class="color-tag" style="${colorStyle}" onclick="editSymbol(event, '${symbol}')"></div>
                                 <div class="symbol-icon">${symbol.charAt(0)}</div>
                                 <div class="symbol-info">
-                                    <div class="symbol-name"
-...
+                                    <div class="symbol-name">
+                                        ${displayName}
+                                        <span class="edit-icon" onclick="editSymbol(event, '${symbol}')">✏️</span>
+                                    </div>
+                                    <div class="symbol-fullname">${providerLabel}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="price-cell">${formatPrice(data.price)}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">
+                            ${formatUnits(data.changeUnits?.daily)}
+                        </td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1d'])}">
+                            ${formatChange(data.changes?.['1d'])}
+                        </td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1w'])}">
+                            ${formatChange(data.changes?.['1w'])}
+                        </td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1m'])}">
+                            ${formatChange(data.changes?.['1m'])}
+                        </td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1y'])}">
+                            ${formatChange(data.changes?.['1y'])}
+                        </td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.yearly)}">
+                            ${formatUnits(data.changeUnits?.yearly)}
+                        </td>
+                        <td>
+                            <button class="control-btn" onclick="removeFromWatchlist('${symbol}')" 
+                                    style="background: #dd4444; border-color: #dd4444; color: #fff; padding: 4px 8px;">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+           
+            tbody.innerHTML = html;
+        }
+       
+        // Helper functions for watchlist management
+        function removeFromWatchlist(symbol) {
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            const index = currentSymbols.findIndex(s => (s.symbol || s) === symbol);
+            if (index > -1) {
+                currentSymbols.splice(index, 1);
+                watchlistSymbols = [...currentSymbols];
+                delete watchlistData[symbol];
+                saveWatchlists();
+                renderWatchlist();
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
+            }
+        }
+       
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            const newName = prompt(`Enter new display name for ${symbol}:`, watchlistData[symbol]?.customName || symbol);
+            if (newName && newName !== symbol) {
+                if (watchlistData[symbol]) {
+                    watchlistData[symbol].customName = newName;
+                    renderWatchlist();
+                }
+            }
+        }
+       
+        function changeSortOrder(order) {
+            sortOrder = order;
+            columnSort = { column: null, direction: null };
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        function sortByColumn(column) {
+            if (columnSort.column === column) {
+                columnSort.direction = columnSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                columnSort.column = column;
+                columnSort.direction = 'desc';
+            }
+            sortOrder = 'custom';
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        function updateSortButtons() {
+            document.querySelectorAll('.sort-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.sort-indicator').forEach(ind => {
+                ind.className = 'sort-indicator';
+            });
+           
+            if (sortOrder !== 'custom') {
+                const activeBtn = document.getElementById(`sort${sortOrder.charAt(0).toUpperCase() + sortOrder.slice(1)}`);
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+           
+            if (columnSort.column) {
+                const indicator = document.getElementById(`sort-${columnSort.column}`);
+                if (indicator) {
+                    indicator.className = `sort-indicator ${columnSort.direction}`;
+                }
+            }
+        }
+       
+        function showTemporaryMessage(message, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = message;
+            document.body.appendChild(popup);
+           
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
+            }, 3000);
+        }
+       
+        // Chart functionality placeholders
+        function addNewChart() {
+            showTemporaryMessage('Chart functionality coming soon!', 'info');
+        }
+       
+        function showChartView() {
+            showTemporaryMessage('Chart view functionality coming soon!', 'info');
+        }
+       
+        function openChartForSymbol(symbol, provider) {
+            showTemporaryMessage(`Chart for ${symbol} coming soon!`, 'info');
+        }
+       
+        // Initialize the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
