@@ -47,4 +47,4 @@ ENV PYTHONPATH=/app/openbb_platform:$PYTHONPATH
 EXPOSE 8000
 
 # Start both cron and the API
-CMD service cron start && python /app/start_api.py
+CMD ./start.sh
