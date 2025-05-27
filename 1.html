@@ -2691,20 +2691,26 @@
                         break;
                 }
                
-                traces.push({
+                const trace = {
                     x: filteredData.map(d => d.date),
                     y: yData,
                     type: 'scatter',
                     mode: displayMode === 'signals' ? 'markers' : 'lines',
                     name: s.symbol,
-                    line: displayMode !== 'signals' ? { color: lineColor, width: 2 } : undefined,
-                    marker: displayMode === 'signals' ? {
+                    hovertemplate: hoverTemplate
+                };
+                
+                if (displayMode === 'signals') {
+                    trace.marker = {
                         color: yData.map(val => val === 1 ? '#00ff88' : val === -1 ? '#ff4444' : '#888888'),
                         size: yData.map(val => val !== 0 ? 12 : 6),
                         symbol: yData.map(val => val === 1 ? 'triangle-up' : val === -1 ? 'triangle-down' : 'circle')
-                    } : undefined,
-                    hovertemplate: hoverTemplate
-                });
+                    };
+                } else {
+                    trace.line = { color: lineColor, width: 2 };
+                }
+                
+                traces.push(trace);
             });
            
             if (traces.length === 0) {
