@@ -45,10 +45,10 @@
         .main-container {
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 71px); /* Adjusted for header height */
+            height: calc(100vh - 71px);
         }
         
-        /* Enhanced Search Section */
+        /* Search Section */
         .search-section {
             background: #121212;
             padding: 20px;
@@ -87,37 +87,6 @@
             font-size: 18px;
         }
         
-        /* Enhanced Ticker Type Filter */
-        .ticker-type-filter {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .type-toggle {
-            background: #252525;
-            border: 1px solid #383838;
-            color: #ccc;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .type-toggle:hover {
-            background: #333;
-            border-color: #555;
-        }
-        .type-toggle.active {
-            background: #00dd77;
-            color: #000;
-            border-color: #00dd77;
-        }
-        
         /* Data Source Filter */
         .data-source-filter {
             display: flex;
@@ -151,7 +120,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #ff4444; /* Default to disconnected */
+            background: #ff4444;
         }
         .source-indicator.connected {
             background: #00dd77;
@@ -164,7 +133,7 @@
             right: 0;
             z-index: 1000;
             margin-top: 5px;
-            max-height: 500px; 
+            max-height: 400px;
             overflow-y: auto;
             background: #181818;
             border: 1px solid #333;
@@ -195,8 +164,6 @@
             color: #00dd77;
             font-size: 16px;
             margin-bottom: 4px;
-            display: flex; /* For aligning type tag */
-            align-items: center; /* For aligning type tag */
         }
         .search-item-name {
             font-size: 14px;
@@ -214,15 +181,6 @@
             background: #2a2a2a;
             padding: 4px 8px;
             border-radius: 4px;
-            text-transform: uppercase;
-        }
-        .search-item-type {
-            font-size: 10px;
-            color: #fff;
-            background: #0066cc;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-left: 8px;
             text-transform: uppercase;
         }
         
@@ -377,7 +335,7 @@
         .chart-canvas {
             background: #0a0a0a;
             border-radius: 6px;
-            height: 500px; 
+            height: 500px;
             flex-grow: 1;
             min-height: 450px;
         }
@@ -426,7 +384,7 @@
         .watchlist-section {
             background: #121212;
             border-top: 1px solid #282828;
-            height: 300px; /* Default height, can be overridden by flex */
+            height: 300px;
             overflow-y: auto;
         }
         
@@ -506,12 +464,12 @@
         .watchlist-table {
             width: 100%;
             border-collapse: collapse;
-            background: #fff; /* Table background */
+            background: #fff;
         }
         
         .watchlist-table th {
-            background: #f5f5f5; /* Header background */
-            color: #333; /* Header text color */
+            background: #f5f5f5;
+            color: #333;
             font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
@@ -519,7 +477,7 @@
             text-align: left;
             border-bottom: 2px solid #e0e0e0;
             position: sticky;
-            top: 57px; /* Height of watchlist-header */
+            top: 57px;
             z-index: 5;
         }
         
@@ -546,19 +504,19 @@
         .watchlist-table tbody tr {
             transition: background-color 0.2s;
             cursor: pointer;
-            background: #fff; /* Row background */
-            color: #333; /* Row text color */
+            background: #fff;
+            color: #333;
         }
         
         .watchlist-table tbody tr:hover {
-            background: #f8f8f8; /* Row hover background */
+            background: #f8f8f8;
         }
         
         .watchlist-table td {
             padding: 12px 15px;
             border-bottom: 1px solid #e0e0e0;
             font-size: 13px;
-            color: #333; /* Cell text color */
+            color: #333;
         }
         
         .symbol-cell {
@@ -699,11 +657,33 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #ff4444; /* Default to disconnected */
+            background: #ff4444;
         }
         
         .status-dot.connected {
             background: #00dd77;
+        }
+        
+        /* Chart period info */
+        .chart-period-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .period-change {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .period-label {
+            color: #888;
         }
         
         /* Liquidity Dashboard Alert */
@@ -720,10 +700,6 @@
         
         .liquidity-alert.moderate {
             background: linear-gradient(45deg, #ffaa00, #ffcc00);
-            color: #000;
-        }
-        .liquidity-alert.low { /* Added for low stress */
-            background: linear-gradient(45deg, #00dd77, #00ccbb);
             color: #000;
         }
         
@@ -930,23 +906,12 @@
         <div class="search-section">
             <div class="search-container">
                 <input type="text" class="search-box" id="searchBox"
-                       placeholder="Search all financial instruments (Stocks, ETFs, Crypto, Bonds, Indices, Economic Data)..."
+                       placeholder="Search financial data across multiple sources (try: AAPL, FEDFUNDS, sofr, OFR FSI, Treasury Monitor, NY Fed Fails)..."
                        onkeyup="performSearch(this.value)"
                        autocomplete="off">
                 <span class="search-icon">🔍</span>
                 <div class="search-results" id="searchResults" style="display: none;"></div>
             </div>
-            
-            <div class="ticker-type-filter">
-                <button class="type-toggle active" data-type="CS" onclick="toggleTickerType('CS')">📈 Stocks</button>
-                <button class="type-toggle active" data-type="ETF" onclick="toggleTickerType('ETF')">🎯 ETFs</button>
-                <button class="type-toggle active" data-type="CRYPTO" onclick="toggleTickerType('CRYPTO')">₿ Crypto</button>
-                <button class="type-toggle active" data-type="MF" onclick="toggleTickerType('MF')">🏛️ Mutual Funds</button>
-                <button class="type-toggle active" data-type="BOND" onclick="toggleTickerType('BOND')">🏦 Bonds</button>
-                <button class="type-toggle active" data-type="INDEX" onclick="toggleTickerType('INDEX')">📊 Indices</button>
-                <button class="type-toggle active" data-type="OTHER" onclick="toggleTickerType('OTHER')">🔧 Other</button>
-            </div>
-            
             <div class="data-source-filter">
                 <button class="source-toggle active" data-source="polygon" onclick="toggleDataSource('polygon')">
                     <span class="source-indicator" id="polygon-indicator"></span>
@@ -1070,7 +1035,7 @@
                         <button class="sort-button" onclick="changeSortOrder('decrease')" id="sortDecrease">↓ Largest Decrease</button>
                         <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
                         <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
-                        <button class="control-btn" onclick="toggleRiskDashboard()" id="riskDashboardBtn">📊 Risk Dashboard</button>
+            <button class="control-btn" onclick="toggleRiskDashboard()" id="riskDashboardBtn">📊 Risk Dashboard</button>
                     </div>
                 </div>
                 <table class="watchlist-table">
@@ -1092,7 +1057,8 @@
                                 1Y % <span class="sort-indicator" id="sort-1y"></span>
                             </th>
                             <th class="text-right">Yearly Change (Units)</th>
-                            <th></th> </tr>
+                            <th></th>
+                        </tr>
                     </thead>
                     <tbody id="watchlistBody">
                         </tbody>
@@ -1105,15 +1071,31 @@
         // Configuration matching your exact backend
         const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
         
-        // Enhanced data source configurations
+        // Enhanced data source configurations for all APIs including new liquidity intelligence
+        // MODIFICATION START: Updated Polygon searchSymbols and descriptions later in getSymbolDescription
         const DATA_SOURCES = {
             polygon: {
                 name: 'Polygon Financial Data',
                 provider: 'polygon_direct',
                 active: true,
-                // searchSymbols are now primarily populated by loadPolygonTickers
-                searchSymbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD'] 
+                searchSymbols: [
+                    // Stocks (CS)
+                    'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD',
+                    'BRK.A', 'JPM', 'V', 'DIS', 'BA',
+                    // ETFs (ETF)
+                    'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 
+                    'GLD', 'ARKK', 'VOX', 'DIA', 'SLV',
+                    // Crypto (CRYPTO) - Polygon uses X: prefix
+                    'X:BTCUSD', 'X:ETHUSD', 'X:ADAUSD', 'X:SOLUSD', 'X:DOGEUSD',
+                    // Mutual Funds (MF)
+                    'VFIAX', 'VTSAX', 'FMAGX', 'VFINX', 'AGTHX',
+                    // Bonds (Using Bond ETFs as examples as direct bond search by type isn't standard via simple ticker search)
+                    'BND', 'AGG', 'LQD', 'HYG', 'TLT',
+                    // Indices (INDEX) - Polygon uses I: prefix
+                    'I:SPX', 'I:NDX', 'I:DJI', 'I:RUT', 'I:VIX',
+                ]
             },
+            // MODIFICATION END
             fred: {
                 name: 'Federal Reserve Economic Data',
                 provider: 'fred_direct',
@@ -1148,11 +1130,16 @@
                 provider: 'ecb_direct',
                 active: true,
                 searchSymbols: [
+                    // Exchange Rates
                     'EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A',
+                    // CISS - Composite Indicator of Systemic Stress
                     'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX',
+                    // Country-specific Sovereign CISS
                     'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX',
                     'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX',
+                    // CLIFS - Country-Level Index of Financial Stress
                     'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX',
+                    // ILM - Interest Rate and Liquidity Measures
                     'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR'
                 ]
             },
@@ -1172,10 +1159,7 @@
                 searchSymbols: [
                     'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_17W', 'BILLS_26W', 'BILLS_52W',
                     'NOTES_2Y', 'NOTES_3Y', 'NOTES_5Y', 'NOTES_7Y', 'NOTES_10Y',
-                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y',
-                    // New Treasury Auction Metrics
-                    'AUCTION_TAIL_4W', 'AUCTION_BTC_4W', 'AUCTION_TAIL_13W', 'AUCTION_BTC_13W',
-                    'AUCTION_TAIL_2Y', 'AUCTION_BTC_2Y', 'AUCTION_TAIL_10Y', 'AUCTION_BTC_10Y'
+                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y'
                 ]
             },
             liquidity: {
@@ -1186,28 +1170,13 @@
             }
         };
         
-        // Ticker type configuration for Polygon
-        const TICKER_TYPES = {
-            CS: { name: 'Common Stock', active: true },
-            ETF: { name: 'Exchange Traded Fund', active: true },
-            CRYPTO: { name: 'Cryptocurrency', active: true },
-            MF: { name: 'Mutual Fund', active: true },
-            BOND: { name: 'Bond', active: true },
-            INDEX: { name: 'Index', active: true },
-            OTHER: { name: 'Other (ADR, REIT, etc.)', active: true } // Catch-all for other types like ADRC, ADRW etc.
-        };
-        
-        let activeTickerTypes = Object.keys(TICKER_TYPES); // All types active by default
-        let polygonTickers = []; // Cache for Polygon tickers
-        let polygonTickersLoaded = false;
-        
         const charts = {};
         let chartIdCounter = 0;
         let activeChartId = null;
         let searchTimeout = null;
         let activeSources = ['polygon', 'fred', 'ny_fed', 'ecb', 'ofr', 'treasury', 'liquidity'];
         
-        // Enhanced watchlists with comprehensive coverage
+        // Enhanced watchlists with comprehensive coverage including new liquidity intelligence
         const watchlists = {
             'MAIN': {
                 symbols: [
@@ -1295,7 +1264,8 @@
                     { symbol: 'T10YIE', provider: 'fred_direct' },
                     { symbol: 'WLCFLPCL', provider: 'fred_direct' },
                     { symbol: 'CC4WSA', provider: 'fred_direct' },
-                    { symbol: 'VIXCLS', provider: 'fred_direct' },
+                    { symbol: 'VIXCLS', provider: 'fred_direct' }, // Already in fred.searchSymbols
+                    { symbol: 'I:VIX', provider: 'polygon_direct'}, // Polygon VIX index
                     { symbol: 'TREAS1590', provider: 'fred_direct' }
                 ],
                 active: false
@@ -1347,11 +1317,7 @@
                     { symbol: 'NOTES_10Y', provider: 'treasury_direct' },
                     { symbol: 'BONDS_30Y', provider: 'treasury_direct' },
                     { symbol: 'TIPS_10Y', provider: 'treasury_direct' },
-                    { symbol: 'TIPS_30Y', provider: 'treasury_direct' },
-                    // New auction metrics
-                    { symbol: 'AUCTION_TAIL_4W', provider: 'treasury_direct' },
-                    { symbol: 'AUCTION_BTC_13W', provider: 'treasury_direct' },
-                    { symbol: 'AUCTION_TAIL_10Y', provider: 'treasury_direct' }
+                    { symbol: 'TIPS_30Y', provider: 'treasury_direct' }
                 ],
                 active: false
             },
@@ -1377,7 +1343,13 @@
             '#00AEEF', '#FF4444', '#F4D03F', '#58D68D', '#FF7043',
             '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
         ];
-        
+        // MODIFICATION START: Second color palette for MACD signal line or other secondary lines
+        const secondaryColorPalette = [
+            '#FF69B4', '#00CED1', '#FFD700', '#32CD32', '#FFA07A',
+            '#BA55D3', '#66CDAA', '#FA8072', '#87CEEB', '#DAA520'
+        ];
+        // MODIFICATION END
+                
         // Risk/Liquidity Dashboard Configuration
         const riskCategories = {
             'risk': {
@@ -1407,131 +1379,306 @@
         };
         
         let riskDashboardData = {};
-        let riskAlerts = {}; // Not actively used in current logic, but kept for potential future use
-        let flashTimers = {};
+        let riskAlerts = {};
         
-        // Update clock function
-        function updateClock() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
+        // Initialize Risk Dashboard
+        function initializeRiskDashboard() {
+            setupRiskConfiguration();
+            loadRiskDashboardData();
+            setInterval(loadRiskDashboardData, 120000); // Update every 2 minutes
+        }
+        
+        // Setup Risk Configuration UI
+        function setupRiskConfiguration() {
+            const categories = ['risk', 'liquidity', 'economic', 'global'];
+            const containers = ['riskSymbols', 'liquiditySymbols', 'economicSymbols', 'globalSymbols'];
+            
+            categories.forEach((category, index) => {
+                const container = document.getElementById(containers[index]);
+                const config = riskCategories[category];
+                
+                config.symbols.forEach(symbol => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'symbol-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="${category}_${symbol}" checked onchange="updateCategoryConfig('${category}', '${symbol}', this.checked)">
+                        <label for="${category}_${symbol}">${getSymbolDescription(symbol, getProviderForSymbol(symbol))}</label>
+                    `;
+                    container.appendChild(checkbox);
+                });
             });
-            const dateString = now.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-            const clockElement = document.getElementById('clock');
-            if (clockElement) {
-                clockElement.textContent = `${dateString} ${timeString}`;
+        }
+        
+        // Get provider for symbol (helper function)
+        function getProviderForSymbol(symbol) {
+            if (symbol.includes('CISS') || symbol.includes('EXR') || symbol.includes('ILM')) return 'ecb';
+            if (['sofr', 'effr', 'obfr', 'tgcr', 'bgcr'].includes(symbol.toLowerCase())) return 'ny_fed';
+            // Add more specific checks if needed, default to FRED for many economic indicators
+            return 'fred'; 
+        }
+        
+        // Update category configuration
+        function updateCategoryConfig(category, symbol, enabled) {
+            if (!enabled) {
+                riskCategories[category].symbols = riskCategories[category].symbols.filter(s => s !== symbol);
+            } else if (!riskCategories[category].symbols.includes(symbol)) {
+                riskCategories[category].symbols.push(symbol);
             }
         }
+        
+        // Toggle Risk Dashboard
+        function toggleRiskDashboard() {
+            const dashboard = document.getElementById('riskDashboard');
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            
+            if (dashboard.classList.contains('active')) {
+                dashboard.classList.remove('active');
+                watchlistSection.style.flex = '1'; // Restore watchlist flex
+                 if (Object.keys(charts).length > 0) { // Only show charts if there are any
+                    chartsArea.style.display = 'block';
+                }
+            } else {
+                dashboard.classList.add('active');
+                chartsArea.style.display = 'none'; // Hide charts when risk dashboard is active
+                watchlistSection.style.flex = '0 0 300px'; // Shrink watchlist
+                loadRiskDashboardData();
+            }
+        }
+        
+        // Toggle Configuration Panel
+        function toggleConfig() {
+            const config = document.getElementById('watchlistConfig');
+            config.style.display = config.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Load Risk Dashboard Data
+        async function loadRiskDashboardData() {
+            const allSymbols = new Set();
+            Object.values(riskCategories).forEach(category => {
+                category.symbols.forEach(symbol => allSymbols.add(symbol));
+            });
+            
+            // Load data for all symbols
+            for (const symbol of allSymbols) {
+                const providerKey = getProviderForSymbol(symbol); // e.g., 'fred'
+                const provider = DATA_SOURCES[providerKey]?.provider; // e.g., 'fred_direct'
+                if (provider) {
+                    try {
+                        await loadRiskSymbolData(symbol, provider);
+                    } catch (error) {
+                        console.warn(`Failed to load risk data for ${symbol}:`, error);
+                    }
+                } else {
+                     console.warn(`Provider not found for risk symbol: ${symbol} (derived key: ${providerKey})`);
+                }
+            }
+            
+            // Calculate risk scores and update dashboard
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+        }
+        
+        // Load individual symbol data for risk analysis
+        async function loadRiskSymbolData(symbol, provider, retryCount = 0) {
+            try {
+                let url;
+                
+                // Use universal data endpoint for FRED, NY_FED, ECB for risk dashboard (as it's simpler for latest value)
+                if (provider === 'fred_direct' || provider === 'ny_fed_direct' || provider === 'ecb_direct' || provider === 'ofr_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else {
+                    console.warn(`Risk symbol provider ${provider} might not be optimally configured for risk dashboard.`);
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`; // Fallback
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.metrics && data.metrics.latest_value !== undefined) {
+                    riskDashboardData[symbol] = {
+                        value: data.metrics.latest_value,
+                        daily_change: data.metrics.daily_change || 0, // % change
+                        weekly_change: data.metrics.weekly_change || 0, // % change
+                        monthly_change: data.metrics.monthly_change || 0, // % change
+                        yearly_change: data.metrics.yearly_change || 0, // % change
+                        provider: provider,
+                        timestamp: Date.now()
+                    };
+                } else if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+                     // Handle array data if metrics are not directly available (less ideal for risk dashboard)
+                    const latestEntry = data.data[data.data.length -1];
+                    const value = latestEntry.value || latestEntry.close || latestEntry.price || 0;
+                     riskDashboardData[symbol] = {
+                        value: value,
+                        daily_change: 0, weekly_change: 0, monthly_change: 0, yearly_change: 0, // Placeholder changes
+                        provider: provider,
+                        timestamp: Date.now()
+                    };
+                }
 
+
+            } catch (error) {
+                if (retryCount < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                    return loadRiskSymbolData(symbol, provider, retryCount + 1);
+                }
+                console.error(`Failed to load ${symbol} for risk dashboard:`, error);
+            }
+        }
+        
+        // Calculate Risk Scores using Z-Score normalization of changes
+        function calculateRiskScores() {
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const scores = [];
+                
+                category.symbols.forEach(symbol => {
+                    if (riskDashboardData[symbol]) {
+                        const data = riskDashboardData[symbol];
+                        // Consider absolute recent changes (e.g., daily, weekly) for risk score
+                        // This example uses daily change, adapt as needed (e.g., weighted average of changes)
+                        const changeToConsider = Math.abs(data.daily_change || 0); 
+                        
+                        // Simple scaling: assume 5% change is significant (score 100), 0% is 0. Max at 100.
+                        // This is a simplified model. Z-scores or other normalization would be more robust.
+                        let score = Math.min(100, (changeToConsider / 5) * 100); 
+                        scores.push(score);
+                    }
+                });
+                
+                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                category.currentScore = Math.round(avgScore);
+                
+                if (avgScore >= category.thresholds.extreme) category.alertLevel = 'extreme';
+                else if (avgScore >= category.thresholds.critical) category.alertLevel = 'high';
+                else if (avgScore >= category.thresholds.warning) category.alertLevel = 'moderate';
+                else category.alertLevel = 'low';
+            });
+        }
+        
+        // Update Risk Gauges
+        function updateRiskGauges() {
+            const gaugeGrid = document.getElementById('gaugeGrid');
+            gaugeGrid.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const gaugeContainer = document.createElement('div');
+                gaugeContainer.className = 'gauge-container';
+                
+                const gaugeId = `gauge_${categoryKey}`;
+                gaugeContainer.innerHTML = `
+                    <div class="gauge-title">${category.name}</div>
+                    <div class="gauge-chart" id="${gaugeId}"></div>
+                `;
+                
+                gaugeGrid.appendChild(gaugeContainer);
+                
+                const data = [{
+                    type: "indicator",
+                    mode: "gauge+number", // Removed delta as it was simple
+                    value: category.currentScore,
+                    domain: { x: [0, 1], y: [0, 1] },
+                    title: { text: "Risk Score", font: {size: 14, color: "#ccc"} },
+                    number: { font: {size: 36, color: "#fff"}},
+                    gauge: {
+                        axis: { range: [null, 100], tickwidth: 1, tickcolor: "darkblue" },
+                        bar: { color: category.color, thickness: 0.3 },
+                        bgcolor: "#1e1e1e",
+                        borderwidth: 1,
+                        bordercolor: "#333",
+                        steps: [
+                            { range: [0, category.thresholds.warning], color: "#00dd7730" },
+                            { range: [category.thresholds.warning, category.thresholds.critical], color: "#ffaa0030" },
+                            { range: [category.thresholds.critical, category.thresholds.extreme], color: "#ff444430" },
+                            { range: [category.thresholds.extreme, 100], color: "#8b000050" }
+                        ],
+                        threshold: {
+                            line: { color: "white", width: 3 },
+                            thickness: 0.75,
+                            value: category.currentScore
+                        }
+                    }
+                }];
+                
+                const layout = {
+                    width: 380, // Adjusted for potentially smaller grid cells
+                    height: 280,
+                    margin: { t: 20, r: 30, l: 30, b: 20 },
+                    paper_bgcolor: "#0a0a0a",
+                    plot_bgcolor: "#0a0a0a",
+                    font: { color: "#fff" }
+                };
+                
+                Plotly.newPlot(gaugeId, data, layout, { displayModeBar: false });
+            });
+        }
+        
+        // Update Alert Indicators
+        function updateAlertIndicators() {
+            const alertContainer = document.getElementById('alertIndicators');
+            alertContainer.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const badge = document.createElement('div');
+                badge.className = `alert-badge ${category.alertLevel}`;
+                
+                let alertText = '';
+                switch (category.alertLevel) {
+                    case 'extreme': alertText = `🚨 EXTREME: ${category.name.replace(/[🔴💧📈🌍\s]/g, '')} ${category.currentScore}%`; break;
+                    case 'high': alertText = `⚠️ HIGH: ${category.name.replace(/[🔴💧📈🌍\s]/g, '')} ${category.currentScore}%`; break;
+                    case 'moderate': alertText = `🟡 WARNING: ${category.name.replace(/[🔴💧📈🌍\s]/g, '')} ${category.currentScore}%`; break;
+                    default: alertText = `✅ ${category.name.replace(/[🔴💧📈🌍\s]/g, '')} ${category.currentScore}%`;
+                }
+                
+                badge.textContent = alertText;
+                alertContainer.appendChild(badge);
+            });
+        }
+        
+        // Update Risk Dashboard (called when config changes)
+        function updateRiskDashboard() {
+            const warning = parseInt(document.getElementById('warningThreshold').value);
+            const critical = parseInt(document.getElementById('criticalThreshold').value);
+            const extreme = parseInt(document.getElementById('extremeThreshold').value);
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                riskCategories[categoryKey].thresholds = { warning, critical, extreme };
+            });
+            
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+            
+            showTemporaryMessage('Risk Dashboard Updated!', 'info');
+        }
+        let flashTimers = {};
+        
         // Initialize the dashboard
         async function init() {
             updateClock();
             setInterval(updateClock, 1000);
             
-            loadWatchlists(); // Load saved watchlists from localStorage
-            await checkAPIConnections(); // Check connections to all data sources
-            loadWatchlistData(); // Load data for the current watchlist
-            setInterval(loadWatchlistData, 60000); // Refresh watchlist data every minute
+            loadWatchlists();
+            await checkAPIConnections();
+            loadWatchlistData();
+            setInterval(loadWatchlistData, 60000); // Refresh watchlist data every 60s
             
-            // Load liquidity dashboard data periodically
             setInterval(loadLiquidityDashboard, 300000); // Every 5 minutes
-            loadLiquidityDashboard(); // Initial load
+            loadLiquidityDashboard();
             
-            updateSortButtons(); // Set initial state of sort buttons
-            document.getElementById('searchBox').focus(); // Focus on search box on load
+            updateSortButtons();
+            document.getElementById('searchBox').focus();
             
-            // Initialize Risk Dashboard
-            initializeRiskDashboard();
-            
-            // Load Polygon tickers for enhanced search (asynchronously)
-            loadPolygonTickers();
+            initializeRiskDashboard(); // Initialize risk dashboard
         }
         
-        // Load Polygon tickers for enhanced search functionality
-        async function loadPolygonTickers() {
-            if (polygonTickersLoaded) return; // Don't reload if already loaded
-            
-            try {
-                console.log('Loading Polygon tickers...');
-                // Fetch a list of tickers from Polygon API
-                const response = await fetch(`${API_BASE}/api/v1/polygon/tickers?limit=5000&active=true`); // Limit to 5000 for performance
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.results) {
-                        // Map fetched tickers to a simpler structure
-                        polygonTickers = data.results.map(ticker => ({
-                            ticker: ticker.ticker,
-                            name: ticker.name,
-                            type: ticker.type || 'CS', // Default type if not provided
-                            market: ticker.market || 'stocks', // Default market
-                            active: ticker.active
-                        }));
-                        polygonTickersLoaded = true;
-                        console.log(`Loaded ${polygonTickers.length} Polygon tickers`);
-                    }
-                } else {
-                    console.warn('Failed to load Polygon tickers:', response.status);
-                    // Fallback to basic tickers if API fails, using the predefined searchSymbols
-                    polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
-                        ticker: symbol, name: symbol, type: 'CS', market: 'stocks', active: true
-                    }));
-                    polygonTickersLoaded = true; // Mark as loaded even with fallback
-                }
-            } catch (error) {
-                console.warn('Error loading Polygon tickers:', error);
-                // Fallback to basic tickers on error
-                polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
-                    ticker: symbol, name: symbol, type: 'CS', market: 'stocks', active: true
-                }));
-                polygonTickersLoaded = true; // Mark as loaded even with fallback
-            }
-        }
-        
-        // Toggle ticker type for filtering Polygon search results
-        function toggleTickerType(type) {
-            const button = document.querySelector(`.ticker-type-filter [data-type="${type}"]`);
-            const isActive = button.classList.contains('active');
-            
-            if (isActive) {
-                button.classList.remove('active');
-                activeTickerTypes = activeTickerTypes.filter(t => t !== type);
-            } else {
-                button.classList.add('active');
-                activeTickerTypes.push(type);
-            }
-        }
-
-        // Get ticker type description for display
-        function getTickerTypeDescription(type) {
-            const descriptions = {
-                CS: 'Common Stock',
-                ETF: 'Exchange Traded Fund',
-                CRYPTO: 'Cryptocurrency',
-                MF: 'Mutual Fund',
-                BOND: 'Bond',
-                INDEX: 'Index',
-                ADRC: 'American Depositary Receipt', 
-                ADRW: 'ADR Warrant',
-                ADRR: 'ADR Rights',
-                FUND: 'Closed-End Fund',
-                SP: 'Structured Product',
-                WARRANT: 'Warrant',
-                RIGHT: 'Rights',
-                UNIT: 'Unit',
-                OTHER: 'Other Security Type'
-            };
-            return descriptions[type] || 'Financial Instrument';
-        }
-        
-        // Enhanced API connection check for all providers
+        // Enhanced API connection check for all providers including liquidity intelligence
         async function checkAPIConnections() {
             let connectedCount = 0;
             const totalSources = Object.keys(DATA_SOURCES).length;
@@ -1539,111 +1686,93 @@
             try {
                 const healthResponse = await fetch(`${API_BASE}/api/v1/health`);
                 if (healthResponse.ok) console.log('Health check OK');
-                else console.warn('Health check failed:', healthResponse.status);
             } catch (error) {
-                console.warn('Health check error:', error);
+                console.warn('Health check failed:', error);
             }
             
             for (const [source, config] of Object.entries(DATA_SOURCES)) {
-                const indicatorElement = document.getElementById(`${source}-indicator`);
                 try {
                     let testUrl;
                     if (source === 'liquidity') {
                         testUrl = `${API_BASE}/api/v1/liquidity/dashboard`;
-                    } else if (source === 'polygon') {
-                        testUrl = `${API_BASE}/api/v1/polygon/reference/tickers?limit=1`;
                     } else {
                         const testSymbol = config.searchSymbols[0];
-                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        if (source === 'polygon') testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&data_type=quote`;
+                        else testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
                     }
                     
                     const response = await fetch(testUrl);
                     if (response.ok) {
                         const data = await response.json();
-                        if (data && (data.metrics || data.data || data.symbol || data.overall_stress_score !== undefined || data.results)) {
-                            if(indicatorElement) indicatorElement.classList.add('connected');
+                        if (data && (data.metrics || data.data || data.symbol || data.overall_stress_score !== undefined)) {
+                            document.getElementById(`${source}-indicator`).classList.add('connected');
                             connectedCount++;
-                            console.log(`${source} connected successfully`);
-                        } else {
-                            if(indicatorElement) indicatorElement.classList.add('connected'); // Still connected, but data might be empty
-                            connectedCount++;
-                            console.warn(`${source} connected, but data structure might be unexpected or empty:`, data);
                         }
-                    } else {
-                        if(indicatorElement) indicatorElement.classList.remove('connected');
-                        console.warn(`${source} API connection failed:`, response.status, await response.text().catch(()=>""));
+                    } else if (response.status === 404) { // Treat 404 on test symbol as API responsive
+                        document.getElementById(`${source}-indicator`).classList.add('connected');
+                        connectedCount++;
                     }
                 } catch (error) {
-                    if(indicatorElement) indicatorElement.classList.remove('connected');
-                    console.warn(`${source} API connection error (catch):`, error);
+                    console.warn(`${source} API connection failed:`, error);
+                    document.getElementById(`${source}-indicator`).classList.remove('connected');
                 }
             }
             
-            const statusText = `${connectedCount}/${totalSources} APIs Connected`;
-            document.getElementById('apiStatusText').textContent = statusText;
-            const apiStatusDot = document.getElementById('apiStatus');
-            
-            if (connectedCount > 0) {
-                if(apiStatusDot) apiStatusDot.classList.add('connected');
-                // showTemporaryMessage(`Connected to ${connectedCount} data sources`, 'info'); // Can be noisy
-            } else {
-                if(apiStatusDot) apiStatusDot.classList.remove('connected');
-                showTemporaryMessage('No API connections available', 'error');
-            }
+            document.getElementById('apiStatusText').textContent = `${connectedCount}/${totalSources} APIs Connected`;
+            if (connectedCount > 0) document.getElementById('apiStatus').classList.add('connected');
+            else document.getElementById('apiStatus').classList.remove('connected');
+
+            showTemporaryMessage(connectedCount > 0 ? `Connected to ${connectedCount} data sources` : 'No API connections available', connectedCount > 0 ? 'info' : 'error');
         }
         
-        // Load liquidity dashboard data
+        // Load liquidity dashboard
         async function loadLiquidityDashboard() {
-            const indicatorElement = document.getElementById('liquidity-indicator');
             try {
                 const response = await fetch(`${API_BASE}/api/v1/liquidity/dashboard`);
                 if (response.ok) {
                     const data = await response.json();
                     updateLiquidityAlert(data);
-                    if(indicatorElement) indicatorElement.classList.add('connected');
-                } else {
-                     if(indicatorElement) indicatorElement.classList.remove('connected');
+                    document.getElementById('liquidity-indicator').classList.add('connected');
                 }
             } catch (error) {
                 console.warn('Liquidity dashboard failed:', error);
-                if(indicatorElement) indicatorElement.classList.remove('connected');
+                document.getElementById('liquidity-indicator').classList.remove('connected');
             }
         }
         
-        // Update liquidity alert display
+        // Update liquidity alert
         function updateLiquidityAlert(data) {
             const alertElement = document.getElementById('liquidityAlert');
             const alertText = document.getElementById('liquidityAlertText');
             
             if (!data || data.overall_stress_score === undefined) {
-                if(alertElement) alertElement.style.display = 'none';
+                alertElement.style.display = 'none';
                 return;
             }
             
             const stressScore = data.overall_stress_score;
-            const stressLevel = data.stress_level; 
+            const stressLevel = data.stress_level;
             
-            if(alertElement) alertElement.style.display = 'block';
-            if(alertText) alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
+            alertElement.style.display = 'block';
+            alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
             
-            if(alertElement) {
-                alertElement.className = 'liquidity-alert'; 
-                if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') {
-                    // Default red gradient
-                } else if (stressLevel === 'MODERATE') {
-                    alertElement.classList.add('moderate');
-                } else { 
-                    alertElement.classList.add('low');
-                }
-            }
+            alertElement.className = 'liquidity-alert'; // Reset classes
+            if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') alertElement.classList.add('high'); // Default red is high/extreme
+            else if (stressLevel === 'MODERATE') alertElement.classList.add('moderate');
+            // No specific 'low' class, default styling applies
         }
         
+        // Show liquidity dashboard
         function showLiquidityDashboard() {
-            showTemporaryMessage('Loading comprehensive liquidity dashboard (placeholder)...', 'info');
+            // This could be expanded to show a modal or a dedicated section
+            // For now, it could toggle the main risk dashboard or add specific liquidity charts
+            toggleRiskDashboard(); // Example: Toggling the existing risk dashboard
+            showTemporaryMessage('Displaying Market Risk & Liquidity Intelligence Dashboard.', 'info');
         }
         
+        // Toggle data source
         function toggleDataSource(source) {
-            const button = document.querySelector(`.data-source-filter [data-source="${source}"]`);
+            const button = document.querySelector(`[data-source="${source}"]`);
             const isActive = button.classList.contains('active');
             
             if (isActive) {
@@ -1655,55 +1784,23 @@
             }
         }
         
+        // Enhanced search across all providers including liquidity intelligence
         async function performSearch(query) {
             const resultsDiv = document.getElementById('searchResults');
+            
             if (!query || query.trim().length < 1) {
-                if(resultsDiv) resultsDiv.style.display = 'none';
+                resultsDiv.style.display = 'none';
                 return;
             }
             
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
-                if(resultsDiv) {
-                    resultsDiv.innerHTML = '<div class="search-loading">Searching...</div>';
-                    resultsDiv.style.display = 'block';
-                }
+                resultsDiv.innerHTML = '<div class="search-loading">Searching across all data sources...</div>';
+                resultsDiv.style.display = 'block';
                 
                 try {
                     const allResults = [];
-                    if (activeSources.includes('polygon')) {
-                        if (!polygonTickersLoaded) await loadPolygonTickers();
-                        const filteredPolygonTickers = polygonTickers.filter(ticker => {
-                            let typeMatch = false;
-                            const tickerTypeUpper = ticker.type ? ticker.type.toUpperCase() : 'OTHER';
-
-                            if (activeTickerTypes.includes(tickerTypeUpper)) {
-                                typeMatch = true;
-                            } else if (activeTickerTypes.includes('OTHER')) {
-                                const commonTypes = ['CS', 'ETF', 'CRYPTO', 'MF', 'BOND', 'INDEX'];
-                                if (!commonTypes.includes(tickerTypeUpper)) typeMatch = true;
-                            }
-                            if (!typeMatch) return false;
-                            
-                            const queryLower = query.toLowerCase();
-                            return ticker.ticker.toLowerCase().includes(queryLower) ||
-                                   (ticker.name && ticker.name.toLowerCase().includes(queryLower));
-                        });
-                        
-                        filteredPolygonTickers.slice(0, 50).forEach(ticker => {
-                            allResults.push({
-                                symbol: ticker.ticker,
-                                name: ticker.name || ticker.ticker,
-                                provider: 'polygon_direct',
-                                source: 'polygon',
-                                type: ticker.type,
-                                description: getTickerTypeDescription(ticker.type)
-                            });
-                        });
-                    }
-                    
                     for (const source of activeSources) {
-                        if (source === 'polygon') continue;
                         const config = DATA_SOURCES[source];
                         if (!config) continue;
                         
@@ -1725,84 +1822,176 @@
                     displaySearchResults(allResults, query);
                 } catch (error) {
                     console.error('Search error:', error);
-                    if(resultsDiv) resultsDiv.innerHTML = `<div class="search-item" style="text-align:center; color:#888;">Error.</div>`;
+                    resultsDiv.innerHTML = `<div class="search-item" style="text-align:center; color:#888;">Error searching.</div>`;
                 }
             }, 300);
         }
         
+        // Enhanced symbol descriptions for all providers including liquidity intelligence
+        // MODIFICATION START: Added descriptions for new Polygon asset types
         function getSymbolDescription(symbol, source) {
-            const sourceConfig = DATA_SOURCES[source];
-            if (sourceConfig && sourceConfig.searchSymbolsDescriptions && sourceConfig.searchSymbolsDescriptions[symbol]) {
-                return sourceConfig.searchSymbolsDescriptions[symbol];
-            }
-            if (source === 'polygon' && polygonTickersLoaded) {
-                const foundTicker = polygonTickers.find(t => t.ticker === symbol);
-                if (foundTicker && foundTicker.name) return foundTicker.name;
-            }
-            return symbol; 
+            const descriptions = {
+                polygon: { // Sorted by asset class for clarity
+                    // Stocks (CS)
+                    'AAPL': 'Apple Inc. (Stock)', 'MSFT': 'Microsoft Corporation (Stock)', 'GOOGL': 'Alphabet Inc. Class A (Stock)', 
+                    'AMZN': 'Amazon.com Inc. (Stock)', 'TSLA': 'Tesla Inc. (Stock)', 'NVDA': 'NVIDIA Corporation (Stock)', 
+                    'META': 'Meta Platforms Inc. (Stock)', 'NFLX': 'Netflix Inc. (Stock)', 'CRM': 'Salesforce, Inc. (Stock)', 
+                    'AMD': 'Advanced Micro Devices, Inc. (Stock)', 'BRK.A': 'Berkshire Hathaway Inc. Class A (Stock)',
+                    'JPM': 'JPMorgan Chase & Co. (Stock)', 'V': 'Visa Inc. (Stock)', 'DIS': 'The Walt Disney Company (Stock)', 'BA': 'The Boeing Company (Stock)',
+                    // ETFs (ETF)
+                    'SPY': 'SPDR S&P 500 ETF Trust (ETF)', 'QQQ': 'Invesco QQQ Trust (ETF)', 'IWM': 'iShares Russell 2000 ETF (ETF)', 
+                    'VTI': 'Vanguard Total Stock Market ETF (ETF)', 'VOO': 'Vanguard S&P 500 ETF (ETF)', 
+                    'GLD': 'SPDR Gold Shares (ETF)', 'ARKK': 'ARK Innovation ETF (ETF)', 'VOX': 'Vanguard Communication Services ETF (ETF)',
+                    'DIA': 'SPDR Dow Jones Industrial Average ETF (ETF)', 'SLV': 'iShares Silver Trust (ETF)',
+                    // Crypto (CRYPTO)
+                    'X:BTCUSD': 'Bitcoin / USD (Crypto)', 'X:ETHUSD': 'Ethereum / USD (Crypto)', 'X:ADAUSD': 'Cardano / USD (Crypto)',
+                    'X:SOLUSD': 'Solana / USD (Crypto)', 'X:DOGEUSD': 'Dogecoin / USD (Crypto)',
+                    // Mutual Funds (MF)
+                    'VFIAX': 'Vanguard 500 Index Fund Admiral Shares (Mutual Fund)', 
+                    'VTSAX': 'Vanguard Total Stock Market Index Fund Admiral Shares (Mutual Fund)', 
+                    'FMAGX': 'Fidelity Magellan Fund (Mutual Fund)', 'VFINX': 'Vanguard 500 Index Fund Investor Shares (Mutual Fund)',
+                    'AGTHX': 'American Funds Growth Fund of America (Mutual Fund)',
+                    // Bonds (Using Bond ETFs as examples)
+                    'BND': 'Vanguard Total Bond Market ETF (Bond ETF)', 'AGG': 'iShares Core U.S. Aggregate Bond ETF (Bond ETF)', 
+                    'LQD': 'iShares iBoxx $ Investment Grade Corporate Bond ETF (Bond ETF)', 
+                    'HYG': 'iShares iBoxx $ High Yield Corporate Bond ETF (Bond ETF)', 'TLT': 'iShares 20+ Year Treasury Bond ETF (Bond ETF)',
+                    // Indices (INDEX)
+                    'I:SPX': 'S&P 500 Index (Index)', 'I:NDX': 'NASDAQ 100 Index (Index)', 'I:DJI': 'Dow Jones Industrial Average (Index)',
+                    'I:RUT': 'Russell 2000 Index (Index)', 'I:VIX': 'CBOE Volatility Index (Index)',
+                },
+                fred: { /* ... existing FRED descriptions ... */ 
+                    'FEDFUNDS': 'Federal Funds Rate', 'UNRATE': 'Unemployment Rate', 'GDP': 'Gross Domestic Product',
+                    'CPIAUCSL': 'Consumer Price Index', 'DFF': 'Daily Federal Funds Rate', 'M2SL': 'M2 Money Supply',
+                    'PAYEMS': 'Total Nonfarm Payrolls', 'HOUST': 'Housing Starts', 'INDPRO': 'Industrial Production Index',
+                    'DTWEXBGS': 'Trade Weighted U.S. Dollar Index: Broad', 'DTWEXAFEGS': 'Trade Weighted U.S. Dollar Index: Advanced Foreign Economies',
+                    'DTWEXEMEGS': 'Trade Weighted U.S. Dollar Index: Emerging Market Economies', 'RESPPNTEPNWW': 'Central Bank Assets to GDP for World',
+                    'RESPPALGUOXAWXCH52NWW': 'Central Bank Assets for World', 'RESPPALGUONNWW': 'Central Bank Assets for World (Narrow)',
+                    'SWP1690': 'Central Bank Liquidity Swaps', 'OTHL1690': 'Other Liquid Assets', 'RMFSL': 'Reserve Bank Credit',
+                    'BOGMBASE': 'Monetary Base', 'WSHOSHO': 'Wholesale Short-Term Funding', 'WRESBAL': 'Reserve Balances',
+                    'TOTRESNS': 'Total Reserves', 'NONBORRES': 'Non-borrowed Reserves', 'NFCINONFINLEVERAGE': 'NFCI: Nonfinancial Leverage Subindex',
+                    'FRBKCLMCIM': 'Bank Commercial and Industrial Loans', 'AMTMUO': 'Margin Trading Outstanding', 'T10YIE': '10-Year Breakeven Inflation Rate',
+                    'WLCFLPCL': 'Crude Oil Prices: WTI', 'CC4WSA': 'Credit Card Charge-Off Rate', 'VIXCLS': 'CBOE Volatility Index (VIX)',
+                    'ISRATIO': 'Total Business Inventories to Sales Ratio', 'MNFCTRIRSA': 'Manufacturers: Inventories to Sales Ratio',
+                    'DGS10': '10-Year Treasury Constant Maturity Rate', 'DGS2': '2-Year Treasury Constant Maturity Rate', 
+                    'DGS30': '30-Year Treasury Constant Maturity Rate', 'DGS5': '5-Year Treasury Constant Maturity Rate', 'DGS1':'1-Year Treasury Constant Maturity Rate',
+                    'SOFR': 'Secured Overnight Financing Rate (FRED)', 'EFFR': 'Effective Federal Funds Rate (FRED)', 'OBFR': 'Overnight Bank Funding Rate (FRED)'
+                },
+                ny_fed: { /* ... existing NY_FED descriptions ... */ 
+                    'sofr': 'Secured Overnight Financing Rate', 'effr': 'Effective Federal Funds Rate', 'obfr': 'Overnight Bank Funding Rate',
+                    'tgcr': 'Tri-party General Collateral Rate', 'bgcr': 'Broad General Collateral Rate'
+                },
+                ecb: { /* ... existing ECB descriptions ... */ 
+                    'EXR.D.USD.EUR.SP00.A': 'EUR/USD Exchange Rate', 'EXR.D.GBP.EUR.SP00.A': 'EUR/GBP Exchange Rate', 'EXR.D.JPY.EUR.SP00.A': 'EUR/JPY Exchange Rate',
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX': 'China Daily Systemic Stress Index', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX': 'Euro Area Daily Systemic Stress Index',
+                    'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX': 'US Daily Systemic Stress Index', 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX': 'Sweden Monthly Sovereign Stress Index',
+                    'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX': 'France Monthly Sovereign Stress Index', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX': 'Finland Monthly Sovereign Stress Index',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX': 'Denmark Monthly Sovereign Stress Index', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX': 'UK Monthly Sovereign Stress Index',
+                    'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX': 'Belgium Monthly Sovereign Stress Index', 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX': 'Germany Country-Level Financial Stress Index',
+                    'ILM.W.U2.C.A030000.U2.Z06': 'Euro Area Weekly Liquidity Measures', 'ILM.W.U2.C.L060000.U4.EUR': 'Euro Area Weekly Interest Rate Measures'
+                },
+                ofr: { /* ... existing OFR descriptions ... */ 
+                    'NYPD-PD_AFtR_T-A': 'NY Primary Dealer After-Fed Total Amount', 'NYPD-PD_AFtD_TOT-A': 'NY Primary Dealer After-Fed Total Daily Amount',
+                    'REPO_OV_TOT_P75': 'Repo Market Overall Total 75th Pctl', 'REPO_OV_TOT_P25': 'Repo Market Overall Total 25th Pctl',
+                    'MMF_OV_TOT': 'Money Market Fund Overall Total', 'DEALER_OV_TOT': 'Dealer Overall Total', 'BANK_OV_TOT': 'Bank Overall Total',
+                    'TGCR_VOL': 'Tri-party General Collateral Rate Volume', 'SOFR_VOL': 'SOFR Volume'
+                },
+                treasury: { /* ... existing Treasury descriptions ... */ 
+                    'BILLS_4W': '4-Week Treasury Bills Auction', 'BILLS_8W': '8-Week Treasury Bills Auction', 'BILLS_13W': '13-Week Treasury Bills Auction',
+                    'BILLS_17W': '17-Week Treasury Bills Auction', 'BILLS_26W': '26-Week Treasury Bills Auction', 'BILLS_52W': '52-Week Treasury Bills Auction',
+                    'NOTES_2Y': '2-Year Treasury Notes Auction', 'NOTES_3Y': '3-Year Treasury Notes Auction', 'NOTES_5Y': '5-Year Treasury Notes Auction',
+                    'NOTES_7Y': '7-Year Treasury Notes Auction', 'NOTES_10Y': '10-Year Treasury Notes Auction', 'BONDS_20Y': '20-Year Treasury Bonds Auction',
+                    'BONDS_30Y': '30-Year Treasury Bonds Auction', 'TIPS_5Y': '5-Year TIPS Auction', 'TIPS_10Y': '10-Year TIPS Auction',
+                    'TIPS_20Y': '20-Year TIPS Auction', 'TIPS_30Y': '30-Year TIPS Auction'
+                },
+                liquidity: { /* ... existing Liquidity descriptions ... */ 
+                    'OFR_FSI': 'OFR Financial Stress Index', 'TREASURY_MONITOR': 'Treasury Auction Monitor',
+                    'NYFED_FAILS': 'NY Fed Primary Dealer Fails', 'LIQUIDITY_DASHBOARD': 'Unified Liquidity Intelligence Dashboard'
+                }
+            };
+            return descriptions[source]?.[symbol] || symbol;
         }
+        // MODIFICATION END
         
+        // Enhanced detailed descriptions
+        // MODIFICATION START: Added more specific details for Polygon asset types
         function getDetailedDescription(symbol, source) {
-            return DATA_SOURCES[source]?.name || 'Financial Data';
+            const details = {
+                polygon: (() => {
+                    if (symbol.startsWith('X:')) return 'Cryptocurrency Pair';
+                    if (symbol.startsWith('I:')) return 'Market Index';
+                    // For other Polygon types, we'd need more info or rely on naming conventions added in getSymbolDescription
+                    if (getSymbolDescription(symbol, source).includes('(Stock)')) return 'Common Stock';
+                    if (getSymbolDescription(symbol, source).includes('(ETF)')) return 'Exchange Traded Fund';
+                    if (getSymbolDescription(symbol, source).includes('(Mutual Fund)')) return 'Mutual Fund';
+                    if (getSymbolDescription(symbol, source).includes('(Bond ETF)')) return 'Bond Exchange Traded Fund'; // Using Bond ETF as proxy
+                    return 'Polygon Financial Data';
+                })(),
+                fred: 'Economic indicator from FRED',
+                ny_fed: 'Reference rate from NY Federal Reserve',
+                ecb: 'European financial indicator from ECB',
+                ofr: 'Financial research data from OFR',
+                treasury: 'Treasury auction data from TreasuryDirect',
+                liquidity: 'Liquidity stress intelligence metric'
+            };
+            return details[source] || 'Financial Data';
         }
+        // MODIFICATION END
         
+        // Display search results
         function displaySearchResults(results, query) {
             const resultsDiv = document.getElementById('searchResults');
-            if (!resultsDiv) return;
-
             if (!results || results.length === 0) {
                 resultsDiv.innerHTML = `<div class="search-item" style="text-align:center; color:#888; padding: 20px;">No results for "${query}"</div>`;
                 return;
             }
-            
-            results.sort((a, b) => { /* ... existing sort logic ... */ return 0;});
-            const displayResults = results.slice(0, 100);
-            
+            results.sort((a, b) => { // Basic relevance sort
+                const symA = a.symbol.toLowerCase(); const symB = b.symbol.toLowerCase(); const qLow = query.toLowerCase();
+                if (symA === qLow) return -1; if (symB === qLow) return 1;
+                if (symA.startsWith(qLow) && !symB.startsWith(qLow)) return -1;
+                if (!symA.startsWith(qLow) && symB.startsWith(qLow)) return 1;
+                return symA.localeCompare(symB);
+            });
+            const displayResults = results.slice(0, 30);
             let html = '';
             displayResults.forEach(result => {
-                const highlightMatch = (text) => { /* ... existing highlight logic ... */ return text; };
-                const typeTag = result.type ? `<span class="search-item-type">${getTickerTypeDescription(result.type)}</span>` : '';
-                
+                const highlightMatch = (text) => text.replace(new RegExp(`(${query.split(' ').join('|')})`, 'gi'), '<span style="color: #00ff88; font-weight: bold;">$1</span>');
                 html += `
-                    <div class="search-item" onclick="addToWatchlistFromSearch('${result.symbol}', '${result.provider}', '${(result.name || result.symbol).replace(/'/g, "\\'")}')">
+                    <div class="search-item" onclick="addToWatchlistFromSearch('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
                         <div class="search-item-left">
-                            <div class="search-item-symbol">${highlightMatch(result.symbol)}${typeTag}</div>
-                            <div class="search-item-name">${highlightMatch(result.name || result.symbol)}</div>
-                            ${result.description && result.description !== getTickerTypeDescription(result.type) ? `<div class="search-item-description">${result.description}</div>` : ''}
+                            <div class="search-item-symbol">${highlightMatch(result.symbol)}</div>
+                            <div class="search-item-name">${highlightMatch(result.name)}</div>
+                            ${result.description ? `<div class="search-item-description">${result.description}</div>` : ''}
                         </div>
                         <div class="search-item-source">${result.source.toUpperCase()}</div>
-                    </div>
-                `;
+                    </div>`;
             });
             resultsDiv.innerHTML = html;
             resultsDiv.style.display = 'block';
         }
         
+        // Add to watchlist from search
         function addToWatchlistFromSearch(symbol, provider, name) {
             const currentSymbols = watchlists[currentWatchlist].symbols;
-            if (!currentSymbols.find(s => s.symbol === symbol && s.provider === provider)) {
+            if (!currentSymbols.find(s => s.symbol === symbol)) {
                 currentSymbols.push({ symbol, provider });
                 watchlistSymbols = [...currentSymbols];
                 saveWatchlists();
                 watchlistData[symbol] = { name: name || symbol, provider: provider, price: 0, changes: {}, changeUnits: {}, hasData: false };
                 renderWatchlist();
                 loadSingleWatchlistItem(symbol, provider);
-                showTemporaryMessage(`Added ${symbol} to ${currentWatchlist}`, 'info');
+                showTemporaryMessage(`Added ${symbol} from ${provider.replace('_direct','').toUpperCase()} to ${currentWatchlist}`, 'info');
             } else {
-                showTemporaryMessage(`${symbol} already in ${currentWatchlist}`, 'info');
+                showTemporaryMessage(`${symbol} is already in ${currentWatchlist} watchlist`, 'info');
             }
             document.getElementById('searchResults').style.display = 'none';
             document.getElementById('searchBox').value = '';
         }
-
+        
+        // Enhanced data loading for all providers including liquidity intelligence
         async function loadSingleWatchlistItem(symbol, provider, retryCount = 0) {
             const maxRetries = 2;
-            let url; 
             try {
-                console.log(`Loading ${symbol} from ${provider} (attempt ${retryCount + 1})`);
-                // Default to include_changes=true for most universal calls, adjust if needed
-                let useIncludeChanges = true; 
-
+                let url;
                 if (provider === 'liquidity_intelligence') {
                     if (symbol === 'OFR_FSI') url = `${API_BASE}/api/v1/ofr/fsi`;
                     else if (symbol === 'TREASURY_MONITOR') url = `${API_BASE}/api/v1/treasury/monitor`;
@@ -1810,39 +1999,20 @@
                     else if (symbol === 'LIQUIDITY_DASHBOARD') url = `${API_BASE}/api/v1/liquidity/dashboard`;
                 } else if (provider === 'polygon_direct') {
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=quote`;
-                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
-                    url = `${API_BASE}/api/v1/treasury/auction_metrics?symbol=${symbol}`;
-                } else { 
-                    // For FRED, NY_FED, OFR, ECB, and general Treasury, default to include_changes=true
-                    // The backend should ideally handle this parameter gracefully.
-                    // If specific symbols under these providers ONLY work with include_changes=false,
-                    // that would require more granular logic or backend adjustments.
-                    // For now, prioritizing getting *some* data if include_changes=true is more robust.
+                } else { // For FRED, ECB, OFR, Treasury, NY_FED - use universal with changes
                     url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
                 }
                 
-                console.log(`Constructed URL for ${symbol} (${provider}): ${url}`); // Log the constructed URL
                 const response = await fetch(url);
-                if (!response.ok) {
-                    console.error(`URL that 404ed or failed for ${symbol} (${provider}): ${url}`);
-                    throw new Error(`API returned ${response.status}`);
-                }
-                
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
                 const data = await response.json();
-                console.log(`Data received for ${symbol}:`, data);
                 
                 if (provider === 'liquidity_intelligence') processLiquidityIntelligenceData(symbol, data, provider);
-                else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) processTreasuryAuctionData(symbol, data, provider);
                 else if (data.metrics && data.metrics.latest_value !== undefined) processWatchlistData(symbol, data, provider);
                 else if (data.data && Array.isArray(data.data) && data.data.length > 0) processWatchlistDataArray(symbol, data.data, provider);
-                // Handle cases where include_changes=false might return a single data point directly
-                else if (data.data && data.data.value !== undefined && data.data.date !== undefined) {
-                     processWatchlistData(symbol, { metrics: { latest_value: data.data.value }, latest_date: data.data.date }, provider);
-                }
-                else throw new Error('No data or unexpected format');
-                
+                else throw new Error('No data available or unrecognized format');
             } catch (error) {
-                console.error(`Error loading ${symbol} from ${provider} (URL: ${url}):`, error.message);
+                console.error(`Error loading ${symbol} from ${provider}:`, error);
                 if (retryCount < maxRetries) {
                     await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
                     return loadSingleWatchlistItem(symbol, provider, retryCount + 1);
@@ -1852,29 +2022,7 @@
             }
         }
         
-        function processTreasuryAuctionData(symbol, data, provider) {
-            let latestValue = 0;
-            let changes = { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
-            let changeUnits = { 'daily': null, 'yearly': null };
-            
-            if (symbol.includes('TAIL')) {
-                latestValue = data.tail_spread || 0;
-                changes['1d'] = data.tail_change_bps || null; 
-            } else if (symbol.includes('BTC')) {
-                latestValue = data.bid_to_cover_ratio || 0;
-                changes['1d'] = data.btc_change_percent || null;
-            }
-            
-            watchlistData[symbol] = {
-                name: getSymbolDescription(symbol, provider), 
-                provider: provider, price: latestValue, changes: changes, changeUnits: changeUnits, 
-                hasData: true, latestDate: data.auction_date || new Date().toISOString().split('T')[0],
-                actualSymbol: symbol, lastUpdateTime: Date.now()
-            };
-            checkForSignificantChanges(symbol, changes);
-            renderWatchlist();
-        }
-        
+        // Process liquidity intelligence data
         function processLiquidityIntelligenceData(symbol, data, provider) {
             let latestValue = 0;
             let changes = { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
@@ -1886,27 +2034,28 @@
                 changeUnits = { 'daily': data.metrics.daily_change_units, 'yearly': data.metrics.yearly_change_units };
             } else if (symbol === 'TREASURY_MONITOR') {
                 latestValue = data.auction_tail_estimate || 0;
-                changes['1d'] = data.record_auction_flag ? 100 : 0;
+                changes['1d'] = data.record_auction_flag ? (data.auction_tail_estimate > 0 ? 100 : -100) : 0; // Indicate flag with a change
             } else if (symbol === 'NYFED_FAILS' && data.metrics) {
                 latestValue = data.metrics.latest_total_fails || 0;
-                changes['1w'] = data.metrics.weekly_change;
+                changes = { '1w': data.metrics.weekly_change }; // Only weekly provided
             } else if (symbol === 'LIQUIDITY_DASHBOARD') {
                 latestValue = data.overall_stress_score || 0;
-                changes['1d'] = latestValue * 100;
+                changes['1d'] = latestValue * 100; // Represent score as a change for display
             }
             
             watchlistData[symbol] = {
-                name: getSymbolDescription(symbol, provider), provider: provider, price: latestValue, changes: changes, changeUnits: changeUnits,
-                hasData: true, latestDate: data.latest_date || new Date().toISOString().split('T')[0], actualSymbol: symbol, lastUpdateTime: Date.now()
+                name: getSymbolDescription(symbol, 'liquidity'), provider: provider, price: latestValue, changes: changes, changeUnits: changeUnits,
+                hasData: true, latestDate: new Date().toISOString().split('T')[0], actualSymbol: symbol, lastUpdateTime: Date.now()
             };
             checkForSignificantChanges(symbol, changes);
             renderWatchlist();
         }
         
+        // Process watchlist data from your API response with new unit changes
         function processWatchlistData(symbol, data, provider) {
             const metrics = data.metrics || {};
             watchlistData[symbol] = {
-                name: getSymbolDescription(symbol, provider), provider: provider, price: metrics.latest_value || 0,
+                name: getSymbolDescription(symbol, provider.split('_')[0]), provider: provider, price: metrics.latest_value || 0,
                 changes: { '1d': metrics.daily_change, '1w': metrics.weekly_change, '1m': metrics.monthly_change, '3m': metrics.quarterly_change, '1y': metrics.yearly_change },
                 changeUnits: { 'daily': metrics.daily_change_units, 'yearly': metrics.yearly_change_units },
                 hasData: true, latestDate: data.latest_date || new Date().toISOString().split('T')[0], actualSymbol: symbol, lastUpdateTime: Date.now()
@@ -1915,6 +2064,7 @@
             renderWatchlist();
         }
         
+        // Process raw data array with unit changes
         function processWatchlistDataArray(symbol, dataArray, provider) {
             if (!dataArray || dataArray.length === 0) return;
             dataArray.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1922,7 +2072,7 @@
             const latestValue = latestItem.value || latestItem.close || latestItem.price || 0;
             
             watchlistData[symbol] = {
-                name: getSymbolDescription(symbol, provider), provider: provider, price: latestValue,
+                name: getSymbolDescription(symbol, provider.split('_')[0]), provider: provider, price: latestValue,
                 changes: calculatePercentageChanges(dataArray), changeUnits: calculateUnitChanges(dataArray),
                 hasData: true, fullData: dataArray, latestDate: latestItem.date, actualSymbol: symbol, lastUpdateTime: Date.now()
             };
@@ -1930,105 +2080,95 @@
             renderWatchlist();
         }
         
-        function calculateUnitChanges(data) { /* ... remains the same ... */ 
+        // Calculate unit changes from data array
+        function calculateUnitChanges(data) {
             if (!data || data.length < 2) return { 'daily': null, 'yearly': null };
-            const latestItem = data[data.length - 1];
-            const latestValue = parseFloat(latestItem.value || latestItem.close || latestItem.price || 0);
-            const latestDate = new Date(latestItem.date);
-            if (isNaN(latestValue)) return { 'daily': null, 'yearly': null };
-            const changeUnits = {};
-            const periods = { 'daily': 1, 'yearly': 365 };
+            const latestVal = data[data.length - 1].value || data[data.length - 1].close || 0;
+            const latestDate = new Date(data[data.length - 1].date);
+            if (latestVal === 0) return { 'daily': null, 'yearly': null };
+
+            const changes = {'daily': null, 'yearly': null};
+            const periods = {'daily': 1, 'yearly': 365};
+
             for (const [period, days] of Object.entries(periods)) {
                 const targetDate = new Date(latestDate);
                 targetDate.setDate(targetDate.getDate() - days);
-                let closestItem = null;
-                let minDiff = Infinity;
-                for (let i = data.length - 2; i >= 0; i--) {
+                let closestItem = null; let minDiff = Infinity;
+                for (let i = data.length - 2; i >= 0; i--) { // Search backwards
                     const itemDate = new Date(data[i].date);
                     const diff = Math.abs(itemDate - targetDate);
-                    if (diff < minDiff && itemDate <= targetDate) {
-                        minDiff = diff;
-                        closestItem = data[i];
-                    } else if (itemDate < targetDate && !closestItem) {
-                        closestItem = data[i];
-                        break;
+                    if (itemDate <= targetDate && diff < minDiff) {
+                        minDiff = diff; closestItem = data[i];
+                    } else if (itemDate < targetDate && !closestItem) { // If no exact match, take first one before target
+                        closestItem = data[i]; break;
                     }
                 }
                 if (closestItem) {
-                    const historicalValue = parseFloat(closestItem.value || closestItem.close || closestItem.price || 0);
-                    if (!isNaN(historicalValue)) changeUnits[period] = latestValue - historicalValue;
-                    else changeUnits[period] = null;
-                } else changeUnits[period] = null;
+                    const histVal = closestItem.value || closestItem.close || 0;
+                    if (histVal !== null && !isNaN(histVal)) changes[period] = latestVal - histVal;
+                }
             }
-            return changeUnits;
+            return changes;
         }
-
-        function calculatePercentageChanges(data) { /* ... remains the same ... */ 
+        
+        // Calculate percentage changes from data array
+        function calculatePercentageChanges(data) {
             if (!data || data.length < 2) return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
-            const latestItem = data[data.length - 1];
-            const latestValue = parseFloat(latestItem.value || latestItem.close || latestItem.price || 0);
-            const latestDate = new Date(latestItem.date);
-            if (isNaN(latestValue) || latestValue === 0) return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            const latestVal = data[data.length - 1].value || data[data.length - 1].close || 0;
+            const latestDate = new Date(data[data.length - 1].date);
+            if (latestVal === 0) return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            
             const changes = {};
             const periods = { '1d': 1, '1w': 7, '1m': 30, '3m': 90, '1y': 365 };
+
             for (const [period, days] of Object.entries(periods)) {
                 const targetDate = new Date(latestDate);
                 targetDate.setDate(targetDate.getDate() - days);
-                let closestItem = null;
-                let minDiff = Infinity;
-                for (let i = data.length - 2; i >= 0; i--) {
+                let closestItem = null; let minDiff = Infinity;
+                 for (let i = data.length - 2; i >= 0; i--) { // Search backwards
                     const itemDate = new Date(data[i].date);
                     const diff = Math.abs(itemDate - targetDate);
-                     if (diff < minDiff && itemDate <= targetDate) {
-                        minDiff = diff;
-                        closestItem = data[i];
-                    } else if (itemDate < targetDate && !closestItem) {
-                        closestItem = data[i];
-                        break;
+                     if (itemDate <= targetDate && diff < minDiff) { // Find closest on or before targetDate
+                        minDiff = diff; closestItem = data[i];
+                    } else if (itemDate < targetDate && !closestItem) { // Fallback if no exact match on date
+                        closestItem = data[i]; break; 
                     }
                 }
                 if (closestItem) {
-                    const historicalValue = parseFloat(closestItem.value || closestItem.close || closestItem.price || 0);
-                    if (!isNaN(historicalValue) && historicalValue !== 0) changes[period] = ((latestValue - historicalValue) / historicalValue * 100);
+                    const histVal = closestItem.value || closestItem.close || 0;
+                    if (histVal && histVal !== 0) changes[period] = ((latestVal - histVal) / histVal * 100);
                     else changes[period] = null;
                 } else changes[period] = null;
             }
             return changes;
         }
         
-        function checkForSignificantChanges(symbol, changes) { /* ... remains the same ... */ 
-            const significantThreshold = 15; 
-            const flashDuration = 7 * 24 * 60 * 60 * 1000; 
-            const dailyChange = changes['1d'];
-            const weeklyChange = changes['1w'];
-            let shouldFlash = false;
-            let flashType = null;
-            if (dailyChange !== null && Math.abs(dailyChange) >= significantThreshold) {
-                shouldFlash = true;
-                flashType = dailyChange > 0 ? 'green' : 'red';
-            } else if (weeklyChange !== null && Math.abs(weeklyChange) >= significantThreshold) {
-                shouldFlash = true;
-                flashType = weeklyChange > 0 ? 'green' : 'red';
-            }
+        // Enhanced flashing logic - only flash for 15%+ changes for 1 week
+        function checkForSignificantChanges(symbol, changes) {
+            const significantThreshold = 15; const flashDuration = 7 * 24 * 60 * 60 * 1000;
+            const dailyChange = changes?.['1d']; const weeklyChange = changes?.['1w'];
+            let shouldFlash = false; let flashType = null;
+
+            if (dailyChange !== null && Math.abs(dailyChange) >= significantThreshold) { shouldFlash = true; flashType = dailyChange > 0 ? 'green' : 'red'; }
+            else if (weeklyChange !== null && Math.abs(weeklyChange) >= significantThreshold) { shouldFlash = true; flashType = weeklyChange > 0 ? 'green' : 'red'; }
+            
             if (shouldFlash) {
                 const currentTime = Date.now();
                 flashTimers[symbol] = { startTime: currentTime, endTime: currentTime + flashDuration, type: flashType };
-                console.log(`🚨 Significant change for ${symbol}: ${dailyChange?.toFixed(2)}% D, ${weeklyChange?.toFixed(2)}% W`);
-                setTimeout(() => {
-                    if (flashTimers[symbol] && flashTimers[symbol].endTime <= Date.now()) {
-                        delete flashTimers[symbol];
-                        renderWatchlist(); 
-                    }
-                }, flashDuration);
+                setTimeout(() => { if (flashTimers[symbol]) { delete flashTimers[symbol]; renderWatchlist(); }}, flashDuration);
             }
         }
-        function shouldSymbolFlash(symbol) { /* ... remains the same ... */ 
+        
+        // Check if symbol should flash
+        function shouldSymbolFlash(symbol) {
             const flashInfo = flashTimers[symbol];
             if (!flashInfo) return { flash: false, type: null };
             if (Date.now() <= flashInfo.endTime) return { flash: true, type: flashInfo.type };
             else { delete flashTimers[symbol]; return { flash: false, type: null }; }
         }
-        function loadWatchlists() { /* ... remains the same ... */ 
+        
+        // Load watchlists from storage
+        function loadWatchlists() {
             const saved = localStorage.getItem('openbbWatchlists');
             if (saved) {
                 try {
@@ -2040,137 +2180,150 @@
             }
             watchlistSymbols = [...watchlists[currentWatchlist].symbols];
         }
-        function saveWatchlists() { /* ... remains the same ... */ 
+        
+        // Save watchlists to storage
+        function saveWatchlists() {
             const toSave = {};
             Object.keys(watchlists).forEach(name => { toSave[name] = { symbols: watchlists[name].symbols }; });
             localStorage.setItem('openbbWatchlists', JSON.stringify(toSave));
         }
-        function switchWatchlist(watchlistName) { /* ... remains the same ... */ 
+        
+        // Switch watchlist
+        function switchWatchlist(watchlistName) {
             currentWatchlist = watchlistName;
             watchlistSymbols = [...watchlists[currentWatchlist].symbols];
-            watchlistData = {}; 
-            loadWatchlistData(); 
+            watchlistData = {}; // Clear old data
+            loadWatchlistData(); // Load new watchlist data
         }
-        async function loadWatchlistData() { /* ... remains the same ... */ 
+        
+        // Load watchlist data
+        async function loadWatchlistData() {
             const tbody = document.getElementById('watchlistBody');
             if (watchlistSymbols.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #888;">No symbols.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist.</td></tr>';
                 return;
             }
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading...</div></td></tr>';
-            const loadPromises = watchlistSymbols.map(symbolObj => {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
+            for (const symbolObj of watchlistSymbols) {
                 const symbol = symbolObj.symbol || symbolObj;
-                const provider = symbolObj.provider || 'fred_direct';
-                return loadSingleWatchlistItem(symbol, provider);
-            });
-            await Promise.all(loadPromises);
+                const provider = symbolObj.provider || 'fred_direct'; // Default provider if not specified
+                await loadSingleWatchlistItem(symbol, provider);
+            }
+             // Ensure render happens after all data attempts
             renderWatchlist();
         }
-        function renderWatchlist() { /* ... remains the same, uses updated formatPrice, formatChange, etc. ... */ 
+        
+        // Update clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
+        }
+        
+        // Enhanced render watchlist with new columns and flashing logic
+        function renderWatchlist() {
             const tbody = document.getElementById('watchlistBody');
             if (watchlistSymbols.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#666;">No symbols.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:#666;">No symbols.</td></tr>';
                 return;
             }
-            let symbolsToRender = watchlistSymbols.map(symbolObj => {
-                const symbol = symbolObj.symbol || symbolObj;
+            let symbolsToRender = watchlistSymbols.map(obj => {
+                const symbol = obj.symbol || obj;
                 const data = watchlistData[symbol];
-                if (!data) return null;
+                if (!data) return null; // Skip if no data yet
                 let maxChange = 0;
                 if (data.changes) {
                     const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v));
-                    if (changes.length > 0) maxChange = changes.reduce((max, change) => Math.abs(change) > Math.abs(max) ? change : max, 0);
+                    if (changes.length > 0) maxChange = changes.reduce((max, chg) => Math.abs(chg) > Math.abs(max) ? chg : max, 0);
                 }
-                const flashInfo = shouldSymbolFlash(symbol);
-                return { symbol, data, maxChange, flashInfo };
+                return { symbol, data, maxChange, flashInfo: shouldSymbolFlash(symbol) };
             }).filter(item => item !== null);
 
             if (columnSort.column && columnSort.direction) {
                 symbolsToRender.sort((a, b) => {
-                    const aValue = a.data.changes[columnSort.column]; const bValue = b.data.changes[columnSort.column];
-                    if (aValue === null || aValue === undefined) return 1; if (bValue === null || bValue === undefined) return -1;
-                    return columnSort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                    const aVal = a.data.changes[columnSort.column]; const bVal = b.data.changes[columnSort.column];
+                    if (aVal == null) return 1; if (bVal == null) return -1; // Nulls last
+                    return columnSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
                 });
-            } else if (sortOrder === 'increase') symbolsToRender.sort((a, b) => b.maxChange - a.maxChange);
-            else if (sortOrder === 'decrease') symbolsToRender.sort((a, b) => a.maxChange - b.maxChange);
+            } else if (sortOrder === 'increase') symbolsToRender.sort((a, b) => (b.maxChange || 0) - (a.maxChange || 0));
+            else if (sortOrder === 'decrease') symbolsToRender.sort((a, b) => (a.maxChange || 0) - (b.maxChange || 0));
 
-            const formatPrice = (price, symbol) => { // Pass symbol to check hasData
-                if (price === 0 && !watchlistData[symbol]?.hasData && !watchlistData[symbol]?.error) return 'Loading...';
-                if (watchlistData[symbol]?.error) return `<span style="color:red;font-size:0.8em;">Error</span>`;
-                if (isNaN(price) || price === null) return 'N/A';
-                if (price >= 1000) return price.toFixed(0); if (price >= 1) return price.toFixed(2); return price.toFixed(4);
-            };
-            const formatChange = (change) => {
-                if (change === null || change === undefined || isNaN(change)) return '—';
-                const val = parseFloat(change); return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
-            };
-            const formatUnits = (change) => {
-                if (change === null || change === undefined || isNaN(change)) return '—';
-                const val = parseFloat(change); return (val >= 0 ? '+' : '') + val.toFixed(4);
-            };
-            const getChangeClass = (change) => {
-                if (change === null || change === undefined || isNaN(change)) return 'neutral';
-                return parseFloat(change) >= 0 ? 'positive' : 'negative';
-            };
+            const formatPrice = (price) => price === 0 && !watchlistData[Object.keys(watchlistData)[0]]?.hasData ? 'Loading...' : (price >= 1000 ? price.toFixed(0) : price >= 1 ? price.toFixed(2) : price.toFixed(4));
+            const formatChange = (chg) => chg == null || isNaN(chg) ? '—' : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`;
+            const formatUnits = (chg) => chg == null || isNaN(chg) ? '—' : `${chg >= 0 ? '+' : ''}${chg.toFixed(4)}`;
+            const getChangeClass = (chg) => chg == null || isNaN(chg) ? 'neutral' : (parseFloat(chg) >= 0 ? 'positive' : 'negative');
 
             const html = symbolsToRender.map(({ symbol, data, flashInfo }) => {
                 const flashClass = flashInfo.flash ? (flashInfo.type === 'green' ? 'flash-green' : 'flash-red') : '';
-                const displayName = data.customName || symbol;
-                const colorStyle = data.color ? `background-color: ${data.color};` : 'display: none;';
-                const providerLabel = data.provider?.replace('_direct', '').replace('_intelligence', '').toUpperCase() || 'API';
+                const providerLabel = data.provider?.replace('_direct', '').replace('_intelligence','').toUpperCase() || 'API';
                 return `
-                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred_direct'}')" class="${flashClass}" style="cursor:pointer;" title="Double-click to chart">
-                        <td><div class="symbol-cell"><div class="color-tag" style="${colorStyle}" onclick="editSymbol(event,'${symbol}')"></div><div class="symbol-icon">${symbol.charAt(0)}</div><div class="symbol-info"><div class="symbol-name">${displayName}<span class="edit-icon" onclick="editSymbol(event,'${symbol}')">✏️</span></div><div class="symbol-fullname">${data.name || symbol} (${providerLabel})</div></div></div></td>
-                        <td class="price-cell">${formatPrice(data.price, symbol)}</td>
-                        <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">${formatUnits(data.changeUnits?.daily)}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changeUnits?.yearly)}">${formatUnits(data.changeUnits?.yearly)}</td>
-                        <td style="padding:5px;"><button class="control-btn" style="padding:4px 8px;font-size:11px;background:#f5f5f5;color:#333;border:1px solid #ddd;" onclick="removeFromWatchlist(event,'${symbol}')">×</button></td>
+                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider}')" class="${flashClass}" title="Double-click for chart">
+                        <td><div class="symbol-cell">
+                            <div class="symbol-icon">${symbol.charAt(0)}</div>
+                            <div class="symbol-info">
+                                <div class="symbol-name">${data.customName || symbol} <span class="edit-icon" onclick="editSymbol(event, '${symbol}')">✏️</span></div>
+                                <div class="symbol-fullname">${data.name} (${providerLabel})</div>
+                            </div></div></td>
+                        <td class="price-cell">${data.hasData ? formatPrice(data.price) : 'Loading...'}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">${data.hasData ? formatUnits(data.changeUnits?.daily) : '—'}</td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1d'])}">${data.hasData ? formatChange(data.changes?.['1d']) : '—'}</td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1w'])}">${data.hasData ? formatChange(data.changes?.['1w']) : '—'}</td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1m'])}">${data.hasData ? formatChange(data.changes?.['1m']) : '—'}</td>
+                        <td class="change-cell ${getChangeClass(data.changes?.['1y'])}">${data.hasData ? formatChange(data.changes?.['1y']) : '—'}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.yearly)}">${data.hasData ? formatUnits(data.changeUnits?.yearly) : '—'}</td>
+                        <td><button class="control-btn" style="padding:4px 8px;font-size:11px;background:#f5f5f5;color:#333;border:1px solid #ddd;" onclick="removeFromWatchlist(event, '${symbol}')">×</button></td>
                     </tr>`;
             }).join('');
-            tbody.innerHTML = html || '<tr><td colspan="9" style="text-align:center;padding:20px;color:#666;">Loading...</td></tr>';
+            tbody.innerHTML = html || '<tr><td colspan="9" style="text-align:center; padding:20px; color:#666;">Loading data...</td></tr>';
             updateSortIndicators();
         }
-        function removeFromWatchlist(event, symbol) { /* ... remains the same ... */ 
-            event.stopPropagation(); 
+        
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol) {
+            event.stopPropagation();
             const currentSymbols = watchlists[currentWatchlist].symbols;
             const index = currentSymbols.findIndex(s => (s.symbol || s) === symbol);
             if (index > -1) {
                 currentSymbols.splice(index, 1);
-                watchlistSymbols = [...currentSymbols]; 
-                delete watchlistData[symbol]; 
-                if (flashTimers[symbol]) delete flashTimers[symbol]; 
-                saveWatchlists(); 
-                renderWatchlist(); 
-                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
+                watchlistSymbols = [...currentSymbols]; // Update the separate array
+                delete watchlistData[symbol];
+                if (flashTimers[symbol]) delete flashTimers[symbol];
+                saveWatchlists();
+                renderWatchlist();
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist}`, 'info');
             }
         }
-        function sortByColumn(period) { /* ... remains the same ... */ 
+        
+        // Sort by column
+        function sortByColumn(period) {
             if (columnSort.column === period) columnSort.direction = columnSort.direction === 'desc' ? 'asc' : 'desc';
             else { columnSort.column = period; columnSort.direction = 'desc'; }
-            sortOrder = 'default'; 
+            sortOrder = 'default'; // Reset general sort
             updateSortButtons(); renderWatchlist();
         }
-        function updateSortIndicators() { /* ... remains the same ... */ 
-            document.querySelectorAll('.sort-indicator').forEach(i => i.className = 'sort-indicator');
+        
+        // Update sort indicators
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(ind => ind.className = 'sort-indicator');
             if (columnSort.column && columnSort.direction) {
                 const ind = document.getElementById(`sort-${columnSort.column}`);
                 if (ind) ind.className = `sort-indicator ${columnSort.direction}`;
             }
         }
-        function changeSortOrder(order) { /* ... remains the same ... */ 
-            sortOrder = order; columnSort = { column: null, direction: null };
+        
+        // Change sort order
+        function changeSortOrder(order) {
+            sortOrder = order; columnSort = { column: null, direction: null }; // Reset column sort
             updateSortButtons(); renderWatchlist();
         }
-        function updateSortButtons() { /* ... remains the same ... */ 
-            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default' && !columnSort.column);
+        
+        // Update sort buttons
+        function updateSortButtons() {
+            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default');
             document.getElementById('sortIncrease').classList.toggle('active', sortOrder === 'increase');
             document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
         }
-        function addNewChart() { /* ... remains the same ... */ 
+        
+        // Enhanced chart functions with new data display options
+        function addNewChart() {
             const chartId = `chart_${chartIdCounter++}`;
             const chartHtml = `
                 <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
@@ -2192,354 +2345,424 @@
                         </div>
                         <div class="chart-controls">
                             <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
-                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','10Y','MAX'].map(tf => 
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','MAX'].map(tf =>
                                     `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}" onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
                                 ).join('')}
                             </div>
                             <button class="close-btn" onclick="removeChart(event, '${chartId}')">×</button>
                         </div>
                     </div>
-                    <div class="chart-canvas" id="${chartId}_canvas"><div class="chart-message">Search to add to chart</div></div>
+                    <div class="chart-canvas" id="${chartId}_canvas">
+                        <div class="chart-message">Search for a financial indicator to add to this chart</div>
+                    </div>
                 </div>`;
             document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
             charts[chartId] = { symbols: [], data: {}, timeframe: '1Y', chartInstance: null, displayMode: 'raw' };
             setActiveChart(chartId);
             document.getElementById('chartsArea').style.display = 'block';
-            document.querySelector('.watchlist-section').style.flex = '0 0 300px';
+            document.querySelector('.watchlist-section').style.flex = '0 0 300px'; // Shrink watchlist
             document.getElementById('chartViewBtn').style.display = 'block';
         }
-        function toggleChartDisplay(event, chartId, displayMode) { /* ... remains the same ... */ 
-            event.stopPropagation(); const chart = charts[chartId]; if (!chart) return;
+        
+        // Toggle chart display mode
+        function toggleChartDisplay(event, chartId, displayMode) {
+            event.stopPropagation();
+            const chart = charts[chartId]; if (!chart) return;
             chart.displayMode = displayMode;
             const controlsDiv = event.target.parentElement;
             controlsDiv.querySelectorAll('.display-toggle').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             updateChartRender(chartId);
         }
-        function setActiveChart(chartId) { /* ... remains the same ... */ 
-            if (activeChartId === chartId) return; activeChartId = chartId;
+        
+        function setActiveChart(chartId) {
+            if (activeChartId === chartId) return;
+            activeChartId = chartId;
             document.querySelectorAll('.chart-window').forEach(c => c.classList.remove('active-chart'));
-            const el = document.getElementById(chartId); if (el) el.classList.add('active-chart');
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) chartElement.classList.add('active-chart');
         }
-        function removeChart(event, chartIdToRemove) { /* ... remains the same ... */ 
+        
+        function removeChart(event, chartIdToRemove) {
             event.stopPropagation();
-            if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) Plotly.purge(`${chartIdToRemove}_canvas`);
-            delete charts[chartIdToRemove]; document.getElementById(chartIdToRemove)?.remove();
+            if (charts[chartIdToRemove]?.chartInstance) Plotly.purge(`${chartIdToRemove}_canvas`);
+            delete charts[chartIdToRemove];
+            document.getElementById(chartIdToRemove)?.remove();
+            
             if (activeChartId === chartIdToRemove) {
-                const keys = Object.keys(charts); activeChartId = keys.length > 0 ? keys[keys.length - 1] : null;
+                const chartKeys = Object.keys(charts);
+                activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
                 if(activeChartId) setActiveChart(activeChartId);
             }
-            if (Object.keys(charts).length === 0) {
+            if (Object.keys(charts).length === 0) { // If no charts left
                 document.getElementById('chartsArea').style.display = 'none';
-                document.querySelector('.watchlist-section').style.flex = '1';
+                document.querySelector('.watchlist-section').style.flex = '1'; // Expand watchlist
                 document.getElementById('chartViewBtn').style.display = 'none';
             }
         }
-        function openChartForSymbol(symbol, provider) { /* ... remains the same ... */ 
+        
+        function openChartForSymbol(symbol, provider) {
             document.getElementById('chartsArea').style.display = 'block';
-            document.querySelector('.watchlist-section').style.flex = '0 0 300px';
+            document.querySelector('.watchlist-section').style.flex = '0 0 300px'; // Shrink watchlist
             document.getElementById('chartViewBtn').style.display = 'block';
             if (Object.keys(charts).length === 0) addNewChart();
             if (activeChartId) addToChart(activeChartId, symbol, provider, watchlistData[symbol]?.name || symbol);
-            else if (Object.keys(charts).length > 0) {
-                const lastId = Object.keys(charts).pop(); setActiveChart(lastId);
-                addToChart(lastId, symbol, provider, watchlistData[symbol]?.name || symbol);
-            }
         }
-        function addToChart(chartId, symbol, provider, name) { /* ... remains the same ... */ 
-            const chart=charts[chartId]; if(!chart)return;
-            if(!chart.symbols.find(s=>s.symbol===symbol && s.provider===provider)){chart.symbols.push({symbol,provider,name});loadChartData(chartId,symbol,provider);}
+        
+        function addToChart(chartId, symbol, provider, name) {
+            const chart = charts[chartId]; if (!chart) return;
+            if (!chart.symbols.find(s => s.symbol === symbol)) {
+                chart.symbols.push({ symbol, provider, name });
+                loadChartData(chartId, symbol, provider);
+            }
             setActiveChart(chartId);
         }
-        async function loadChartData(chartId, symbol, provider) { /* ... remains the same, uses updated calculateTechnicalIndicators ... */ 
+        
+        // Enhanced chart data loading with liquidity intelligence support
+        async function loadChartData(chartId, symbol, provider) {
             const chart = charts[chartId]; if (!chart) return;
             const canvasDiv = document.getElementById(`${chartId}_canvas`);
             if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol}...</div>`;
-            let url; // Define here for logging in catch
+            
             try {
-                const endDate = new Date().toISOString().split('T')[0]; let startDate = new Date();
-                if (provider === 'polygon_direct') startDate.setFullYear(startDate.getFullYear() - 10);
-                else if (['fred_direct', 'ecb_direct', 'ny_fed_direct', 'ofr_direct'].includes(provider)) startDate.setFullYear(startDate.getFullYear() - 20);
-                else startDate.setFullYear(startDate.getFullYear() - 5);
-                const startDateStr = startDate.toISOString().split('T')[0];
-
-                let useIncludeChangesForChart = true; // Default to true
-                // For these specific providers, if fetching historical data, include_changes=true is generally better.
-                // If include_changes=false was intended for a "latest value only" chart, that's a different chart type.
-                // For time series charts, we want historical data.
-                // The 404s with include_changes=false suggest that specific representation isn't available.
-                // Sticking to include_changes=true for universal historical data is more consistent.
-
-                if (provider === 'liquidity_intelligence') { 
-                    if (symbol === 'OFR_FSI') url = `${API_BASE}/api/v1/ofr/fsi`;
-                    else if (symbol === 'NYFED_FAILS') url = `${API_BASE}/api/v1/nyfed/fails`;
+                let url;
+                // MODIFICATION START: Corrected FRED URL for historical data
+                if (provider === 'fred_direct') {
+                    // Fetch all available observations, sorted ascending
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&sort_order=asc&include_pandas=false`;
+                } 
+                // MODIFICATION END
+                else if (provider === 'liquidity_intelligence') {
+                    if (symbol === 'OFR_FSI') url = `${API_BASE}/api/v1/ofr/fsi`; // Assuming this returns historical
+                    else if (symbol === 'NYFED_FAILS') url = `${API_BASE}/api/v1/nyfed/fails`; // Assuming historical
                     else throw new Error('Chart not available for this liquidity indicator');
+                } else if (provider === 'polygon_direct') {
+                    const endDate = new Date().toISOString().split('T')[0];
+                    // Fetch up to 5 years for polygon, adjust as needed
+                    const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; 
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
+                } else { // For ECB, OFR, Treasury, NY_FED (if they support broader ranges via universal)
+                     // Attempt to fetch more data; specific API behavior might vary
+                    const endDate = new Date().toISOString().split('T')[0];
+                    const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 5 years
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}&include_changes=true`;
                 }
-                else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) url = `${API_BASE}/api/v1/treasury/auction_history?symbol=${symbol}&limit=500`;
-                else if (provider === 'polygon_direct') url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDateStr}&end_date=${endDate}`;
-                else if (provider === 'fred_direct') url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=10000&sort_order=asc&include_pandas=false`;
-                else url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true&start_date=${startDateStr}&end_date=${endDate}`; // Default to true
                 
-                console.log(`Constructed Chart URL for ${symbol} (${provider}): ${url}`);
-                const response = await fetch(url); 
-                if (!response.ok) {
-                    console.error(`URL that 404ed or failed for chart ${symbol} (${provider}): ${url}`);
-                    throw new Error(`API Error: ${response.status}`);
-                }
-                const result = await response.json(); console.log(`Chart data for ${symbol}:`, result);
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to load data: ${response.status}`);
+                const result = await response.json();
+                
                 let processedData = [];
-                if (result.data && Array.isArray(result.data)) processedData = result.data.map(item => ({ date: item.date || item.time || item.period, value: parseFloat(item.value || item.close || item.price || item.rate || 0) }));
-                else if (result.observations && Array.isArray(result.observations)) processedData = result.observations.map(obs => ({ date: obs.date, value: obs.value !== '.' ? parseFloat(obs.value) : null }));
-                else if (result.auction_data && Array.isArray(result.auction_data)) processedData = result.auction_data.map(a => ({ date: a.auction_date, value: symbol.includes('TAIL') ? parseFloat(a.tail_spread) : parseFloat(a.bid_to_cover_ratio) }));
+                if (result.data && Array.isArray(result.data)) { // Standard universal data format
+                    processedData = result.data.map(item => ({ date: item.date || item.time || item.period, value: parseFloat(item.value || item.close || item.price || item.rate || null) }))
+                                          .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                                          .sort((a,b) => new Date(a.date) - new Date(b.date));
+                } else if (result.observations && Array.isArray(result.observations)) { // FRED direct format
+                    processedData = result.observations.map(obs => ({ date: obs.date, value: obs.value !== '.' ? parseFloat(obs.value) : null }))
+                                          .filter(item => item.value !== null && !isNaN(item.value))
+                                          .sort((a,b) => new Date(a.date) - new Date(b.date)); // Already sorted asc from API
+                } else if (provider === 'liquidity_intelligence' && symbol === 'OFR_FSI' && result.historical_data) { // OFR FSI specific historical
+                     processedData = result.historical_data.map(item => ({ date: item.date, value: parseFloat(item.value) }))
+                                          .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                                          .sort((a,b) => new Date(a.date) - new Date(b.date));
+                }
+                 else if (provider === 'liquidity_intelligence' && symbol === 'NYFED_FAILS' && result.historical_data) { // NYFED Fails specific historical
+                     processedData = result.historical_data.map(item => ({ date: item.date, value: parseFloat(item.total_fails) })) // Assuming total_fails is the value
+                                          .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                                          .sort((a,b) => new Date(a.date) - new Date(b.date));
+                }
+
+
+                if (processedData.length === 0) throw new Error('No valid data points found');
                 
-                processedData = processedData.filter(item => item.value !== null && !isNaN(item.value) && item.date).sort((a,b) => new Date(a.date) - new Date(b.date));
-                if (processedData.length === 0) throw new Error('No valid data points');
+                processedData = calculateChartChanges(processedData); // Basic changes
+                processedData = calculateTechnicalIndicators(processedData); // MACD, etc.
                 
-                processedData = calculateChartChanges(processedData);
-                processedData = calculateTechnicalIndicators(processedData);
-                
-                chart.data[symbol] = processedData; updateChartRender(chartId); updateChartSymbols(chartId);
+                chart.data[symbol] = processedData;
+                updateChartRender(chartId);
+                updateChartSymbols(chartId);
             } catch (error) {
-                console.error(`Chart data error for ${symbol} (URL: ${url}):`, error);
-                if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message" style="color:red;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
-                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol); updateChartSymbols(chartId);
+                console.error(`Error loading chart data for ${symbol}:`, error);
+                if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+                updateChartSymbols(chartId);
             }
         }
-        function calculateChartChanges(data) { /* ... remains the same ... */ 
-            if (!data || data.length === 0) return data;
-            return data.map((item, index, arr) => {
-                const newItem = { ...item }; const currentDate = new Date(item.date);
-                const findPreviousValue = (daysAgo) => {
-                    const targetDate = new Date(currentDate); targetDate.setDate(currentDate.getDate() - daysAgo);
-                    for (let i = index - 1; i >= 0; i--) if (new Date(arr[i].date) <= targetDate) return arr[i].value; return null;
-                };
-                const prevDayValue = (index > 0) ? arr[index-1].value : null;
-                const prevWeekValue = findPreviousValue(7); const prevYearValue = findPreviousValue(365);
-                if (prevDayValue !== null && prevDayValue !== 0) { newItem.daily_pct_change = ((item.value - prevDayValue) / prevDayValue) * 100; newItem.daily_change_units = item.value - prevDayValue; }
-                if (prevWeekValue !== null && prevWeekValue !== 0) { newItem.weekly_pct_change = ((item.value - prevWeekValue) / prevWeekValue) * 100; newItem.weekly_change_units = item.value - prevWeekValue; }
-                if (prevYearValue !== null && prevYearValue !== 0) { newItem.yearly_pct_change = ((item.value - prevYearValue) / prevYearValue) * 100; newItem.yearly_change_units = item.value - prevYearValue; }
-                return newItem;
+        
+        // Calculate percentage and unit changes for chart data
+        function calculateChartChanges(data) { // Same as before, kept for consistency
+            if (!data || data.length < 2) return data;
+            return data.map((item, index) => {
+                const itemDate = new Date(item.date);
+                let dailyPctChange = null, dailyUnitChange = null, weeklyPctChange = null, weeklyUnitChange = null, yearlyPctChange = null, yearlyUnitChange = null;
+
+                if (index > 0) {
+                    const prevValue = data[index - 1].value;
+                    if (prevValue && prevValue !== 0) {
+                        dailyPctChange = ((item.value - prevValue) / prevValue) * 100;
+                        dailyUnitChange = item.value - prevValue;
+                    }
+                }
+                const weekAgo = new Date(itemDate); weekAgo.setDate(weekAgo.getDate() - 7);
+                for (let i = index - 1; i >= 0; i--) { if (new Date(data[i].date) <= weekAgo) { const wv = data[i].value; if (wv && wv !== 0) { weeklyPctChange = ((item.value - wv) / wv) * 100; weeklyUnitChange = item.value - wv; } break; } }
+                const yearAgo = new Date(itemDate); yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                for (let i = index - 1; i >= 0; i--) { if (new Date(data[i].date) <= yearAgo) { const yv = data[i].value; if (yv && yv !== 0) { yearlyPctChange = ((item.value - yv) / yv) * 100; yearlyUnitChange = item.value - yv; } break; } }
+                return { ...item, daily_pct_change: dailyPctChange, daily_change_units: dailyUnitChange, weekly_pct_change: weeklyPctChange, weekly_change_units: weeklyUnitChange, yearly_pct_change: yearlyPctChange, yearly_change_units: yearlyUnitChange };
             });
         }
-        function calculateTechnicalIndicators(data) { /* ... remains the same, uses updated MACD ... */ 
+        
+        // Calculate Technical Analysis Indicators
+        // MODIFICATION START: Corrected MACD and Signal Line Calculation
+        function calculateTechnicalIndicators(data) {
             if (!data || data.length === 0) return data;
             const values = data.map(d => d.value);
-            const calculateEMA = (period, dataArray) => {
-                if (dataArray.length < period) return dataArray.map(() => null);
-                const k = 2 / (period + 1); const emaArray = [];
-                let ema = dataArray.slice(0, period).reduce((s, v) => s + v, 0) / period;
-                emaArray.push(...Array(period - 1).fill(null), ema);
-                for (let i = period; i < dataArray.length; i++) { ema = (dataArray[i] - ema) * k + ema; emaArray.push(ema); }
-                return emaArray;
-            };
-            const ema12Values = calculateEMA(12, values); const ema26Values = calculateEMA(26, values);
-            const macdLine = ema12Values.map((e12, i) => ema26Values[i] !== null && e12 !== null ? e12 - ema26Values[i] : null);
-            const validMacdLine = macdLine.filter(val => val !== null);
-            const signalLineValues = validMacdLine.length >=9 ? calculateEMA(9, validMacdLine) : validMacdLine.map(() => null);
-            
-            let signalLineIdx = 0; 
 
-            return data.map((item, index) => {
-                let slope30 = null, zscore30 = null, signal = null;
-                let currentMacd = macdLine[index];
-                let currentSignal = null;
+            let ema12Values = new Array(values.length).fill(null);
+            let ema26Values = new Array(values.length).fill(null);
+            let macdValues = new Array(values.length).fill(null);
+            let signalLineValues = new Array(values.length).fill(null);
 
-                if(macdLine[index] !== null) { 
-                    if(signalLineIdx < signalLineValues.length) {
-                        currentSignal = signalLineValues[signalLineIdx++];
+            // Calculate EMA12
+            if (values.length >= 12) {
+                let k12 = 2 / (12 + 1);
+                ema12Values[11] = values.slice(0, 12).reduce((a, b) => a + b, 0) / 12; // SMA for first point
+                for (let i = 12; i < values.length; i++) {
+                    if (values[i] !== null && ema12Values[i-1] !== null) {
+                         ema12Values[i] = (values[i] - ema12Values[i-1]) * k12 + ema12Values[i-1];
+                    } else if (values[i] !== null && i > 0 && ema12Values[i-1] === null) { // Try to re-init SMA if gap
+                        let reSmaCandidate = values.slice(Math.max(0, i-11), i+1);
+                        if (reSmaCandidate.length === 12) ema12Values[i] = reSmaCandidate.reduce((a,b)=>a+b,0)/12;
                     }
                 }
+            }
 
-
-                if (index >= 29) { 
-                    const window = values.slice(index - 29, index + 1); const n = window.length;
-                    const x = Array.from({length: n}, (_, i) => i); const sumX = x.reduce((a,b)=>a+b,0);
-                    const sumY = window.reduce((a,b)=>a+b,0); const sumXY = x.reduce((s,xi,i)=>s+xi*window[i],0);
-                    const sumX2 = x.reduce((s,xi)=>s+xi*xi,0);
-                    if((n*sumX2-sumX*sumX)!==0) slope30=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX);
-                    const mean = sumY/n; const variance = window.reduce((s,val)=>s+Math.pow(val-mean,2),0)/n;
-                    const stdDev = Math.sqrt(variance); if(stdDev>0)zscore30=(item.value-mean)/stdDev;
+            // Calculate EMA26
+            if (values.length >= 26) {
+                let k26 = 2 / (26 + 1);
+                ema26Values[25] = values.slice(0, 26).reduce((a, b) => a + b, 0) / 26; // SMA for first point
+                for (let i = 26; i < values.length; i++) {
+                     if (values[i] !== null && ema26Values[i-1] !== null) {
+                        ema26Values[i] = (values[i] - ema26Values[i-1]) * k26 + ema26Values[i-1];
+                     } else if (values[i] !== null && i > 0 && ema26Values[i-1] === null) { // Try to re-init SMA if gap
+                        let reSmaCandidate = values.slice(Math.max(0, i-25), i+1);
+                        if (reSmaCandidate.length === 26) ema26Values[i] = reSmaCandidate.reduce((a,b)=>a+b,0)/26;
+                    }
                 }
-                if (currentMacd !== null && currentSignal !== null && slope30 !== null && zscore30 !== null) {
-                    if (currentMacd > currentSignal && slope30 > 0 && zscore30 < -1.5) signal = 1;
-                    else if (currentMacd < currentSignal && slope30 < 0 && zscore30 > 1.5) signal = -1;
+            }
+
+            // Calculate MACD Line
+            for (let i = 0; i < values.length; i++) {
+                if (ema12Values[i] !== null && ema26Values[i] !== null) {
+                    macdValues[i] = ema12Values[i] - ema26Values[i];
+                }
+            }
+
+            // Calculate Signal Line (9-period EMA of MACD)
+            const validMacdValues = macdValues.map((val, idx) => ({val, idx})).filter(item => item.val !== null);
+            if (validMacdValues.length >= 9) {
+                let kSignal = 2 / (9 + 1);
+                let firstSignalSmaValues = validMacdValues.slice(0, 9).map(item => item.val);
+                let firstSignalSmaIndex = validMacdValues[8].idx; // Index in original data array
+                signalLineValues[firstSignalSmaIndex] = firstSignalSmaValues.reduce((a, b) => a + b, 0) / 9;
+
+                for (let i = 9; i < validMacdValues.length; i++) {
+                    let currentMacdItem = validMacdValues[i];
+                    let prevSignalItemIndexInMacd = i - 1;
+                    let prevSignalValue = signalLineValues[validMacdValues[prevSignalItemIndexInMacd].idx];
+
+                    if (currentMacdItem.val !== null && prevSignalValue !== null) {
+                         signalLineValues[currentMacdItem.idx] = (currentMacdItem.val - prevSignalValue) * kSignal + prevSignalValue;
+                    }
+                }
+            }
+            
+            return data.map((item, index) => {
+                let slope30 = null; let zscore30 = null; let signal = null; // Keep existing logic for these for now
+
+                if (index >= 29) { // Slope
+                    const window = values.slice(index - 29, index + 1); const n = window.length; const x = Array.from({length: n}, (_, i) => i);
+                    const sumX = x.reduce((a,b)=>a+b,0); const sumY = window.reduce((a,b)=>a+b,0);
+                    const sumXY = x.reduce((s,xi,i)=>s+xi*window[i],0); const sumX2 = x.reduce((s,xi)=>s+xi*xi,0);
+                    slope30 = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                }
+                if (index >= 29) { // Z-score
+                    const window = values.slice(index - 29, index + 1); const mean = window.reduce((a,b)=>a+b,0)/window.length;
+                    const variance = window.reduce((s,v)=>s+Math.pow(v-mean,2),0)/window.length; const stdDev = Math.sqrt(variance);
+                    if (stdDev > 0) zscore30 = (item.value - mean) / stdDev;
+                }
+                if (macdValues[index] !== null && slope30 !== null && zscore30 !== null) { // Signal
+                    if (macdValues[index] > (signalLineValues[index] || 0) && slope30 > 0 && zscore30 < -1) signal = 1; // Buy
+                    else if (macdValues[index] < (signalLineValues[index] || 0) && slope30 < 0 && zscore30 > 1) signal = -1; // Sell
                     else signal = 0;
                 }
-                return { ...item, slope_30: slope30, ema12: ema12Values[index], ema26: ema26Values[index], macd: currentMacd, macd_signal: currentSignal, zscore_30: zscore30, signal: signal };
+
+                return { ...item, slope_30: slope30, ema12: ema12Values[index], ema26: ema26Values[index], macd: macdValues[index], macd_signal: signalLineValues[index], zscore_30: zscore30, signal: signal };
             });
         }
-        function updateChartSymbols(chartId) { /* ... remains the same ... */ 
-            const chart=charts[chartId];if(!chart)return;const div=document.getElementById(`${chartId}_symbols`);if(!div)return;
-            div.innerHTML=chart.symbols.map((s,i)=>`<div class="chart-symbol-tag"><span class="symbol-color-dot" style="background-color:${colorPalette[i%colorPalette.length]};"></span>${s.symbol}<span class="remove-symbol" onclick="removeSymbolFromChart(event,'${chartId}','${s.symbol}')">×</span></div>`).join('');
+        // MODIFICATION END
+        
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId]; if (!chart) return;
+            const symbolsDiv = document.getElementById(`${chartId}_symbols`); if (!symbolsDiv) return;
+            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag">
+                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
+                    ${s.symbol}
+                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}')">×</span>
+                </div>`).join('');
         }
-        function removeSymbolFromChart(event, chartId, symbolToRemove) { /* ... remains the same ... */ 
-            event.stopPropagation();const chart=charts[chartId];if(!chart)return;
-            chart.symbols=chart.symbols.filter(s=>s.symbol!==symbolToRemove);delete chart.data[symbolToRemove];
-            updateChartRender(chartId);updateChartSymbols(chartId);
-            if(chart.symbols.length===0)document.getElementById(`${chartId}_canvas`).innerHTML='<div class="chart-message">Search to add to chart</div>';
+        
+        function removeSymbolFromChart(event, chartId, symbolToRemove) {
+            event.stopPropagation();
+            const chart = charts[chartId]; if (!chart) return;
+            chart.symbols = chart.symbols.filter(s => s.symbol !== symbolToRemove);
+            delete chart.data[symbolToRemove];
+            updateChartRender(chartId); updateChartSymbols(chartId);
+            if (chart.symbols.length === 0) document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search to add indicator</div>';
         }
-        function changeTimeframe(event, chartId, timeframe) { /* ... remains the same ... */ 
-            event.stopPropagation();const chart=charts[chartId];if(!chart)return;chart.timeframe=timeframe;
-            const btnCont=document.getElementById(`${chartId}_timeframe_buttons`);
-            if(btnCont){btnCont.querySelectorAll('.timeframe-btn').forEach(b=>b.classList.remove('active'));if(event.target.tagName==='BUTTON')event.target.classList.add('active');}
+        
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId]; if (!chart) return;
+            chart.timeframe = timeframe;
+            const btnContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (btnContainer) {
+                btnContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
             updateChartRender(chartId);
         }
-        function filterDataByTimeframe(data, timeframe) { /* ... remains the same ... */ 
-            if(!data||data.length===0)return data;const now=new Date();let cutoff=new Date();
-            switch(timeframe){case'1D':cutoff.setDate(now.getDate()-1);break;case'1W':cutoff.setDate(now.getDate()-7);break;case'1M':cutoff.setMonth(now.getMonth()-1);break;case'3M':cutoff.setMonth(now.getMonth()-3);break;case'6M':cutoff.setMonth(now.getMonth()-6);break;case'1Y':cutoff.setFullYear(now.getFullYear()-1);break;case'2Y':cutoff.setFullYear(now.getFullYear()-2);break;case'5Y':cutoff.setFullYear(now.getFullYear()-5);break;case'10Y':cutoff.setFullYear(now.getFullYear()-10);break;case'MAX':return data;}
-            return data.filter(item=>new Date(item.date)>=cutoff);
-        }
-        function updateChartRender(chartId) { /* ... remains the same, uses updated MACD trace ... */ 
-            const chart = charts[chartId]; const canvasElement = document.getElementById(`${chartId}_canvas`);
-            if (!canvasElement || !chart) return;
-            if (chart.symbols.length === 0) {
-                canvasElement.innerHTML = '<div class="chart-message">Search to add to chart</div>';
-                if (chart.chartInstance) Plotly.purge(canvasElement); return;
-            }
-            const traces = []; const displayMode = chart.displayMode || 'raw'; let yLabel = 'Value';
-            chart.symbols.forEach((s, index) => {
-                const symbolData = chart.data[s.symbol]; if (!symbolData || symbolData.length === 0) return;
-                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe); if (filteredData.length === 0) return;
-                const lineColor = colorPalette[index % colorPalette.length]; let yData; let hoverTemplate;
-                switch (displayMode) {
-                    case 'pct_change': yData = filteredData.map(d => d.daily_pct_change || 0); yLabel = '% Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>%C: %{y:.2f}%<extra></extra>`; break;
-                    case 'unit_change': yData = filteredData.map(d => d.daily_change_units || 0); yLabel = 'Unit Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>UC: %{y:.4f}<extra></extra>`; break;
-                    case 'year_pct': yData = filteredData.map(d => d.yearly_pct_change || 0); yLabel = 'Yearly % Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Y%C: %{y:.2f}%<extra></extra>`; break;
-                    case 'year_units': yData = filteredData.map(d => d.yearly_change_units || 0); yLabel = 'Yearly Unit Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>YUC: %{y:.4f}<extra></extra>`; break;
-                    case 'slope': yData = filteredData.map(d => d.slope_30 || 0); yLabel = 'Slope (30)'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Slope: %{y:.6f}<extra></extra>`; break;
-                    case 'macd': yData = filteredData.map(d => d.macd || 0); yLabel = 'MACD'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>MACD: %{y:.4f}<extra></extra>`; break;
-                    case 'zscore': yData = filteredData.map(d => d.zscore_30 || 0); yLabel = 'Z-Score (30)'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Z: %{y:.2f}<extra></extra>`; break;
-                    case 'signals': yData = filteredData.map(d => d.signal || 0); yLabel = 'Signals'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Sig: %{y}<extra></extra>`; break;
-                    default: yData = filteredData.map(d => d.value); yLabel = 'Value'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Val: %{y:.4f}<extra></extra>`; break;
-                }
-                const trace = { x: filteredData.map(d => d.date), y: yData, type: 'scatter', mode: displayMode === 'signals' ? 'markers' : 'lines', name: s.symbol, hovertemplate: hoverTemplate };
-                if (displayMode === 'signals') trace.marker = { color: yData.map(v => v === 1 ? '#00ff88' : v === -1 ? '#ff4444' : '#888'), size: yData.map(v => v !== 0 ? 12 : 6), symbol: yData.map(v => v === 1 ? 'triangle-up' : v === -1 ? 'triangle-down' : 'circle') };
-                else trace.line = { color: lineColor, width: 2 };
-                traces.push(trace);
-                if (displayMode === 'macd') {
-                    const signalData = filteredData.map(d => d.macd_signal || null);
-                    if (signalData.some(v => v !== null)) {
-                        traces.push({ x: filteredData.map(d=>d.date), y: signalData, type:'scatter', mode:'lines', name:`${s.symbol} Signal`, line:{color:lineColor,width:1,dash:'dash'}, hovertemplate:`<b>${s.symbol} Sig</b><br>%{x}<br>Sig: %{y:.4f}<extra></extra>`});
-                    }
-                }
-            });
-            if(traces.length===0){canvasElement.innerHTML='<div class="chart-message">No data for timeframe/mode.</div>';return;}
-            const layout = { title:{text:`${displayMode.replace(/_/g,' ').toUpperCase()} VIEW`,font:{color:'#fff',size:14},x:0.5}, paper_bgcolor:'#0a0a0a', plot_bgcolor:'#0a0a0a', font:{color:'#aaa',size:12}, margin:{t:60,r:80,b:60,l:80}, xaxis:{type:'date',gridcolor:'#22222250',tickfont:{color:'#888'},rangeslider:{visible:false}}, yaxis:{title:{text:yLabel,font:{color:'#aaa'}},gridcolor:'#22222250',tickfont:{color:'#888'},zeroline:true,zerolinecolor:'#444',zerolinewidth:1}, hovermode:'x unified', showlegend:true, legend:{orientation:'h',yanchor:'bottom',y:1.02,xanchor:'right',x:1,bgcolor:'rgba(10,10,10,0.8)',bordercolor:'#333',borderwidth:1,font:{size:11}}, height:500, autosize:true };
-            const config = {responsive:true,displaylogo:false,modeBarButtonsToRemove:['select2d','lasso2d','toImage'],displayModeBar:true};
-            if(canvasElement.querySelector('.chart-message'))canvasElement.innerHTML='';
-            Plotly.react(canvasElement,traces,layout,config).then(gd=>charts[chartId].chartInstance=gd).catch(err=>{console.error("Plotly err:",err);canvasElement.innerHTML=`<div class="chart-message" style="color:red;">Chart err:${err.message}</div>`;});
-        }
-        function showChartView() { /* ... remains the same ... */ 
-            const ca=document.getElementById('chartsArea'),ws=document.querySelector('.watchlist-section');
-            if(ca.style.display==='none'){ca.style.display='block';ws.style.flex='0 0 300px';}else{ca.style.display='none';ws.style.flex='1';}
-        }
-        function editSymbol(event, symbol) { /* ... remains the same ... */ 
-            event.stopPropagation(); showTemporaryMessage(`Edit for ${symbol} (placeholder)`, 'info');
-        }
-        function showTemporaryMessage(text, type = 'info') { /* ... remains the same ... */ 
-            const p=document.createElement('div');p.className=`message-popup ${type}`;p.textContent=text;document.body.appendChild(p);
-            setTimeout(()=>p.remove(),3000);
-        }
-        document.addEventListener('click', function(event) { /* ... remains the same ... */ 
-            const sb=document.getElementById('searchBox'),sr=document.getElementById('searchResults');
-            if(sb&&sr&&!sb.contains(event.target)&&!sr.contains(event.target))sr.style.display='none';
-        });
         
-        // --- Risk Dashboard Functions ---
-        function initializeRiskDashboard() { /* ... remains the same ... */ 
-            setupRiskConfiguration(); loadRiskDashboardData(); setInterval(loadRiskDashboardData,120000);
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+            const now = new Date(); let cutoffDate = new Date();
+            switch(timeframe) {
+                case '1D': cutoffDate.setDate(now.getDate() - 1); break;
+                case '1W': cutoffDate.setDate(now.getDate() - 7); break;
+                case '1M': cutoffDate.setMonth(now.getMonth() - 1); break;
+                case '3M': cutoffDate.setMonth(now.getMonth() - 3); break;
+                case '6M': cutoffDate.setMonth(now.getMonth() - 6); break;
+                case '1Y': cutoffDate.setFullYear(now.getFullYear() - 1); break;
+                case '2Y': cutoffDate.setFullYear(now.getFullYear() - 2); break;
+                case '5Y': cutoffDate.setFullYear(now.getFullYear() - 5); break;
+                case 'MAX': return data;
+            }
+            return data.filter(item => new Date(item.date) >= cutoffDate);
         }
-        function setupRiskConfiguration() { /* ... remains the same ... */ 
-            const cats=['risk','liquidity','economic','global'],cons={risk:'riskSymbols',liquidity:'liquiditySymbols',economic:'economicSymbols',global:'globalSymbols'};
-            cats.forEach(catKey=>{const cont=document.getElementById(cons[catKey]);if(!cont)return;cont.innerHTML='';const cfg=riskCategories[catKey];
-            cfg.symbols.forEach(sym=>{const cbd=document.createElement('div');cbd.className='symbol-checkbox';
-            cbd.innerHTML=`<input type="checkbox" id="${catKey}_${sym}" checked onchange="updateCategoryConfig('${catKey}','${sym}',this.checked)"><label for="${catKey}_${sym}">${getSymbolDescription(sym,getProviderForSymbol(sym))}</label>`;cont.appendChild(cbd);});});
-        }
-        function getProviderForSymbol(symbol) { /* ... remains the same ... */ 
-            if(symbol.includes('CISS.')||symbol.includes('EXR.')||symbol.includes('ILM.'))return 'ecb';
-            if(['sofr','effr','obfr','tgcr','bgcr'].includes(symbol.toLowerCase()))return 'ny_fed';return 'fred';
-        }
-        function updateCategoryConfig(category, symbol, enabled) { /* ... remains the same ... */ 
-            if(!riskCategories[category])return;
-            if(!enabled)riskCategories[category].symbols=riskCategories[category].symbols.filter(s=>s!==symbol);
-            else if(!riskCategories[category].symbols.includes(symbol))riskCategories[category].symbols.push(symbol);
-        }
-        function toggleRiskDashboard() { /* ... remains the same ... */ 
-            const dash=document.getElementById('riskDashboard'),ca=document.getElementById('chartsArea'),ws=document.querySelector('.watchlist-section');
-            if(dash.classList.contains('active')){dash.classList.remove('active');ws.style.flex='1';}
-            else{dash.classList.add('active');ca.style.display='none';ws.style.flex='0 0 300px';loadRiskDashboardData();}
-        }
-        function toggleConfig() { /* ... remains the same ... */ 
-            const cfgPanel=document.getElementById('watchlistConfig');cfgPanel.style.display=cfgPanel.style.display==='none'?'block':'none';
-        }
-        async function loadRiskDashboardData() { /* ... remains the same ... */ 
-            const allSyms=new Set();Object.values(riskCategories).forEach(cat=>cat.symbols.forEach(s=>allSyms.add(s)));
-            const promises=Array.from(allSyms).map(s=>{const p=getProviderForSymbol(s)+'_direct';return loadRiskSymbolData(s,p);});
-            await Promise.all(promises);calculateRiskScores();updateRiskGauges();updateAlertIndicators();
-        }
-        async function loadRiskSymbolData(symbol, provider, retryCount = 0) { 
-            let url; 
-            try {
-                // For risk data, we generally want historical changes if available, so default to true
-                let useIncludeChanges = true; 
-                url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=${useIncludeChanges}`;
-                
-                console.log(`Constructed Risk URL for ${symbol} (${provider}): ${url}`);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    console.error(`URL that 404ed or failed for risk symbol ${symbol} (${provider}): ${url}`);
-                    throw new Error(`API returned ${response.status} for ${symbol}`);
+        
+        // Enhanced chart rendering with new display modes
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            if (!canvasElement || !chart) return;
+
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
+                return;
+            }
+
+            const traces = [];
+            const displayMode = chart.displayMode || 'raw';
+            let yLabel = 'Value'; // Default yLabel
+
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.symbol];
+                if (!symbolData || symbolData.length === 0) return;
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+
+                const lineColor = colorPalette[index % colorPalette.length];
+                let yData, hoverTemplate;
+
+                switch (displayMode) {
+                    case 'pct_change': yData = filteredData.map(d => d.daily_pct_change || 0); yLabel = '% Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>% Chg: %{y:.2f}%<extra></extra>`; break;
+                    case 'unit_change': yData = filteredData.map(d => d.daily_change_units || 0); yLabel = 'Unit Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Unit Chg: %{y:.4f}<extra></extra>`; break;
+                    case 'year_pct': yData = filteredData.map(d => d.yearly_pct_change || 0); yLabel = 'Yearly % Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Yr % Chg: %{y:.2f}%<extra></extra>`; break;
+                    case 'year_units': yData = filteredData.map(d => d.yearly_change_units || 0); yLabel = 'Yearly Unit Change'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Yr Unit Chg: %{y:.4f}<extra></extra>`; break;
+                    case 'slope': yData = filteredData.map(d => d.slope_30 || 0); yLabel = 'Slope (30p)'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Slope: %{y:.6f}<extra></extra>`; break;
+                    // MODIFICATION START: MACD plotting with signal line
+                    case 'macd':
+                        const macdLineData = filteredData.map(d => d.macd);
+                        const signalLineData = filteredData.map(d => d.macd_signal);
+                        yLabel = 'MACD';
+                        traces.push({
+                            x: filteredData.map(d => d.date), y: macdLineData, type: 'scatter', mode: 'lines', name: `${s.symbol} MACD`,
+                            line: { color: lineColor, width: 2 }, hovertemplate: `<b>${s.symbol} MACD</b><br>%{x}<br>MACD: %{y:.4f}<extra></extra>`
+                        });
+                        traces.push({
+                            x: filteredData.map(d => d.date), y: signalLineData, type: 'scatter', mode: 'lines', name: `${s.symbol} Signal`,
+                            line: { color: secondaryColorPalette[index % secondaryColorPalette.length], width: 1, dash: 'dot' }, 
+                            hovertemplate: `<b>${s.symbol} Signal</b><br>%{x}<br>Signal: %{y:.4f}<extra></extra>`
+                        });
+                        return; // Skip default trace push for MACD as it has two
+                    // MODIFICATION END
+                    case 'zscore': yData = filteredData.map(d => d.zscore_30 || 0); yLabel = 'Z-Score (30p)'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Z-Score: %{y:.2f}<extra></extra>`; break;
+                    case 'signals': yData = filteredData.map(d => d.signal); yLabel = 'Buy/Sell Signals'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Signal: %{y}<extra></extra>`; break;
+                    default: yData = filteredData.map(d => d.value); yLabel = 'Value'; hoverTemplate = `<b>${s.symbol}</b><br>%{x}<br>Value: %{y:.4f}<extra></extra>`; break;
                 }
-                const data = await response.json();
-                if (data.metrics && data.metrics.latest_value !== undefined) {
-                    riskDashboardData[symbol] = { value: data.metrics.latest_value, daily_change: data.metrics.daily_change || 0, weekly_change: data.metrics.weekly_change || 0, monthly_change: data.metrics.monthly_change || 0, provider: provider, timestamp: Date.now() };
-                } else if (data.data && data.data.value !== undefined && data.data.date !== undefined) { // Handle single value if metrics object is missing
-                     riskDashboardData[symbol] = { value: data.data.value, daily_change: 0, weekly_change: 0, monthly_change: 0, provider: provider, timestamp: Date.now() };
-                }
-                else {
-                     console.warn(`Risk data format issue for ${symbol}:`, data);
-                     riskDashboardData[symbol] = { value: 0, daily_change: 0, weekly_change: 0, monthly_change: 0, error: true};
-                }
-            } catch (error) {
-                if (retryCount < 2) { await new Promise(r => setTimeout(r, 1000*(retryCount+1))); return loadRiskSymbolData(symbol, provider, retryCount + 1); }
-                console.error(`Failed to load risk data for ${symbol} (${provider}) (URL: ${url}):`, error);
-                riskDashboardData[symbol] = { value: 0, daily_change: 0, weekly_change: 0, monthly_change: 0, error: true};
+
+                const trace = {
+                    x: filteredData.map(d => d.date), y: yData, type: 'scatter', 
+                    mode: displayMode === 'signals' ? 'markers' : 'lines', name: s.symbol, hovertemplate: hoverTemplate
+                };
+                if (displayMode === 'signals') {
+                    trace.marker = {
+                        color: yData.map(val => val === 1 ? '#00dd77' : val === -1 ? '#ff4444' : '#777'),
+                        size: yData.map(val => val !== 0 ? 10 : 5),
+                        symbol: yData.map(val => val === 1 ? 'triangle-up' : val === -1 ? 'triangle-down' : 'circle')
+                    };
+                } else trace.line = { color: lineColor, width: 2 };
+                traces.push(trace);
+            });
+
+            if (traces.length === 0 && chart.symbols.length > 0) { // Handles case where MACD might be the only mode and returns early
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe or mode.</div>'; return;
+            }
+            if (traces.length === 0) { // No symbols or no data for any symbol
+                 canvasElement.innerHTML = '<div class="chart-message">No data to display.</div>'; return;
+            }
+
+
+            const layout = {
+                title: { text: `${displayMode.replace('_',' ').toUpperCase()} VIEW`, font: {color:'#fff',size:14}, x:0.5 },
+                paper_bgcolor: '#0a0a0a', plot_bgcolor: '#0a0a0a', font: {color:'#aaa',size:12},
+                margin: {t:60,r:80,b:60,l:80},
+                xaxis: { type:'date', gridcolor:'#22222250', tickfont:{color:'#888'}, rangeslider:{visible:false} },
+                yaxis: { title:{text:yLabel,font:{color:'#aaa'}}, gridcolor:'#22222250', tickfont:{color:'#888'}, zeroline:true, zerolinecolor:'#444', zerolinewidth:1 },
+                hovermode: 'x unified', showlegend: true,
+                legend: { orientation:'h', yanchor:'bottom', y:1.02, xanchor:'right', x:1, bgcolor:'rgba(10,10,10,0.8)', bordercolor:'#333', borderwidth:1, font:{size:11} },
+                height: 500, autosize: true
+            };
+            const config = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'], displayModeBar: true };
+            
+            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = ''; // Clear loading/error message
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => { charts[chartId].chartInstance = gd; })
+                .catch(err => { console.error("Plotly error:", err); canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`; });
+        }
+        
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block'; watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none'; watchlistSection.style.flex = '1';
             }
         }
-        function calculateRiskScores() { /* ... remains the same ... */ 
-            Object.keys(riskCategories).forEach(catKey=>{const cat=riskCategories[catKey];const scores=[];
-            cat.symbols.forEach(sym=>{if(riskDashboardData[sym]&&!riskDashboardData[sym].error){const d=riskDashboardData[sym];
-            const chgs=[Math.abs(d.daily_change),Math.abs(d.weekly_change),Math.abs(d.monthly_change)].filter(x=>x!==null&&!isNaN(x)&&x!==0);
-            if(chgs.length>0){const m=chgs.reduce((a,b)=>a+b,0)/chgs.length;const v=chgs.reduce((s,val)=>s+Math.pow(val-m,2),0)/chgs.length;
-            const sd=Math.sqrt(v);let zS=0;if(sd>0.0001)zS=Math.abs(d.daily_change||0)/sd;else if(Math.abs(d.daily_change||0)>0)zS=3;
-            scores.push(Math.min(100,Math.max(0,(zS/3)*100)));}else scores.push(0);}else scores.push(0);});
-            const avgS=scores.length>0?scores.reduce((a,b)=>a+b,0)/scores.length:0;cat.currentScore=Math.round(avgS);
-            if(avgS>=cat.thresholds.extreme)cat.alertLevel='extreme';else if(avgS>=cat.thresholds.critical)cat.alertLevel='high';
-            else if(avgS>=cat.thresholds.warning)cat.alertLevel='moderate';else cat.alertLevel='low';});
+        
+        function editSymbol(event, symbol) { event.stopPropagation(); showTemporaryMessage(`Edit for ${symbol} (TBD)`, 'info'); }
+        function showTemporaryMessage(text, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`; popup.textContent = text;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 3000);
         }
-        function updateRiskGauges() { /* ... remains the same ... */ 
-            const gg=document.getElementById('gaugeGrid');if(!gg)return;gg.innerHTML='';
-            Object.keys(riskCategories).forEach(catKey=>{const cat=riskCategories[catKey];const gc=document.createElement('div');gc.className='gauge-container';
-            const gId=`gauge_${catKey}`;gc.innerHTML=`<div class="gauge-title">${cat.name}</div><div class="gauge-chart" id="${gId}"></div>`;gg.appendChild(gc);
-            const pD=[{type:"indicator",mode:"gauge+number",value:cat.currentScore,domain:{x:[0,1],y:[0,1]},title:{text:"Risk Score (%)",font:{size:14}},
-            gauge:{axis:{range:[null,100],tickwidth:1,tickcolor:"darkblue"},bar:{color:cat.color,thickness:0.3},bgcolor:"white",borderwidth:2,bordercolor:"gray",
-            steps:[{range:[0,cat.thresholds.warning],color:"#2ca02c40"},{range:[cat.thresholds.warning,cat.thresholds.critical],color:"#ffdd0040"},{range:[cat.thresholds.critical,cat.thresholds.extreme],color:"#ff7f0e40"},{range:[cat.thresholds.extreme,100],color:"#d6272840"}],
-            threshold:{line:{color:"black",width:4},thickness:0.75,value:cat.currentScore}}}];
-            const layout={width:Math.min(400,gc.offsetWidth>0?gc.offsetWidth-30:370),height:250,margin:{t:25,r:25,l:25,b:25},paper_bgcolor:"#0a0a0a",plot_bgcolor:"#0a0a0a",font:{color:"#fff",family:"Arial"}};
-            Plotly.newPlot(gId,pD,layout,{displayModeBar:false});});
-        }
-        function updateAlertIndicators() { /* ... remains the same ... */ 
-            const ac=document.getElementById('alertIndicators');if(!ac)return;ac.innerHTML='';
-            Object.keys(riskCategories).forEach(catKey=>{const cat=riskCategories[catKey];const b=document.createElement('div');b.className=`alert-badge ${cat.alertLevel}`;
-            let txt=`${cat.name.split(' ')[1]}: ${cat.currentScore}% (${cat.alertLevel.toUpperCase()})`;b.textContent=txt;ac.appendChild(b);});
-        }
-        function updateRiskDashboard() { /* ... remains the same ... */ 
-            const w=parseInt(document.getElementById('warningThreshold').value),c=parseInt(document.getElementById('criticalThreshold').value),e=parseInt(document.getElementById('extremeThreshold').value);
-            Object.keys(riskCategories).forEach(catKey=>riskCategories[catKey].thresholds={warning:w,critical:c,extreme:e});
-            calculateRiskScores();updateRiskGauges();updateAlertIndicators();showTemporaryMessage('Risk Dashboard Updated!','info');
-        }
-
-        // Initialize on page load
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox'); const searchResults = document.getElementById('searchResults');
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) searchResults.style.display = 'none';
+        });
         window.onload = init;
     </script>
 </body>
