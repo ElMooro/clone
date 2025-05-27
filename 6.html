@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenBB Financial Intelligence Platform - Full Production</title>
+    <title>OpenBB Financial Intelligence Platform</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     
@@ -16,7 +16,6 @@
             overflow-x: hidden;
         }
         
-        /* Header */
         .header {
             background: #121212;
             padding: 15px 20px;
@@ -41,14 +40,12 @@
             align-items: center;
         }
         
-        /* Main Container */
         .main-container {
             display: flex;
             flex-direction: column;
             height: calc(100vh - 71px);
         }
         
-        /* Enhanced Search Section */
         .search-section {
             background: #121212;
             padding: 20px;
@@ -87,7 +84,6 @@
             font-size: 18px;
         }
         
-        /* Enhanced Ticker Type Filter */
         .ticker-type-filter {
             display: flex;
             gap: 8px;
@@ -118,7 +114,6 @@
             border-color: #00dd77;
         }
         
-        /* Data Source Filter */
         .data-source-filter {
             display: flex;
             gap: 8px;
@@ -227,7 +222,6 @@
             text-transform: uppercase;
         }
         
-        /* Charts and Watchlist Container */
         .content {
             flex: 1;
             display: flex;
@@ -235,7 +229,6 @@
             overflow: hidden;
         }
         
-        /* Charts Area */
         .charts-area {
             flex: 1;
             padding: 20px;
@@ -348,7 +341,6 @@
             font-weight: bold;
         }
         
-        /* Chart Display Controls */
         .chart-display-controls {
             display: flex;
             gap: 8px;
@@ -425,7 +417,6 @@
         }
         .close-btn:hover { background: #ff5555; }
         
-        /* Risk Dashboard */
         .risk-dashboard {
             background: #131313;
             border: 1px solid #282828;
@@ -522,7 +513,6 @@
             width: 100%;
         }
         
-        /* Watchlist Section */
         .watchlist-section {
             background: #121212;
             border-top: 1px solid #282828;
@@ -602,7 +592,6 @@
         }
         .add-watchlist:hover { background: #00ff88; }
         
-        /* CoinMarketCap Style Table */
         .watchlist-table {
             width: 100%;
             border-collapse: collapse;
@@ -735,7 +724,6 @@
         .negative { color: #ff4444 !important; }
         .neutral { color: #666 !important; }
         
-        /* Enhanced flashing animations for significant changes (15%+) */
         @keyframes flashGreen {
             0%, 100% { background-color: #fff; }
             50% { background-color: #00ff8830; }
@@ -754,20 +742,17 @@
             animation: flashRed 2s ease-in-out infinite;
         }
         
-        /* Loading */
         .loading-pulse { animation: pulse 1.5s infinite ease-in-out; }
         @keyframes pulse {
             0%, 100% { opacity: 0.6; }
             50% { opacity: 1; }
         }
         
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f0f0f; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #444; }
         
-        /* Message Popup */
         .message-popup {
             position: fixed;
             top: 20px;
@@ -806,7 +791,6 @@
             background: #00dd77;
         }
         
-        /* Liquidity Dashboard Alert */
         .liquidity-alert {
             background: linear-gradient(45deg, #ff4444, #ff6666);
             color: #fff;
@@ -829,7 +813,6 @@
         }
         .text-right { text-align: right; }
         
-        /* Connection Status */
         .connection-status {
             position: fixed;
             bottom: 20px;
@@ -956,7 +939,7 @@
                 <div class="watchlist-header">
                     <div class="watchlist-title">
                         <select class="watchlist-selector" id="watchlistSelector">
-                            <option value="MAIN">MAIN DASHBOARD</option>
+                            <option value="MAIN DASHBOARD">MAIN DASHBOARD</option>
                             <option value="STOCKS">STOCKS</option>
                             <option value="NY FED RATES">NY FED RATES</option>
                             <option value="ECB SYSTEMIC STRESS">ECB SYSTEMIC STRESS</option>
@@ -1018,7 +1001,6 @@
         </div>
     </div>
 
-    <!-- Connection Status Indicator -->
     <div class="connection-status" id="connectionStatus">
         ⚠️ API Connection Lost - Retrying...
     </div>
@@ -1029,77 +1011,39 @@
         
         // Real API endpoints from your backend
         const API_ENDPOINTS = {
-            // Core Infrastructure
             health: '/api/v1/health',
             cors_test: '/api/v1/test/cors',
-            
-            // FRED Integration
             fred_search: '/api/v1/fred/search',
             fred_data: '/api/v1/fred/series/observations',
             fred_info: '/api/v1/fred/series/info',
-            
-            // Universal Data API
             universal_data: '/api/v1/universal/data',
             universal_search: '/api/v1/universal/search',
-            
-            // Liquidity Intelligence
             ofr_fsi: '/api/v1/ofr/fsi',
             treasury_monitor: '/api/v1/treasury/monitor',
             nyfed_fails: '/api/v1/nyfed/fails',
             liquidity_dashboard: '/api/v1/liquidity/dashboard',
-            
-            // Advanced Analytics
             liquidity_events: '/api/v1/liquidity/events',
             black_swan_detect: '/api/v1/black-swan/detect',
             macro_signals: '/api/v1/macro-signals',
             macro_signals_enhanced: '/api/v1/macro-signals/enhanced',
             macro_raw: '/api/v1/macro-raw',
-            
-            // Discovery Endpoints
             ofr_series: '/api/v1/ofr/series',
             treasury_datasets: '/api/v1/treasury/datasets'
         };
         
-        // MASSIVE ENHANCED DATA SOURCES with all missing features restored
+        // ENHANCED DATA SOURCES
         const DATA_SOURCES = {
             polygon: {
                 name: 'Polygon Financial Data',
                 provider: 'polygon_direct',
                 active: true,
                 searchSymbols: [
-                    // Stocks (CS) - Major US stocks
                     'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD', 'INTC', 'ORCL', 'ADBE', 'NOW',
                     'JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'USB', 'TFC', 'PNC', 'COF',
                     'WMT', 'HD', 'PG', 'JNJ', 'UNH', 'V', 'MA', 'DIS', 'MCD', 'NKE', 'SBUX', 'KO', 'PEP', 'MRK', 'ABT',
-                    'XOM', 'CVX', 'LMT', 'RTX', 'BA', 'CAT', 'DE', 'MMM', 'HON', 'UPS', 'FDX',
-                    // Tech Growth
-                    'PLTR', 'SNOW', 'ZM', 'DOCU', 'UBER', 'LYFT', 'SQ', 'SHOP', 'ROKU', 'ZS', 'CRWD', 'OKTA', 'DDOG', 'NET', 'FSLY',
-                    // ETFs (ETF) - Comprehensive coverage
                     'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 'VEA', 'VWO', 'VTV', 'VUG', 'VXUS', 'VB', 'VO', 'VV',
-                    'AGG', 'BND', 'LQD', 'HYG', 'JNK', 'TIP', 'VTEB', 'MUB', 'SHY', 'IEF', 'TLT', 'TLH',
-                    'GLD', 'SLV', 'IAU', 'PDBC', 'DBA', 'USO', 'UNG', 'CPER', 'PALL',
-                    'EFA', 'EEM', 'FEZ', 'EPP', 'EWJ', 'EWZ', 'EWY', 'EWC', 'EWU', 'EWG', 'EWA', 'EWH',
-                    'XLK', 'XLF', 'XLE', 'XLV', 'XLI', 'XLY', 'XLP', 'XLB', 'XLU', 'XLRE',
-                    'SMH', 'XBI', 'IBB', 'KRE', 'KIE', 'ITB', 'VNQ', 'IYR',
-                    // Crypto (CRYPTO) - Major cryptocurrencies with X: prefix
                     'X:BTCUSD', 'X:ETHUSD', 'X:ADAUSD', 'X:DOTUSD', 'X:SOLUSD', 'X:AVAXUSD', 'X:MATICUSD', 'X:LINKUSD',
-                    'X:UNIUSD', 'X:LTCUSD', 'X:BCHUSD', 'X:XLMUSD', 'X:XRPUSD', 'X:ALGOUSD', 'X:ATOMUSD', 'X:AAVEUSD',
-                    'X:COMPUSD', 'X:MKRUSD', 'X:SUSHIUSD', 'X:YFIUSD', 'X:SNXUSD', 'X:BATUSD', 'X:ZRXUSD', 'X:OMGUSD',
-                    // Indices (INDEX) - Major indices with I: prefix
-                    'I:SPX', 'I:DJI', 'I:NDX', 'I:RUT', 'I:VIX', 'I:TNX', 'I:DXY', 'I:GSPC', 'I:IXIC', 'I:NYA',
-                    'I:OEX', 'I:SOX', 'I:RUI', 'I:XAU', 'I:HUI', 'I:CRB', 'I:WTIC', 'I:BDI',
-                    // ADRs (ADR) - American Depositary Receipts
-                    'BABA', 'TSM', 'ASML', 'NVO', 'TM', 'SAP', 'SHOP', 'SE', 'MELI', 'TME', 'BIDU', 'JD', 'NIO', 'LI', 'XPEV',
-                    'PDD', 'DIDI', 'GRAB', 'UBER', 'RIO', 'BHP', 'VALE', 'FCX', 'GOLD', 'NEM', 'AUY',
-                    'SNY', 'GSK', 'AZN', 'NVS', 'RHHBY', 'UL', 'DEO', 'STZ', 'BUD', 'SAM',
-                    // REITs (REIT) - Real Estate Investment Trusts
-                    'AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'EXR', 'AVB', 'EQR', 'WELL', 'DLR', 'SPG', 'O', 'VTR', 'BXP', 'ARE',
-                    'ESS', 'MAA', 'UDR', 'CPT', 'ELS', 'AMH', 'INVH', 'HST', 'RHP', 'SLG', 'REG', 'FRT', 'KIM', 'MAC',
-                    // Mutual Funds (MF) - Major fund families
-                    'VFIAX', 'VTSAX', 'VTIAX', 'VBTLX', 'VGSLX', 'VTSMX', 'VFINX', 'VGTSX', 'VBMFX', 'VMMXX',
-                    'FXAIX', 'FSKAX', 'FTIHX', 'FXNAX', 'FREL', 'FDVV', 'FZROX', 'FZILX', 'SWTSX', 'SWPPX',
-                    // Bonds/Fixed Income (BOND)
-                    'GOVT', 'SPTS', 'SPTL', 'SPTI', 'SPDW', 'SPEM', 'SPYG', 'SPYV', 'SPLG', 'SPHD', 'SPIB', 'SPAB'
+                    'I:SPX', 'I:DJI', 'I:NDX', 'I:RUT', 'I:VIX', 'I:TNX', 'I:DXY', 'I:GSPC', 'I:IXIC', 'I:NYA'
                 ]
             },
             fred: {
@@ -1109,43 +1053,12 @@
                 endpoint: API_ENDPOINTS.fred_data,
                 searchEndpoint: API_ENDPOINTS.fred_search,
                 searchSymbols: [
-                    // CORE ECONOMIC INDICATORS
                     'FEDFUNDS', 'UNRATE', 'GDP', 'GDPC1', 'CPIAUCSL', 'CPILFESL', 'DFF', 'M1SL', 'M2SL', 'PAYEMS', 'HOUST', 'INDPRO',
-                    'PERMIT', 'HOUSTNSA', 'UMCSENT', 'RETAILMNSA', 'DSPIC96', 'PCE', 'PCEDG', 'PCESV', 'PSAVERT',
-                    
-                    // DOLLAR & EXCHANGE RATES (Enhanced)
                     'DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DTWEXM', 'DTWEXO', 'DTWEXS', 'DEXUSAL', 'DEXJPUS', 'DEXUSEU', 'DEXUSUK',
-                    'DEXCAUS', 'DEXCHUS', 'DEXKOUS', 'DEXMXUS', 'DEXBZUS', 'DEXINUS', 'DEXSFUS', 'DEXNOUS', 'DEXDNUS', 'DEXSZUS',
-                    
-                    // TREASURY RATES (Complete Yield Curve)
                     'DGS1MO', 'DGS3MO', 'DGS6MO', 'DGS1', 'DGS2', 'DGS3', 'DGS5', 'DGS7', 'DGS10', 'DGS20', 'DGS30',
-                    'TB3MS', 'TB6MS', 'GS1', 'GS2', 'GS3', 'GS5', 'GS7', 'GS10', 'GS20', 'GS30',
-                    
-                    // ENHANCED GLOBAL LIQUIDITY INDICATORS
                     'RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690', 'RESH4MFNWW',
-                    'SUBLPDCISTQNQ', 'DRISCFLM', 'DRISCFS', 'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S', 'MABMM301JPM189S',
-                    'TREAS911Y', 'RREP15', 'OTHL15', 'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES',
-                    
-                    // BLACK SWAN INDICATORS (Enhanced)
                     'NFCINONFINLEVERAGE', 'NFCI', 'ANFCI', 'STLFSI4', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'T10YIE', 'T5YIE', 'T10Y2Y',
-                    'AMERIBOR', 'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 'VIXCLS', 'TEDRATE', 'DFII10', 'DFII5', 'DFII30',
-                    
-                    // LABOR MARKET (Enhanced)
-                    'CIVPART', 'EMRATIO', 'ICSA', 'IC4WSA', 'JTSJOL', 'JTSQUL', 'JTSHIL', 'JTSTSL', 'JTSLDL', 'U6RATE',
-                    'NPPTTL', 'AWHMAN', 'AWOTMAN', 'CES0500000003', 'COMPRNFB', 'OPHNFB', 'HCOMPBS', 
-                    
-                    // HOUSING & REAL ESTATE
-                    'CSUSHPINSA', 'CSUSHPISA', 'HPIPONM226S', 'ASPNHSUS', 'MSACSR', 'HOSINVUSM495N', 'BOGZ1FL155035005Q',
-                    
-                    // CREDIT & BANKING
-                    'TOTCI', 'CONSUMER', 'REVOLSL', 'NONREVSL', 'DRISCRS', 'DRISCRR', 'DRISCRC', 'CHARGEOFFALLSA', 'DRTSCILM',
-                    
-                    // FEDERAL FINANCES
-                    'FYFSGDA188S', 'FYFSDA188S', 'FGRECPT', 'FGEXPND', 'FYONET', 'GFDEBTN', 'GFDEGDQ188S', 'INTDSPTOTLM',
-                    
-                    // ADDITIONAL ENHANCED DATA
-                    'ISRATIO', 'MNFCTRIRSA', 'SOFR', 'EFFR', 'OBFR', 'TGCR', 'BGCR', 'IORB', 'IOER', 'DFEDTARU', 'DFEDTARL',
-                    'WALCL', 'WTREGEN', 'WSHOMCB', 'WSHO'
+                    'VIXCLS', 'TEDRATE', 'SOFR', 'EFFR', 'OBFR', 'TGCR', 'BGCR', 'IORB', 'IOER'
                 ]
             },
             ny_fed: {
@@ -1154,30 +1067,7 @@
                 active: true,
                 endpoint: API_ENDPOINTS.nyfed_fails,
                 searchSymbols: [
-                    // REFERENCE RATES (Core)
-                    'sofr', 'effr', 'obfr', 'tgcr', 'bgcr', 'iorb', 'ioer', 'on_rrp', 'primary_credit', 'secondary_credit',
-                    
-                    // SOMA HOLDINGS & OPERATIONS (Enhanced)
-                    'soma_treasury', 'soma_mbs', 'soma_agency', 'soma_tips', 'soma_frn', 'soma_bills', 'soma_notes', 'soma_bonds',
-                    'soma_cusip_level', 'soma_par_value', 'soma_premium_discount', 'soma_maturity_distribution',
-                    
-                    // MARKET OPERATIONS (Enhanced)
-                    'rrp_operations', 'term_operations', 'fx_operations', 'swap_operations', 'pomo_purchases', 'pomo_sales',
-                    'temporary_operations', 'test_operations', 'small_value_operations',
-                    
-                    // PRIMARY DEALER STATISTICS (Complete)
-                    'pd_trading', 'pd_positions', 'pd_financing', 'pd_fails_to_deliver', 'pd_fails_to_receive',
-                    'pd_net_positions', 'pd_long_positions', 'pd_short_positions', 'pd_customer_positions',
-                    'pd_repo_positions', 'pd_reverse_repo', 'pd_trading_revenues', 'pd_inventory_turnover',
-                    
-                    // DISCOUNT WINDOW (Enhanced)
-                    'discount_window_primary', 'discount_window_secondary', 'discount_window_seasonal',
-                    'discount_window_extended_credit', 'discount_window_term_auction', 'discount_window_rates',
-                    
-                    // H.4.1 WEEKLY RELEASE DATA (Complete Federal Reserve Balance Sheet)
-                    'h41_factors', 'h41_treasury', 'h41_other', 'h41_reserves', 'h41_currency', 'h41_deposits',
-                    'h41_reverse_repo', 'h41_foreign_repo', 'h41_term_deposit', 'h41_other_liabilities',
-                    'h41_capital', 'h41_federal_reserve_notes', 'h41_required_reserves', 'h41_excess_reserves'
+                    'sofr', 'effr', 'obfr', 'tgcr', 'bgcr', 'iorb', 'ioer', 'on_rrp', 'primary_credit', 'secondary_credit'
                 ]
             },
             ecb: {
@@ -1185,31 +1075,10 @@
                 provider: 'ecb_direct',
                 active: true,
                 searchSymbols: [
-                    // EXCHANGE RATES (Enhanced)
                     'EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A', 'EXR.D.CHF.EUR.SP00.A',
-                    'EXR.D.SEK.EUR.SP00.A', 'EXR.D.NOK.EUR.SP00.A', 'EXR.D.DKK.EUR.SP00.A', 'EXR.D.PLN.EUR.SP00.A',
-                    'EXR.D.CZK.EUR.SP00.A', 'EXR.D.HUF.EUR.SP00.A', 'EXR.D.CAD.EUR.SP00.A', 'EXR.D.AUD.EUR.SP00.A',
-                    'EXR.D.NZD.EUR.SP00.A', 'EXR.D.SGD.EUR.SP00.A', 'EXR.D.HKD.EUR.SP00.A', 'EXR.D.KRW.EUR.SP00.A',
-                    'EXR.D.CNY.EUR.SP00.A', 'EXR.D.INR.EUR.SP00.A', 'EXR.D.BRL.EUR.SP00.A', 'EXR.D.ZAR.EUR.SP00.A',
-                    
-                    // CISS - COMPOSITE INDICATOR OF SYSTEMIC STRESS (Complete)
                     'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX',
-                    'CISS.D.JP.Z0Z.4F.EC.SS_CI.IDX', 'CISS.D.GB.Z0Z.4F.EC.SS_CI.IDX', 'CISS.D.CA.Z0Z.4F.EC.SS_CI.IDX',
-                    
-                    // COUNTRY-SPECIFIC SOVEREIGN CISS (Enhanced)
-                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX',
-                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX',
-                    'CISS.M.NL.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.AT.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.IE.Z0Z.4F.EC.SOV_CI.IDX',
-                    'CISS.M.PT.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.ES.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.IT.Z0Z.4F.EC.SOV_CI.IDX',
-                    'CISS.M.GR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.CY.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.MT.Z0Z.4F.EC.SOV_CI.IDX',
-                    
-                    // CLIFS - COUNTRY-LEVEL INDEX OF FINANCIAL STRESS (Complete)
-                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', 'CLIFS.M.FR._Z.4F.EC.CLIFS_CI.IDX', 'CLIFS.M.IT._Z.4F.EC.CLIFS_CI.IDX',
-                    'CLIFS.M.ES._Z.4F.EC.CLIFS_CI.IDX', 'CLIFS.M.NL._Z.4F.EC.CLIFS_CI.IDX', 'CLIFS.M.BE._Z.4F.EC.CLIFS_CI.IDX',
-                    
-                    // ILM - INTEREST RATE AND LIQUIDITY MEASURES (Enhanced)
-                    'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR', 'ILM.W.U2.C.A030000.U4.EUR',
-                    'ILM.M.U2.C.A030000.U2.Z06', 'ILM.M.U2.C.L060000.U4.EUR', 'ILM.M.U2.C.A030000.U4.EUR'
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', 'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR'
                 ]
             },
             ofr: {
@@ -1218,27 +1087,8 @@
                 active: true,
                 endpoint: API_ENDPOINTS.ofr_fsi,
                 searchSymbols: [
-                    // PRIMARY DEALER DATA (Enhanced)
-                    'NYPD-PD_AFtR_T-A', 'NYPD-PD_AFtD_TOT-A', 'NYPD-PD_AFtD_BILLS-A', 'NYPD-PD_AFtD_NOTES-A', 'NYPD-PD_AFtD_BONDS-A',
-                    'NYPD-PD_AFtD_TIPS-A', 'NYPD-PD_AFtD_FRN-A', 'NYPD-PD_AFtR_BILLS-A', 'NYPD-PD_AFtR_NOTES-A', 'NYPD-PD_AFtR_BONDS-A',
-                    
-                    // REPO MARKET DATA (Complete Coverage)
-                    'REPO_OV_TOT_P75', 'REPO_OV_TOT_P25', 'REPO_OV_TOT_MED', 'REPO_OV_TOT_MEAN', 'REPO_OV_TOT_VOL',
-                    'REPO_OV_BILLS_P75', 'REPO_OV_NOTES_P75', 'REPO_OV_BONDS_P75', 'REPO_OV_TIPS_P75', 'REPO_OV_AGENCY_P75',
-                    
-                    // MONEY MARKET FUND DATA (Enhanced)
-                    'MMF_OV_TOT', 'MMF_OV_GOVT', 'MMF_OV_PRIME', 'MMF_OV_TAX_EXEMPT', 'MMF_WAM', 'MMF_WAL', 'MMF_7DAY_YIELD',
-                    'MMF_WEEKLY_ASSETS', 'MMF_REPO_EXPOSURE', 'MMF_LIQUIDITY_FEES', 'MMF_REDEMPTION_GATES',
-                    
-                    // DEALER FINANCING (Complete)
-                    'DEALER_OV_TOT', 'DEALER_REPO_IN', 'DEALER_REPO_OUT', 'DEALER_SEC_LENDING', 'DEALER_SEC_BORROWING',
-                    'DEALER_MARGIN_LENDING', 'DEALER_PRIME_BROKERAGE', 'DEALER_CUSTOMER_REPOS', 'DEALER_INTERDEALER',
-                    
-                    // VOLATILITY MEASURES (New)
-                    'TGCR_VOL', 'SOFR_VOL', 'EFFR_VOL', 'OBFR_VOL', 'BGCR_VOL', 'REPO_VOL', 'MMF_VOL',
-                    
-                    // FINANCIAL STABILITY INDICATORS
-                    'FSI_BANKING', 'FSI_MARKET_LIQUIDITY', 'FSI_FUNDING_STRESS', 'FSI_CREDIT_INTERMEDIATION', 'FSI_LEVERAGE'
+                    'NYPD-PD_AFtR_T-A', 'NYPD-PD_AFtD_TOT-A', 'REPO_OV_TOT_P75', 'REPO_OV_TOT_P25',
+                    'MMF_OV_TOT', 'DEALER_OV_TOT', 'TGCR_VOL', 'SOFR_VOL'
                 ]
             },
             treasury: {
@@ -1247,55 +1097,9 @@
                 active: true,
                 endpoint: API_ENDPOINTS.treasury_monitor,
                 searchSymbols: [
-                    // TREASURY BILLS (Complete)
-                    'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_17W', 'BILLS_26W', 'BILLS_52W',
-                    
-                    // TREASURY NOTES (Complete)
+                    'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_26W', 'BILLS_52W',
                     'NOTES_2Y', 'NOTES_3Y', 'NOTES_5Y', 'NOTES_7Y', 'NOTES_10Y',
-                    
-                    // TREASURY BONDS (Complete)
-                    'BONDS_20Y', 'BONDS_30Y',
-                    
-                    // TIPS - TREASURY INFLATION-PROTECTED SECURITIES (Complete)
-                    'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y',
-                    
-                    // FLOATING RATE NOTES
-                    'FRN_2Y', 'FRN_CURRENT', 'FRN_SPREAD',
-                    
-                    // AUCTION METRICS - TAILS (Complete Coverage)
-                    'AUCTION_TAIL_4W', 'AUCTION_TAIL_8W', 'AUCTION_TAIL_13W', 'AUCTION_TAIL_17W', 'AUCTION_TAIL_26W', 'AUCTION_TAIL_52W',
-                    'AUCTION_TAIL_2Y', 'AUCTION_TAIL_3Y', 'AUCTION_TAIL_5Y', 'AUCTION_TAIL_7Y', 'AUCTION_TAIL_10Y', 'AUCTION_TAIL_20Y', 'AUCTION_TAIL_30Y',
-                    'AUCTION_TAIL_FRN_2Y', 'AUCTION_TAIL_TIPS_5Y', 'AUCTION_TAIL_TIPS_10Y', 'AUCTION_TAIL_TIPS_30Y',
-                    
-                    // AUCTION METRICS - BID-TO-COVER RATIOS (Complete Coverage)
-                    'AUCTION_BTC_4W', 'AUCTION_BTC_8W', 'AUCTION_BTC_13W', 'AUCTION_BTC_17W', 'AUCTION_BTC_26W', 'AUCTION_BTC_52W',
-                    'AUCTION_BTC_2Y', 'AUCTION_BTC_3Y', 'AUCTION_BTC_5Y', 'AUCTION_BTC_7Y', 'AUCTION_BTC_10Y', 'AUCTION_BTC_20Y', 'AUCTION_BTC_30Y',
-                    'AUCTION_BTC_FRN_2Y', 'AUCTION_BTC_TIPS_5Y', 'AUCTION_BTC_TIPS_10Y', 'AUCTION_BTC_TIPS_30Y',
-                    
-                    // AUCTION METRICS - DIRECT BIDDER PARTICIPATION (Complete)
-                    'AUCTION_DIRECT_4W', 'AUCTION_DIRECT_8W', 'AUCTION_DIRECT_13W', 'AUCTION_DIRECT_17W', 'AUCTION_DIRECT_26W', 'AUCTION_DIRECT_52W',
-                    'AUCTION_DIRECT_2Y', 'AUCTION_DIRECT_3Y', 'AUCTION_DIRECT_5Y', 'AUCTION_DIRECT_7Y', 'AUCTION_DIRECT_10Y', 'AUCTION_DIRECT_20Y', 'AUCTION_DIRECT_30Y',
-                    
-                    // AUCTION METRICS - INDIRECT BIDDER PARTICIPATION (Complete)
-                    'AUCTION_INDIRECT_4W', 'AUCTION_INDIRECT_8W', 'AUCTION_INDIRECT_13W', 'AUCTION_INDIRECT_17W', 'AUCTION_INDIRECT_26W', 'AUCTION_INDIRECT_52W',
-                    'AUCTION_INDIRECT_2Y', 'AUCTION_INDIRECT_3Y', 'AUCTION_INDIRECT_5Y', 'AUCTION_INDIRECT_7Y', 'AUCTION_INDIRECT_10Y', 'AUCTION_INDIRECT_20Y', 'AUCTION_INDIRECT_30Y',
-                    
-                    // PRIMARY DEALER PARTICIPATION (Complete)
-                    'AUCTION_PD_4W', 'AUCTION_PD_8W', 'AUCTION_PD_13W', 'AUCTION_PD_17W', 'AUCTION_PD_26W', 'AUCTION_PD_52W',
-                    'AUCTION_PD_2Y', 'AUCTION_PD_3Y', 'AUCTION_PD_5Y', 'AUCTION_PD_7Y', 'AUCTION_PD_10Y', 'AUCTION_PD_20Y', 'AUCTION_PD_30Y',
-                    
-                    // HIGH YIELD & STOP OUT RATES (Complete)
-                    'AUCTION_HIGH_4W', 'AUCTION_HIGH_8W', 'AUCTION_HIGH_13W', 'AUCTION_HIGH_17W', 'AUCTION_HIGH_26W', 'AUCTION_HIGH_52W',
-                    'AUCTION_HIGH_2Y', 'AUCTION_HIGH_3Y', 'AUCTION_HIGH_5Y', 'AUCTION_HIGH_7Y', 'AUCTION_HIGH_10Y', 'AUCTION_HIGH_20Y', 'AUCTION_HIGH_30Y',
-                    
-                    // FISCAL DATA INTEGRATION (Enhanced)
-                    'FISCAL_RECEIPTS', 'FISCAL_OUTLAYS', 'FISCAL_DEFICIT', 'FISCAL_SURPLUS', 'FISCAL_DEBT_OUTSTANDING', 'FISCAL_DEBT_LIMIT',
-                    'FISCAL_INTEREST_EXPENSE', 'FISCAL_DTS_BALANCE', 'FISCAL_OPERATING_CASH', 'FISCAL_BORROWING_CAPACITY',
-                    'FISCAL_REDEMPTIONS', 'FISCAL_NEW_ISSUES', 'FISCAL_NET_BORROWING', 'FISCAL_CASH_MANAGEMENT',
-                    
-                    // TREASURY MARKET DATA (Enhanced)
-                    'TREASURY_VOLUME', 'TREASURY_LIQUIDITY', 'TREASURY_VOLATILITY', 'TREASURY_FAILS', 'TREASURY_SPECIALS',
-                    'TREASURY_CURVE_STEEPNESS', 'TREASURY_REAL_YIELDS', 'TREASURY_BREAKEVEN_INFLATION'
+                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y'
                 ]
             },
             liquidity: {
@@ -1304,21 +1108,12 @@
                 active: true,
                 endpoint: API_ENDPOINTS.liquidity_dashboard,
                 searchSymbols: [
-                    // LIQUIDITY INTELLIGENCE CORE
                     'OFR_FSI', 'TREASURY_MONITOR', 'NYFED_FAILS', 'LIQUIDITY_DASHBOARD',
-                    
-                    // ADVANCED LIQUIDITY METRICS
-                    'LIQUIDITY_STRESS_COMPOSITE', 'FUNDING_PRESSURE_INDEX', 'MARKET_DEPTH_INDICATOR',
-                    'CROSS_ASSET_LIQUIDITY', 'SYSTEMIC_LIQUIDITY_RISK', 'LIQUIDITY_SPILLOVER_INDEX',
-                    
-                    // EARLY WARNING SYSTEMS
-                    'LIQUIDITY_EARLY_WARNING', 'FUNDING_DISRUPTION_ALERT', 'MARKET_STRESS_SIGNAL',
-                    'CONTAGION_RISK_INDICATOR', 'FLASH_CRASH_PREDICTOR', 'VOLATILITY_REGIME_DETECTOR'
+                    'LIQUIDITY_STRESS_COMPOSITE', 'FUNDING_PRESSURE_INDEX'
                 ]
             }
         };
         
-        // ENHANCED TICKER TYPE CONFIGURATION
         const TICKER_TYPES = {
             CS: { name: 'Common Stock', active: true, icon: '📈' },
             ETF: { name: 'Exchange Traded Fund', active: true, icon: '🎯' },
@@ -1336,25 +1131,18 @@
         let activeSources = Object.keys(DATA_SOURCES).filter(source => DATA_SOURCES[source].active);
         let searchTimeout = null;
         
-        // CHART MANAGEMENT WITH ENHANCED FEATURES
         const charts = {};
         let chartIdCounter = 0;
         let activeChartId = null;
         
-        // CHART DISPLAY MODES (9 Different Modes - RESTORED)
         const CHART_DISPLAY_MODES = {
             'raw': { name: 'Raw Values', description: 'Original data values' },
             'pct_change': { name: '% Change', description: 'Percentage change from start' },
             'unit_change': { name: 'Unit Change', description: 'Absolute change from start' },
-            'normalized': { name: 'Normalized', description: 'Normalized to 0-1 scale' },
-            'zscore': { name: 'Z-Score', description: 'Standard deviations from mean' },
-            'macd': { name: 'MACD', description: 'Moving Average Convergence Divergence' },
-            'slope': { name: 'Slope', description: 'Rate of change over time' },
-            'signals': { name: 'Signals', description: 'Buy/Sell signals' },
-            'volatility': { name: 'Volatility', description: 'Rolling volatility measure' }
+            'year_pct': { name: 'Year % Change', description: 'Year-over-year percentage change' },
+            'year_units': { name: 'Year Unit Change', description: 'Year-over-year unit change' }
         };
         
-        // Enhanced timeframes - RESTORED
         const TIMEFRAMES = {
             '1D': { name: '1 Day', days: 1 },
             '1W': { name: '1 Week', days: 7 },
@@ -1368,217 +1156,150 @@
             'MAX': { name: 'Maximum', days: null }
         };
         
-        // Color palette for charts
         const colorPalette = [
             '#00AEEF', '#FF4444', '#F4D03F', '#58D68D', '#FF7043',
-            '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041',
-            '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#D7BDE2'
+            '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
         ];
         
-        // COMPLETE ENHANCED WATCHLISTS - FIXED PROVIDER MAPPING
         const watchlists = {
-            'MAIN': {
+            'MAIN DASHBOARD': {
                 symbols: [
-                    { symbol: 'AAPL', provider: 'polygon', color: '#00AEEF' },
-                    { symbol: 'FEDFUNDS', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'UNRATE', provider: 'fred', color: '#F4D03F' },
-                    { symbol: 'sofr', provider: 'ny_fed', color: '#58D68D' }
+                    { symbol: 'AAPL', provider: 'polygon_direct', color: '#00AEEF' },
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'UNRATE', provider: 'fred_direct', color: '#F4D03F' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct', color: '#58D68D' }
                 ],
                 active: true
             },
             'STOCKS': {
                 symbols: [
-                    { symbol: 'AAPL', provider: 'polygon', color: '#00AEEF' },
-                    { symbol: 'MSFT', provider: 'polygon', color: '#FF4444' },
-                    { symbol: 'GOOGL', provider: 'polygon', color: '#F4D03F' },
-                    { symbol: 'AMZN', provider: 'polygon', color: '#58D68D' },
-                    { symbol: 'TSLA', provider: 'polygon', color: '#FF7043' },
-                    { symbol: 'SPY', provider: 'polygon', color: '#AF7AC5' },
-                    { symbol: 'QQQ', provider: 'polygon', color: '#48C9B0' },
-                    { symbol: 'NVDA', provider: 'polygon', color: '#EC7063' },
-                    { symbol: 'META', provider: 'polygon', color: '#5DADE2' },
-                    { symbol: 'NFLX', provider: 'polygon', color: '#F5B041' }
+                    { symbol: 'AAPL', provider: 'polygon_direct', color: '#00AEEF' },
+                    { symbol: 'MSFT', provider: 'polygon_direct', color: '#FF4444' },
+                    { symbol: 'GOOGL', provider: 'polygon_direct', color: '#F4D03F' },
+                    { symbol: 'AMZN', provider: 'polygon_direct', color: '#58D68D' },
+                    { symbol: 'TSLA', provider: 'polygon_direct', color: '#FF7043' },
+                    { symbol: 'SPY', provider: 'polygon_direct', color: '#AF7AC5' },
+                    { symbol: 'QQQ', provider: 'polygon_direct', color: '#48C9B0' },
+                    { symbol: 'NVDA', provider: 'polygon_direct', color: '#EC7063' },
+                    { symbol: 'META', provider: 'polygon_direct', color: '#5DADE2' },
+                    { symbol: 'NFLX', provider: 'polygon_direct', color: '#F5B041' }
                 ],
                 active: false
             },
             'NY FED RATES': {
                 symbols: [
-                    { symbol: 'sofr', provider: 'ny_fed', color: '#00AEEF' },
-                    { symbol: 'effr', provider: 'ny_fed', color: '#FF4444' },
-                    { symbol: 'obfr', provider: 'ny_fed', color: '#F4D03F' },
-                    { symbol: 'tgcr', provider: 'ny_fed', color: '#58D68D' },
-                    { symbol: 'bgcr', provider: 'ny_fed', color: '#FF7043' },
-                    { symbol: 'iorb', provider: 'ny_fed', color: '#AF7AC5' },
-                    { symbol: 'on_rrp', provider: 'ny_fed', color: '#48C9B0' }
+                    { symbol: 'sofr', provider: 'ny_fed_direct', color: '#00AEEF' },
+                    { symbol: 'effr', provider: 'ny_fed_direct', color: '#FF4444' },
+                    { symbol: 'obfr', provider: 'ny_fed_direct', color: '#F4D03F' },
+                    { symbol: 'tgcr', provider: 'ny_fed_direct', color: '#58D68D' },
+                    { symbol: 'bgcr', provider: 'ny_fed_direct', color: '#FF7043' }
                 ],
                 active: false
             },
             'ECB SYSTEMIC STRESS': {
                 symbols: [
-                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb', color: '#FF4444' },
-                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb', color: '#FF7043' },
-                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb', color: '#EC7063' },
-                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb', color: '#F1948A' },
-                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb', color: '#85C1E9' },
-                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb', color: '#F8C471' },
-                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb', color: '#82E0AA' }
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct', color: '#FF4444' },
+                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct', color: '#FF7043' },
+                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct', color: '#EC7063' }
                 ],
                 active: false
             },
             'DOLLAR & EXCHANGE': {
                 symbols: [
-                    { symbol: 'DTWEXBGS', provider: 'fred', color: '#00AEEF' },
-                    { symbol: 'DTWEXAFEGS', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'DTWEXEMEGS', provider: 'fred', color: '#F4D03F' },
-                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb', color: '#58D68D' },
-                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb', color: '#FF7043' },
-                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb', color: '#AF7AC5' },
-                    { symbol: 'I:DXY', provider: 'polygon', color: '#48C9B0' }
+                    { symbol: 'DTWEXBGS', provider: 'fred_direct', color: '#00AEEF' },
+                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct', color: '#58D68D' },
+                    { symbol: 'I:DXY', provider: 'polygon_direct', color: '#48C9B0' }
                 ],
                 active: false
             },
             'GLOBAL LIQUIDITY': {
                 symbols: [
-                    { symbol: 'RESPPNTEPNWW', provider: 'fred', color: '#00AEEF' },
-                    { symbol: 'RESPPALGUOXAWXCH52NWW', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'RESPPALGUONNWW', provider: 'fred', color: '#F4D03F' },
-                    { symbol: 'SWP1690', provider: 'fred', color: '#58D68D' },
-                    { symbol: 'OTHL1690', provider: 'fred', color: '#FF7043' },
-                    { symbol: 'RMFSL', provider: 'fred', color: '#AF7AC5' },
-                    { symbol: 'BOGMBASE', provider: 'fred', color: '#48C9B0' },
-                    { symbol: 'WSHOSHO', provider: 'fred', color: '#EC7063' },
-                    { symbol: 'WRESBAL', provider: 'fred', color: '#5DADE2' },
-                    { symbol: 'TOTRESNS', provider: 'fred', color: '#F5B041' },
-                    { symbol: 'NONBORRES', provider: 'fred', color: '#85C1E9' },
-                    { symbol: 'ILM.W.U2.C.A030000.U2.Z06', provider: 'ecb', color: '#F8C471' }
+                    { symbol: 'RESPPNTEPNWW', provider: 'fred_direct', color: '#00AEEF' },
+                    { symbol: 'M2SL', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'BOGMBASE', provider: 'fred_direct', color: '#F4D03F' }
                 ],
                 active: false
             },
             'BLACK SWAN INDICATORS': {
                 symbols: [
-                    { symbol: 'NFCINONFINLEVERAGE', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'FRBKCLMCIM', provider: 'fred', color: '#FF7043' },
-                    { symbol: 'AMTMUO', provider: 'fred', color: '#EC7063' },
-                    { symbol: 'T10YIE', provider: 'fred', color: '#F1948A' },
-                    { symbol: 'WLCFLPCL', provider: 'fred', color: '#D7BDE2' },
-                    { symbol: 'CC4WSA', provider: 'fred', color: '#F8C471' },
-                    { symbol: 'VIXCLS', provider: 'fred', color: '#82E0AA' },
-                    { symbol: 'TREAS1590', provider: 'fred', color: '#85C1E9' },
-                    { symbol: 'TEDRATE', provider: 'fred', color: '#F5B041' }
+                    { symbol: 'NFCINONFINLEVERAGE', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'VIXCLS', provider: 'fred_direct', color: '#FF7043' },
+                    { symbol: 'T10YIE', provider: 'fred_direct', color: '#EC7063' }
                 ],
                 active: false
             },
             'ECONOMIC INDICATORS': {
                 symbols: [
-                    { symbol: 'GDP', provider: 'fred', color: '#00AEEF' },
-                    { symbol: 'UNRATE', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'CPIAUCSL', provider: 'fred', color: '#F4D03F' },
-                    { symbol: 'PAYEMS', provider: 'fred', color: '#58D68D' },
-                    { symbol: 'INDPRO', provider: 'fred', color: '#FF7043' },
-                    { symbol: 'HOUST', provider: 'fred', color: '#AF7AC5' },
-                    { symbol: 'ISRATIO', provider: 'fred', color: '#48C9B0' },
-                    { symbol: 'MNFCTRIRSA', provider: 'fred', color: '#EC7063' },
-                    { symbol: 'UMCSENT', provider: 'fred', color: '#5DADE2' },
-                    { symbol: 'RETAILMNSA', provider: 'fred', color: '#F5B041' }
+                    { symbol: 'GDP', provider: 'fred_direct', color: '#00AEEF' },
+                    { symbol: 'UNRATE', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'CPIAUCSL', provider: 'fred_direct', color: '#F4D03F' },
+                    { symbol: 'PAYEMS', provider: 'fred_direct', color: '#58D68D' }
                 ],
                 active: false
             },
             'RATES & MONETARY': {
                 symbols: [
-                    { symbol: 'FEDFUNDS', provider: 'fred', color: '#00AEEF' },
-                    { symbol: 'DGS10', provider: 'fred', color: '#FF4444' },
-                    { symbol: 'DGS2', provider: 'fred', color: '#F4D03F' },
-                    { symbol: 'DGS30', provider: 'fred', color: '#58D68D' },
-                    { symbol: 'sofr', provider: 'ny_fed', color: '#FF7043' },
-                    { symbol: 'effr', provider: 'ny_fed', color: '#AF7AC5' },
-                    { symbol: 'M2SL', provider: 'fred', color: '#48C9B0' },
-                    { symbol: 'T10Y2Y', provider: 'fred', color: '#EC7063' }
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct', color: '#00AEEF' },
+                    { symbol: 'DGS10', provider: 'fred_direct', color: '#FF4444' },
+                    { symbol: 'DGS2', provider: 'fred_direct', color: '#F4D03F' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct', color: '#FF7043' }
                 ],
                 active: false
             },
             'OFR FUNDING MONITOR': {
                 symbols: [
-                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr', color: '#00AEEF' },
-                    { symbol: 'NYPD-PD_AFtD_TOT-A', provider: 'ofr', color: '#FF4444' },
-                    { symbol: 'REPO_OV_TOT_P75', provider: 'ofr', color: '#F4D03F' },
-                    { symbol: 'REPO_OV_TOT_P25', provider: 'ofr', color: '#58D68D' },
-                    { symbol: 'MMF_OV_TOT', provider: 'ofr', color: '#FF7043' },
-                    { symbol: 'DEALER_OV_TOT', provider: 'ofr', color: '#AF7AC5' },
-                    { symbol: 'TGCR_VOL', provider: 'ofr', color: '#EC7063' },
-                    { symbol: 'SOFR_VOL', provider: 'ofr', color: '#5DADE2' }
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct', color: '#00AEEF' },
+                    { symbol: 'REPO_OV_TOT_P75', provider: 'ofr_direct', color: '#FF4444' },
+                    { symbol: 'MMF_OV_TOT', provider: 'ofr_direct', color: '#F4D03F' }
                 ],
                 active: false
             },
             'TREASURY AUCTIONS': {
                 symbols: [
-                    { symbol: 'BILLS_4W', provider: 'treasury', color: '#00AEEF' },
-                    { symbol: 'BILLS_13W', provider: 'treasury', color: '#FF4444' },
-                    { symbol: 'BILLS_26W', provider: 'treasury', color: '#F4D03F' },
-                    { symbol: 'BILLS_52W', provider: 'treasury', color: '#58D68D' },
-                    { symbol: 'NOTES_2Y', provider: 'treasury', color: '#FF7043' },
-                    { symbol: 'NOTES_5Y', provider: 'treasury', color: '#AF7AC5' },
-                    { symbol: 'NOTES_10Y', provider: 'treasury', color: '#48C9B0' },
-                    { symbol: 'BONDS_30Y', provider: 'treasury', color: '#EC7063' },
-                    { symbol: 'TIPS_10Y', provider: 'treasury', color: '#5DADE2' },
-                    { symbol: 'TIPS_30Y', provider: 'treasury', color: '#F5B041' },
-                    { symbol: 'AUCTION_TAIL_4W', provider: 'treasury', color: '#85C1E9' },
-                    { symbol: 'AUCTION_BTC_13W', provider: 'treasury', color: '#F8C471' },
-                    { symbol: 'AUCTION_TAIL_10Y', provider: 'treasury', color: '#82E0AA' }
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct', color: '#00AEEF' },
+                    { symbol: 'NOTES_2Y', provider: 'treasury_direct', color: '#FF4444' },
+                    { symbol: 'NOTES_10Y', provider: 'treasury_direct', color: '#F4D03F' },
+                    { symbol: 'BONDS_30Y', provider: 'treasury_direct', color: '#58D68D' }
                 ],
                 active: false
             },
             'LIQUIDITY INTELLIGENCE': {
                 symbols: [
-                    { symbol: 'OFR_FSI', provider: 'liquidity', color: '#FF4444' },
-                    { symbol: 'TREASURY_MONITOR', provider: 'liquidity', color: '#FF7043' },
-                    { symbol: 'NYFED_FAILS', provider: 'liquidity', color: '#EC7063' },
-                    { symbol: 'LIQUIDITY_DASHBOARD', provider: 'liquidity', color: '#F1948A' },
-                    { symbol: 'LIQUIDITY_STRESS_COMPOSITE', provider: 'liquidity', color: '#D7BDE2' },
-                    { symbol: 'FUNDING_PRESSURE_INDEX', provider: 'liquidity', color: '#85C1E9' }
+                    { symbol: 'OFR_FSI', provider: 'liquidity_intelligence', color: '#FF4444' },
+                    { symbol: 'TREASURY_MONITOR', provider: 'liquidity_intelligence', color: '#FF7043' },
+                    { symbol: 'NYFED_FAILS', provider: 'liquidity_intelligence', color: '#EC7063' },
+                    { symbol: 'LIQUIDITY_DASHBOARD', provider: 'liquidity_intelligence', color: '#F1948A' }
                 ],
                 active: false
             },
             'CRYPTO MARKETS': {
                 symbols: [
-                    { symbol: 'X:BTCUSD', provider: 'polygon', color: '#F7931A' },
-                    { symbol: 'X:ETHUSD', provider: 'polygon', color: '#627EEA' },
-                    { symbol: 'X:ADAUSD', provider: 'polygon', color: '#0033AD' },
-                    { symbol: 'X:DOTUSD', provider: 'polygon', color: '#E6007A' },
-                    { symbol: 'X:SOLUSD', provider: 'polygon', color: '#00FFA3' },
-                    { symbol: 'X:AVAXUSD', provider: 'polygon', color: '#E84142' },
-                    { symbol: 'X:MATICUSD', provider: 'polygon', color: '#8247E5' },
-                    { symbol: 'X:LINKUSD', provider: 'polygon', color: '#375BD2' }
+                    { symbol: 'X:BTCUSD', provider: 'polygon_direct', color: '#F7931A' },
+                    { symbol: 'X:ETHUSD', provider: 'polygon_direct', color: '#627EEA' },
+                    { symbol: 'X:ADAUSD', provider: 'polygon_direct', color: '#0033AD' }
                 ],
                 active: false
             },
             'FOREX & CURRENCIES': {
                 symbols: [
-                    { symbol: 'I:DXY', provider: 'polygon', color: '#00AEEF' },
-                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb', color: '#FF4444' },
-                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb', color: '#F4D03F' },
-                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb', color: '#58D68D' },
-                    { symbol: 'EXR.D.CHF.EUR.SP00.A', provider: 'ecb', color: '#FF7043' },
-                    { symbol: 'DEXUSAL', provider: 'fred', color: '#AF7AC5' },
-                    { symbol: 'DEXJPUS', provider: 'fred', color: '#48C9B0' },
-                    { symbol: 'DEXUSEU', provider: 'fred', color: '#EC7063' }
+                    { symbol: 'I:DXY', provider: 'polygon_direct', color: '#00AEEF' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct', color: '#FF4444' },
+                    { symbol: 'DEXUSAL', provider: 'fred_direct', color: '#F4D03F' }
                 ],
                 active: false
             },
             'COMMODITY INDICES': {
                 symbols: [
-                    { symbol: 'GLD', provider: 'polygon', color: '#FFD700' },
-                    { symbol: 'SLV', provider: 'polygon', color: '#C0C0C0' },
-                    { symbol: 'USO', provider: 'polygon', color: '#000000' },
-                    { symbol: 'UNG', provider: 'polygon', color: '#4169E1' },
-                    { symbol: 'DBA', provider: 'polygon', color: '#228B22' },
-                    { symbol: 'PDBC', provider: 'polygon', color: '#8B4513' },
-                    { symbol: 'I:CRB', provider: 'polygon', color: '#FF6347' }
+                    { symbol: 'GLD', provider: 'polygon_direct', color: '#FFD700' },
+                    { symbol: 'SLV', provider: 'polygon_direct', color: '#C0C0C0' },
+                    { symbol: 'USO', provider: 'polygon_direct', color: '#000000' }
                 ],
                 active: false
             }
         };
         
-        let currentWatchlist = 'MAIN';
+        let currentWatchlist = 'MAIN DASHBOARD';
         let watchlistData = {};
         let sortOrder = 'default';
         let columnSort = { column: null, direction: null };
@@ -1587,11 +1308,10 @@
         let retryCount = 0;
         let maxRetries = 3;
         
-        // ENHANCED RISK/LIQUIDITY DASHBOARD CONFIGURATION - RESTORED
         const riskCategories = {
             'market_risk': {
                 name: '🔴 Market Risk',
-                symbols: ['VIXCLS', 'T10YIE', 'NFCINONFINLEVERAGE', 'CC4WSA', 'WLCFLPCL', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX'],
+                symbols: ['VIXCLS', 'T10YIE', 'NFCINONFINLEVERAGE'],
                 color: '#ff4444',
                 thresholds: { warning: 60, critical: 80, extreme: 95 },
                 currentScore: 0,
@@ -1600,7 +1320,7 @@
             },
             'liquidity_stress': {
                 name: '💧 Liquidity Stress',
-                symbols: ['M2SL', 'TOTRESNS', 'WRESBAL', 'RMFSL', 'BOGMBASE', 'sofr', 'effr', 'REPO_OV_TOT_P75'],
+                symbols: ['M2SL', 'sofr', 'effr'],
                 color: '#00aaff',
                 thresholds: { warning: 65, critical: 85, extreme: 95 },
                 currentScore: 0,
@@ -1609,7 +1329,7 @@
             },
             'economic_stress': {
                 name: '📈 Economic Stress',
-                symbols: ['UNRATE', 'CPIAUCSL', 'PAYEMS', 'INDPRO', 'FEDFUNDS', 'DGS10', 'T10Y2Y'],
+                symbols: ['UNRATE', 'CPIAUCSL', 'FEDFUNDS', 'DGS10'],
                 color: '#ffaa00',
                 thresholds: { warning: 70, critical: 85, extreme: 95 },
                 currentScore: 0,
@@ -1618,7 +1338,7 @@
             },
             'global_stability': {
                 name: '🌍 Global Stability',
-                symbols: ['DTWEXBGS', 'EXR.D.USD.EUR.SP00.A', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX'],
+                symbols: ['DTWEXBGS', 'EXR.D.USD.EUR.SP00.A'],
                 color: '#aa00ff',
                 thresholds: { warning: 60, critical: 80, extreme: 90 },
                 currentScore: 0,
@@ -1630,358 +1350,33 @@
         let riskDashboardData = {};
         let riskDashboardActive = false;
         
-        // ENHANCED DATA PROCESSING FUNCTIONS - RESTORED
-        
-        // Specialized Treasury Data Processor
-        function processTreasurySpecialData(data, symbol) {
-            if (!data || !data.length) return data;
-            
-            // Handle auction tails - negative values indicate strong demand
-            if (symbol.includes('AUCTION_TAIL_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value,
-                    signal: point.value < -2 ? 'strong_demand' : point.value > 5 ? 'weak_demand' : 'normal',
-                    color: point.value < -2 ? '#00dd77' : point.value > 5 ? '#ff4444' : '#888888'
-                }));
-            }
-            
-            // Handle bid-to-cover ratios - higher is better demand
-            if (symbol.includes('AUCTION_BTC_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value,
-                    signal: point.value > 2.5 ? 'strong_demand' : point.value < 2.0 ? 'weak_demand' : 'normal',
-                    color: point.value > 2.5 ? '#00dd77' : point.value < 2.0 ? '#ff4444' : '#888888'
-                }));
-            }
-            
-            // Handle participation rates
-            if (symbol.includes('AUCTION_DIRECT_') || symbol.includes('AUCTION_INDIRECT_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value,
-                    participation_level: point.value > 15 ? 'high' : point.value < 5 ? 'low' : 'normal'
-                }));
-            }
-            
-            return data;
-        }
-        
-        // Specialized NY Fed Data Processor
-        function processNYFedSpecialData(data, symbol) {
-            if (!data || !data.length) return data;
-            
-            // Handle SOMA holdings
-            if (symbol.includes('soma_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value / 1000000, // Convert to trillions
-                    display_unit: 'Trillions USD'
-                }));
-            }
-            
-            // Handle H.4.1 balance sheet data
-            if (symbol.includes('h41_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value / 1000, // Convert to billions
-                    display_unit: 'Billions USD'
-                }));
-            }
-            
-            // Handle primary dealer data
-            if (symbol.includes('pd_')) {
-                return data.map(point => ({
-                    ...point,
-                    processed_value: point.value / 1000, // Convert to billions
-                    display_unit: 'Billions USD',
-                    volatility: calculateRollingVolatility(data, point.date, 30)
-                }));
-            }
-            
-            return data;
-        }
-        
-        // Advanced Technical Indicators - RESTORED
-        function calculateMACD(data, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
-            if (!data || data.length < slowPeriod) return [];
-            
-            const emaFast = calculateEMA(data, fastPeriod);
-            const emaSlow = calculateEMA(data, slowPeriod);
-            
-            const macdLine = emaFast.map((fast, i) => ({
-                date: data[i].date,
-                value: fast - emaSlow[i],
-                type: 'macd'
-            }));
-            
-            const signalLine = calculateEMA(macdLine, signalPeriod);
-            const histogram = macdLine.map((macd, i) => ({
-                date: macd.date,
-                value: macd.value - (signalLine[i] || 0),
-                type: 'histogram'
-            }));
-            
-            return {
-                macd: macdLine,
-                signal: signalLine.map((sig, i) => ({ date: data[i].date, value: sig, type: 'signal' })),
-                histogram: histogram
-            };
-        }
-        
-        function calculateEMA(data, period) {
-            if (!data || data.length < period) return [];
-            
-            const multiplier = 2 / (period + 1);
-            const ema = [];
-            
-            // Start with SMA for first value
-            let sum = 0;
-            for (let i = 0; i < period; i++) {
-                sum += (data[i].value || data[i]);
-            }
-            ema[period - 1] = sum / period;
-            
-            // Calculate EMA for remaining values
-            for (let i = period; i < data.length; i++) {
-                const currentValue = data[i].value || data[i];
-                ema[i] = (currentValue * multiplier) + (ema[i - 1] * (1 - multiplier));
-            }
-            
-            return ema;
-        }
-        
-        function calculateZScore(data, window = 30) {
-            if (!data || data.length < window) return data;
-            
-            return data.map((point, i) => {
-                const start = Math.max(0, i - window + 1);
-                const windowData = data.slice(start, i + 1);
-                const mean = windowData.reduce((sum, p) => sum + p.value, 0) / windowData.length;
-                const variance = windowData.reduce((sum, p) => sum + Math.pow(p.value - mean, 2), 0) / windowData.length;
-                const stdDev = Math.sqrt(variance);
-                
-                return {
-                    ...point,
-                    zscore: stdDev > 0 ? (point.value - mean) / stdDev : 0,
-                    mean: mean,
-                    stdDev: stdDev
-                };
-            });
-        }
-        
-        function calculateRollingVolatility(data, date, window = 30) {
-            if (!data || data.length < window) return 0;
-            
-            const dateIndex = data.findIndex(p => p.date === date);
-            if (dateIndex < window - 1) return 0;
-            
-            const windowData = data.slice(dateIndex - window + 1, dateIndex + 1);
-            const returns = [];
-            
-            for (let i = 1; i < windowData.length; i++) {
-                const prevValue = windowData[i - 1].value;
-                const currentValue = windowData[i].value;
-                if (prevValue > 0) {
-                    returns.push(Math.log(currentValue / prevValue));
-                }
-            }
-            
-            if (returns.length === 0) return 0;
-            
-            const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-            const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
-            
-            return Math.sqrt(variance * 252); // Annualized volatility
-        }
-        
-        function generateTradingSignals(data, symbol) {
-            if (!data || data.length < 50) return [];
-            
-            const signals = [];
-            const sma20 = calculateSMA(data, 20);
-            const sma50 = calculateSMA(data, 50);
-            const rsi = calculateRSI(data, 14);
-            
-            for (let i = 50; i < data.length; i++) {
-                let signal = 'hold';
-                let strength = 0;
-                let reasons = [];
-                
-                // Moving average crossover
-                if (sma20[i] > sma50[i] && sma20[i - 1] <= sma50[i - 1]) {
-                    signal = 'buy';
-                    strength += 0.3;
-                    reasons.push('SMA20 crossed above SMA50');
-                }
-                if (sma20[i] < sma50[i] && sma20[i - 1] >= sma50[i - 1]) {
-                    signal = 'sell';
-                    strength += 0.3;
-                    reasons.push('SMA20 crossed below SMA50');
-                }
-                
-                // RSI conditions
-                if (rsi[i] < 30) {
-                    signal = signal === 'sell' ? 'hold' : 'buy';
-                    strength += 0.2;
-                    reasons.push('RSI oversold');
-                }
-                if (rsi[i] > 70) {
-                    signal = signal === 'buy' ? 'hold' : 'sell';
-                    strength += 0.2;
-                    reasons.push('RSI overbought');
-                }
-                
-                signals.push({
-                    date: data[i].date,
-                    signal: signal,
-                    strength: Math.min(strength, 1),
-                    reasons: reasons,
-                    price: data[i].value
-                });
-            }
-            
-            return signals;
-        }
-        
-        function calculateSMA(data, period) {
-            const sma = [];
-            for (let i = period - 1; i < data.length; i++) {
-                const sum = data.slice(i - period + 1, i + 1).reduce((sum, p) => sum + p.value, 0);
-                sma[i] = sum / period;
-            }
-            return sma;
-        }
-        
-        function calculateRSI(data, period = 14) {
-            const rsi = [];
-            const gains = [];
-            const losses = [];
-            
-            // Calculate initial gains and losses
-            for (let i = 1; i < data.length; i++) {
-                const change = data[i].value - data[i - 1].value;
-                gains.push(change > 0 ? change : 0);
-                losses.push(change < 0 ? Math.abs(change) : 0);
-            }
-            
-            // Calculate RSI
-            for (let i = period - 1; i < gains.length; i++) {
-                const avgGain = gains.slice(i - period + 1, i + 1).reduce((sum, g) => sum + g, 0) / period;
-                const avgLoss = losses.slice(i - period + 1, i + 1).reduce((sum, l) => sum + l, 0) / period;
-                
-                const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-                rsi[i + 1] = 100 - (100 / (1 + rs));
-            }
-            
-            return rsi;
-        }
-        
-        // DATA TRANSFORMATION FUNCTIONS FOR CHART DISPLAY MODES - RESTORED ALL 9 MODES
-        function transformDataForDisplay(data, mode, symbol) {
-            if (!data || data.length === 0) return data;
-            
-            switch (mode) {
-                case 'raw':
-                    return data;
-                
-                case 'pct_change':
-                    const baseValue = data[0].value;
-                    return data.map(point => ({
-                        ...point,
-                        value: baseValue !== 0 ? ((point.value - baseValue) / baseValue * 100) : 0
-                    }));
-                
-                case 'unit_change':
-                    const baseUnit = data[0].value;
-                    return data.map(point => ({
-                        ...point,
-                        value: point.value - baseUnit
-                    }));
-                
-                case 'normalized':
-                    const values = data.map(p => p.value);
-                    const min = Math.min(...values);
-                    const max = Math.max(...values);
-                    const range = max - min;
-                    return data.map(point => ({
-                        ...point,
-                        value: range !== 0 ? (point.value - min) / range : 0
-                    }));
-                
-                case 'zscore':
-                    return calculateZScore(data);
-                
-                case 'macd':
-                    const macdData = calculateMACD(data);
-                    return macdData.macd || data;
-                
-                case 'slope':
-                    return data.map((point, i) => {
-                        if (i < 5) return { ...point, value: 0 };
-                        const prevPoints = data.slice(i - 5, i);
-                        const avgPrev = prevPoints.reduce((sum, p) => sum + p.value, 0) / prevPoints.length;
-                        return {
-                            ...point,
-                            value: point.value - avgPrev
-                        };
-                    });
-                
-                case 'signals':
-                    const signals = generateTradingSignals(data, symbol);
-                    return signals.map(signal => ({
-                        date: signal.date,
-                        value: signal.strength * (signal.signal === 'buy' ? 1 : signal.signal === 'sell' ? -1 : 0),
-                        signal: signal.signal,
-                        reasons: signal.reasons
-                    }));
-                
-                case 'volatility':
-                    return data.map((point, i) => ({
-                        ...point,
-                        value: calculateRollingVolatility(data, point.date, 30)
-                    }));
-                
-                default:
-                    return data;
-            }
-        }
-        
-        // Application State
-        let retryTimeout = null;
-        
-        // Initialize the application
         function init() {
-            console.log('🚀 Initializing OpenBB Financial Intelligence Platform - Full Production');
+            console.log('🚀 Initializing OpenBB Financial Intelligence Platform');
             
             updateClock();
             setInterval(updateClock, 1000);
             
-            // Initialize API connections
             checkAPIHealth();
-            
-            // Load initial data
             loadWatchlistData();
             
-            // Set up periodic updates
-            setInterval(loadWatchlistData, 60000); // Every minute
-            setInterval(loadLiquidityDashboard, 300000); // Every 5 minutes
-            setInterval(checkAPIHealth, 300000); // Every 5 minutes
+            setInterval(loadWatchlistData, 60000);
+            setInterval(loadLiquidityDashboard, 300000);
+            setInterval(checkAPIHealth, 300000);
             
             setupEventListeners();
             initializeRiskDashboard();
-            
-            // Initialize enhanced features
             initializeFlashingSystem();
-            setupAdvancedSorting();
             
-            console.log('✅ Full Platform initialized successfully with all features');
+            console.log('✅ Platform initialized successfully');
         }
         
-        // Enhanced flashing system for significant changes (15%+ threshold) - RESTORED
+        async function initializeRiskDashboard() {
+            console.log('🎯 Initializing Risk Dashboard...');
+            await loadRiskDashboardData();
+        }
+        
         function initializeFlashingSystem() {
-            const FLASH_THRESHOLD = 15; // 15% change threshold
+            const FLASH_THRESHOLD = 15;
             
             function checkForSignificantChanges() {
                 Object.keys(watchlistData).forEach(symbol => {
@@ -1990,20 +1385,16 @@
                     
                     const dayChange = Math.abs(data.changes['1d'] || 0);
                     const weekChange = Math.abs(data.changes['7d'] || 0);
-                    const monthChange = Math.abs(data.changes['30d'] || 0);
                     
                     const row = document.querySelector(`[data-symbol="${symbol}"]`);
                     if (!row) return;
                     
-                    // Clear existing flash classes
                     row.classList.remove('flash-green', 'flash-red');
                     
-                    // Apply flashing for significant changes
-                    if (dayChange >= FLASH_THRESHOLD || weekChange >= FLASH_THRESHOLD || monthChange >= FLASH_THRESHOLD) {
-                        const isPositive = (data.changes['1d'] || 0) > 0 || (data.changes['7d'] || 0) > 0 || (data.changes['30d'] || 0) > 0;
+                    if (dayChange >= FLASH_THRESHOLD || weekChange >= FLASH_THRESHOLD) {
+                        const isPositive = (data.changes['1d'] || 0) > 0 || (data.changes['7d'] || 0) > 0;
                         row.classList.add(isPositive ? 'flash-green' : 'flash-red');
                         
-                        // Auto-remove after 10 seconds
                         if (flashTimers[symbol]) {
                             clearTimeout(flashTimers[symbol]);
                         }
@@ -2015,17 +1406,9 @@
                 });
             }
             
-            // Check for significant changes every minute
             setInterval(checkForSignificantChanges, 60000);
         }
         
-        // Enhanced sorting functionality - RESTORED
-        function setupAdvancedSorting() {
-            // Column sorting functionality is already in setupEventListeners
-            // Additional advanced sorting methods can be added here
-        }
-        
-        // API HEALTH CHECKING - ENHANCED
         async function checkAPIHealth() {
             try {
                 const response = await fetch(`${API_BASE}${API_ENDPOINTS.health}`, {
@@ -2040,10 +1423,6 @@
                     const health = await response.json();
                     updateAPIStatus(true, health);
                     retryCount = 0;
-                    if (retryTimeout) {
-                        clearTimeout(retryTimeout);
-                        retryTimeout = null;
-                    }
                 } else {
                     throw new Error(`Health check failed: ${response.status}`);
                 }
@@ -2051,11 +1430,10 @@
                 console.error('❌ API Health Check Failed:', error);
                 updateAPIStatus(false);
                 
-                // Enhanced retry logic with exponential backoff
                 if (retryCount < maxRetries) {
                     retryCount++;
-                    const delay = Math.min(5000 * Math.pow(2, retryCount - 1), 30000); // Max 30 seconds
-                    retryTimeout = setTimeout(checkAPIHealth, delay);
+                    const delay = Math.min(5000 * Math.pow(2, retryCount - 1), 30000);
+                    setTimeout(checkAPIHealth, delay);
                 }
             }
         }
@@ -2074,7 +1452,6 @@
                 statusDot.classList.add('connected');
                 connectionStatus.classList.remove('offline');
                 
-                // Update individual source indicators
                 Object.keys(DATA_SOURCES).forEach(source => {
                     const indicator = document.getElementById(`${source}-indicator`);
                     if (indicator) {
@@ -2086,7 +1463,6 @@
                 statusDot.classList.remove('connected');
                 connectionStatus.classList.add('offline');
                 
-                // Update individual source indicators
                 Object.keys(DATA_SOURCES).forEach(source => {
                     const indicator = document.getElementById(`${source}-indicator`);
                     if (indicator) {
@@ -2096,14 +1472,13 @@
             }
         }
         
-        // REAL DATA LOADING FUNCTIONS - ENHANCED
         async function loadWatchlistData() {
             if (!isOnline) {
                 console.log('📵 Offline - skipping data load');
                 return;
             }
             
-            console.log('📊 Loading live watchlist data with all features...');
+            console.log('📊 Loading live watchlist data...');
             
             const watchlist = watchlists[currentWatchlist];
             if (!watchlist || !watchlist.symbols.length) {
@@ -2112,7 +1487,6 @@
             }
             
             try {
-                // Load data for each symbol in the watchlist
                 const dataPromises = watchlist.symbols.map(async ({ symbol, provider }) => {
                     try {
                         const data = await fetchSymbolData(symbol, provider);
@@ -2125,7 +1499,6 @@
                 
                 const results = await Promise.all(dataPromises);
                 
-                // Update watchlist data
                 watchlistData = {};
                 results.forEach(({ symbol, data }) => {
                     if (data) {
@@ -2134,7 +1507,7 @@
                 });
                 
                 displayWatchlist();
-                console.log(`✅ Loaded data for ${Object.keys(watchlistData).length} symbols with full features`);
+                console.log(`✅ Loaded data for ${Object.keys(watchlistData).length} symbols`);
                 
             } catch (error) {
                 console.error('❌ Error loading watchlist data:', error);
@@ -2143,7 +1516,7 @@
         }
         
         async function fetchSymbolData(symbol, provider) {
-            const dataSource = DATA_SOURCES[provider];
+            const dataSource = DATA_SOURCES[provider.replace('_direct', '').replace('_intelligence', '')];
             if (!dataSource) {
                 throw new Error(`Unknown data provider: ${provider}`);
             }
@@ -2151,41 +1524,46 @@
             let url;
             let params = new URLSearchParams();
             
-            // Use real API endpoints based on provider
             switch (provider) {
-                case 'fred':
+                case 'fred_direct':
                     url = `${API_BASE}${API_ENDPOINTS.fred_data}`;
                     params.append('series_id', symbol);
                     params.append('limit', '365');
                     break;
                     
-                case 'ofr':
+                case 'ofr_direct':
                     url = `${API_BASE}${API_ENDPOINTS.ofr_fsi}`;
                     if (symbol !== 'FSI') {
                         params.append('metric', symbol);
                     }
                     break;
                     
-                case 'treasury':
+                case 'treasury_direct':
                     url = `${API_BASE}${API_ENDPOINTS.treasury_monitor}`;
                     params.append('metric', symbol);
                     break;
                     
-                case 'ny_fed':
+                case 'ny_fed_direct':
                     url = `${API_BASE}${API_ENDPOINTS.nyfed_fails}`;
                     params.append('metric', symbol);
                     break;
                     
-                case 'liquidity':
+                case 'liquidity_intelligence':
                     url = `${API_BASE}${API_ENDPOINTS.liquidity_dashboard}`;
                     params.append('metric', symbol);
                     break;
                     
-                case 'ecb':
-                case 'polygon':
-                    // These endpoints return 404, so use mock data instead
-                    console.log(`⚠️ ${provider} endpoint not available, generating realistic demo data for ${symbol}`);
-                    return generateMockSymbolData(symbol, provider);
+                case 'ecb_direct':
+                    url = `${API_BASE}${API_ENDPOINTS.universal_data}`;
+                    params.append('provider', 'ecb');
+                    params.append('symbol', symbol);
+                    break;
+                    
+                case 'polygon_direct':
+                    url = `${API_BASE}${API_ENDPOINTS.universal_data}`;
+                    params.append('provider', 'polygon');
+                    params.append('symbol', symbol);
+                    break;
                     
                 default:
                     throw new Error(`Unsupported provider: ${provider}`);
@@ -2194,96 +1572,23 @@
             const fullUrl = `${url}?${params.toString()}`;
             console.log(`🔄 Fetching: ${fullUrl}`);
             
-            try {
-                const response = await fetch(fullUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        console.log(`⚠️ Endpoint not available (404): ${fullUrl}, using demo data for ${symbol}`);
-                        return generateMockSymbolData(symbol, provider);
-                    }
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
-                
-                const data = await response.json();
-                return processSymbolData(symbol, provider, data);
-            } catch (error) {
-                console.log(`⚠️ API call failed for ${symbol}, using demo data:`, error.message);
-                return generateMockSymbolData(symbol, provider);
-            }
-        }
-        
-        function generateMockSymbolData(symbol, provider) {
-            // Generate realistic mock data based on symbol and provider
-            const baseValue = getBaseValueForSymbol(symbol);
-            const volatility = getVolatilityForSymbol(symbol);
-            
-            // Generate realistic time series data
-            const observations = [];
-            const now = new Date();
-            let currentValue = baseValue;
-            
-            for (let i = 365; i >= 0; i--) {
-                const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
-                const change = (Math.random() - 0.5) * volatility * currentValue * 0.02;
-                currentValue = Math.max(currentValue + change, 0.01);
-                
-                observations.push({
-                    date: date.toISOString().split('T')[0],
-                    value: currentValue.toFixed(4),
-                    realtime_start: date.toISOString().split('T')[0],
-                    realtime_end: date.toISOString().split('T')[0]
-                });
-            }
-            
-            return processSymbolData(symbol, provider, {
-                observations: observations,
-                mock_data: true
             });
-        }
-        
-        function getBaseValueForSymbol(symbol) {
-            // Return realistic base values for different symbols
-            const symbolValues = {
-                'AAPL': 180,
-                'MSFT': 350,
-                'GOOGL': 140,
-                'TSLA': 250,
-                'SPY': 450,
-                'QQQ': 380,
-                'FEDFUNDS': 5.25,
-                'UNRATE': 3.8,
-                'DGS10': 4.2,
-                'DGS2': 4.8,
-                'VIXCLS': 18,
-                'sofr': 5.3,
-                'effr': 5.25,
-                'X:BTCUSD': 42000,
-                'X:ETHUSD': 2500,
-                'I:SPX': 4800,
-                'I:DXY': 104.5
-            };
             
-            return symbolValues[symbol] || 100;
-        }
-        
-        function getVolatilityForSymbol(symbol) {
-            // Return realistic volatility for different symbols
-            if (symbol.startsWith('X:')) return 3; // Crypto - high volatility
-            if (symbol.includes('RATE') || symbol.includes('FUNDS') || symbol.includes('DGS')) return 0.1; // Rates - low volatility
-            if (symbol === 'VIXCLS') return 2; // VIX - high volatility
-            if (symbol.length <= 5 && !symbol.includes('.')) return 1; // Stocks - medium volatility
-            return 0.5; // Default - moderate volatility
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            return processSymbolData(symbol, provider, data);
         }
         
         function processSymbolData(symbol, provider, rawData) {
-            // Process raw API data into standardized format with enhanced features
             let processedData = {
                 symbol: symbol,
                 provider: provider,
@@ -2299,21 +1604,16 @@
                     yearly: null
                 },
                 zscore: null,
-                volatility: null,
-                trend: null,
                 last_updated: new Date().toISOString(),
                 raw_data: rawData
             };
             
             try {
-                // Extract data based on API response structure
                 if (rawData.observations && Array.isArray(rawData.observations)) {
-                    // FRED-style data
                     const obs = rawData.observations;
                     if (obs.length > 0) {
                         processedData.current_value = parseFloat(obs[obs.length - 1].value);
                         
-                        // Calculate percentage changes for all periods
                         if (obs.length > 1) {
                             const current = parseFloat(obs[obs.length - 1].value);
                             const prev1d = obs.length > 1 ? parseFloat(obs[obs.length - 2].value) : current;
@@ -2329,37 +1629,16 @@
                             processedData.unit_changes.daily = current - prev1d;
                             processedData.unit_changes.yearly = current - prev1y;
                         }
-                        
-                        // Apply specialized processing
-                        if (provider === 'treasury') {
-                            const processed = processTreasurySpecialData(obs, symbol);
-                            if (processed !== obs) {
-                                processedData.special_processing = processed[processed.length - 1];
-                            }
-                        } else if (provider === 'ny_fed') {
-                            const processed = processNYFedSpecialData(obs, symbol);
-                            if (processed !== obs) {
-                                processedData.special_processing = processed[processed.length - 1];
-                            }
-                        }
-                        
-                        // Add demo data indicator if this is mock data
-                        if (rawData.mock_data) {
-                            processedData.is_demo_data = true;
-                        }
                     }
                 } else if (rawData.current_value !== undefined) {
-                    // Direct value format
                     processedData.current_value = rawData.current_value;
                     processedData.changes = rawData.changes || processedData.changes;
                     processedData.unit_changes = rawData.unit_changes || processedData.unit_changes;
                     processedData.zscore = rawData.zscore;
                 } else if (typeof rawData === 'number') {
-                    // Simple numeric value
                     processedData.current_value = rawData;
                 }
                 
-                // Calculate Z-score if we have enough data
                 if (rawData.observations && rawData.observations.length > 30) {
                     const values = rawData.observations.slice(-90).map(obs => parseFloat(obs.value)).filter(v => !isNaN(v));
                     if (values.length > 0) {
@@ -2367,14 +1646,6 @@
                         const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
                         const stdDev = Math.sqrt(variance);
                         processedData.zscore = stdDev > 0 ? (processedData.current_value - mean) / stdDev : 0;
-                        
-                        // Calculate volatility
-                        processedData.volatility = stdDev;
-                        
-                        // Determine trend
-                        const recentValues = values.slice(-10);
-                        const slope = (recentValues[recentValues.length - 1] - recentValues[0]) / recentValues.length;
-                        processedData.trend = slope > 0 ? 'up' : slope < 0 ? 'down' : 'flat';
                     }
                 }
                 
@@ -2385,7 +1656,6 @@
             return processedData;
         }
         
-        // ENHANCED SEARCH FUNCTIONALITY
         async function performSearch(query) {
             if (!query || query.length < 1) {
                 document.getElementById('searchResults').style.display = 'none';
@@ -2394,14 +1664,12 @@
             
             const searchResults = document.getElementById('searchResults');
             searchResults.style.display = 'block';
-            searchResults.innerHTML = '<div class="search-loading">🔍 Searching comprehensive financial database...</div>';
+            searchResults.innerHTML = '<div class="search-loading">🔍 Searching financial database...</div>';
             
-            // Clear existing timeout
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
             }
             
-            // Debounce search
             searchTimeout = setTimeout(async () => {
                 try {
                     const results = await searchAllSources(query);
@@ -2419,7 +1687,6 @@
             }
             
             try {
-                // Use universal search endpoint
                 const response = await fetch(`${API_BASE}${API_ENDPOINTS.universal_search}?query=${encodeURIComponent(query)}`, {
                     method: 'GET',
                     headers: {
@@ -2441,7 +1708,6 @@
         }
         
         function getOfflineSearchResults(query) {
-            // Enhanced fallback search using comprehensive local symbol lists
             const results = [];
             const queryLower = query.toLowerCase();
             
@@ -2452,7 +1718,6 @@
                     source.searchSymbols.forEach(symbol => {
                         const symbolLower = symbol.toLowerCase();
                         
-                        // Enhanced matching logic
                         if (symbolLower.includes(queryLower) || queryLower.includes(symbolLower)) {
                             const symbolInfo = getSymbolInfo(symbol, sourceKey);
                             if (symbolInfo && activeTickerTypes.includes(symbolInfo.type)) {
@@ -2472,49 +1737,30 @@
                 }
             });
             
-            // Sort by relevance and limit results
             return results.sort((a, b) => b.relevance - a.relevance).slice(0, 50);
         }
         
         function getSymbolInfo(symbol, sourceKey) {
-            // Enhanced symbol information with comprehensive categorization
             const symbolMappings = {
-                // Polygon symbols
-                'AAPL': { name: 'Apple Inc.', description: 'Technology company - iPhone, Mac, iPad', type: 'CS' },
-                'MSFT': { name: 'Microsoft Corporation', description: 'Technology company - Software, Cloud, AI', type: 'CS' },
-                'GOOGL': { name: 'Alphabet Inc.', description: 'Technology company - Search, Cloud, AI', type: 'CS' },
-                'TSLA': { name: 'Tesla Inc.', description: 'Electric vehicles and clean energy', type: 'CS' },
+                'AAPL': { name: 'Apple Inc.', description: 'Technology company', type: 'CS' },
+                'MSFT': { name: 'Microsoft Corporation', description: 'Technology company', type: 'CS' },
+                'GOOGL': { name: 'Alphabet Inc.', description: 'Technology company', type: 'CS' },
+                'TSLA': { name: 'Tesla Inc.', description: 'Electric vehicles', type: 'CS' },
                 'SPY': { name: 'SPDR S&P 500 ETF', description: 'Tracks S&P 500 index', type: 'ETF' },
                 'QQQ': { name: 'Invesco QQQ Trust', description: 'Tracks NASDAQ-100 index', type: 'ETF' },
                 'X:BTCUSD': { name: 'Bitcoin', description: 'Leading cryptocurrency', type: 'CRYPTO' },
-                'X:ETHUSD': { name: 'Ethereum', description: 'Smart contract blockchain platform', type: 'CRYPTO' },
+                'X:ETHUSD': { name: 'Ethereum', description: 'Smart contract platform', type: 'CRYPTO' },
                 'I:SPX': { name: 'S&P 500 Index', description: 'Large-cap US equity index', type: 'INDEX' },
                 'I:VIX': { name: 'VIX Volatility Index', description: 'Market fear gauge', type: 'INDEX' },
-                'AMT': { name: 'American Tower Corporation', description: 'Cell tower REIT', type: 'REIT' },
-                'BABA': { name: 'Alibaba Group', description: 'Chinese e-commerce giant', type: 'ADR' },
-                
-                // FRED symbols
-                'FEDFUNDS': { name: 'Federal Funds Rate', description: 'Fed\'s benchmark interest rate', type: 'FRED' },
+                'FEDFUNDS': { name: 'Federal Funds Rate', description: 'Fed benchmark rate', type: 'FRED' },
                 'UNRATE': { name: 'Unemployment Rate', description: 'US unemployment percentage', type: 'FRED' },
                 'GDP': { name: 'Gross Domestic Product', description: 'US economic output', type: 'FRED' },
                 'CPIAUCSL': { name: 'Consumer Price Index', description: 'Inflation measure', type: 'FRED' },
-                'DGS10': { name: '10-Year Treasury Rate', description: '10-year government bond yield', type: 'BOND' },
+                'DGS10': { name: '10-Year Treasury Rate', description: '10-year bond yield', type: 'BOND' },
                 'VIXCLS': { name: 'VIX Volatility', description: 'Stock market volatility', type: 'FRED' },
-                'DTWEXBGS': { name: 'Dollar Index (Broad)', description: 'Trade-weighted dollar index', type: 'FRED' },
-                
-                // NY Fed symbols
                 'sofr': { name: 'SOFR Rate', description: 'Secured Overnight Financing Rate', type: 'FRED' },
                 'effr': { name: 'Effective Fed Funds Rate', description: 'Market-based fed funds rate', type: 'FRED' },
-                'obfr': { name: 'Overnight Bank Funding Rate', description: 'Bank overnight funding cost', type: 'FRED' },
-                
-                // ECB symbols
-                'EXR.D.USD.EUR.SP00.A': { name: 'EUR/USD Exchange Rate', description: 'Euro to Dollar exchange rate', type: 'OTHER' },
-                'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX': { name: 'CISS Euro Area', description: 'Composite systemic stress indicator', type: 'OTHER' },
-                
-                // Treasury symbols
-                'BILLS_4W': { name: '4-Week Treasury Bills', description: 'Short-term government debt', type: 'BOND' },
-                'NOTES_10Y': { name: '10-Year Treasury Notes', description: 'Medium-term government debt', type: 'BOND' },
-                'AUCTION_TAIL_10Y': { name: '10Y Auction Tail', description: 'Demand indicator for 10Y notes', type: 'OTHER' }
+                'EXR.D.USD.EUR.SP00.A': { name: 'EUR/USD Exchange Rate', description: 'Euro to Dollar rate', type: 'OTHER' }
             };
             
             const info = symbolMappings[symbol];
@@ -2522,12 +1768,11 @@
                 return info;
             }
             
-            // Generate info for unmapped symbols based on patterns
             if (symbol.startsWith('X:')) {
                 const cryptoName = symbol.replace('X:', '').replace('USD', '');
                 return {
                     name: `${cryptoName} Price`,
-                    description: `${cryptoName} cryptocurrency price in USD`,
+                    description: `${cryptoName} cryptocurrency`,
                     type: 'CRYPTO'
                 };
             }
@@ -2541,16 +1786,7 @@
                 };
             }
             
-            if (symbol.includes('AUCTION_')) {
-                return {
-                    name: `Treasury Auction Metric`,
-                    description: `Treasury auction performance indicator`,
-                    type: 'BOND'
-                };
-            }
-            
-            // Enhanced FRED categorization
-            if (sourceKey === 'fred_direct') {
+            if (sourceKey === 'fred') {
                 return {
                     name: symbol,
                     description: `FRED economic data series`,
@@ -2558,7 +1794,6 @@
                 };
             }
             
-            // Default fallback
             return {
                 name: symbol,
                 description: `${sourceKey} data series`,
@@ -2570,16 +1805,9 @@
             let score = 0;
             const symbolLower = symbol.toLowerCase();
             
-            // Exact match gets highest score
             if (symbolLower === query) score += 100;
-            
-            // Starts with query gets high score
             else if (symbolLower.startsWith(query)) score += 50;
-            
-            // Contains query gets medium score
             else if (symbolLower.includes(query)) score += 25;
-            
-            // Partial matches get lower scores
             else {
                 const queryChars = query.split('');
                 let matches = 0;
@@ -2617,7 +1845,6 @@
             searchResults.innerHTML = html;
         }
         
-        // Toggle functions for filters
         function toggleTickerType(type) {
             const btn = document.querySelector(`[data-type="${type}"]`);
             const isActive = activeTickerTypes.includes(type);
@@ -2630,7 +1857,6 @@
                 btn.classList.add('active');
             }
             
-            // Refresh search if there's a query
             const searchQuery = document.getElementById('searchBox').value.trim();
             if (searchQuery) {
                 performSearch(searchQuery);
@@ -2649,19 +1875,16 @@
                 btn.classList.add('active');
             }
             
-            // Refresh search if there's a query
             const searchQuery = document.getElementById('searchBox').value.trim();
             if (searchQuery) {
                 performSearch(searchQuery);
             }
         }
         
-        // Enhanced watchlist management
         async function addToWatchlist(symbol, provider) {
             const currentList = watchlists[currentWatchlist];
             if (!currentList) return;
             
-            // Check if already exists
             const exists = currentList.symbols.find(s => s.symbol === symbol && s.provider === provider);
             if (exists) {
                 showMessage(`${symbol} already in ${currentWatchlist} watchlist`, 'info');
@@ -2669,7 +1892,6 @@
                 return;
             }
             
-            // Add to watchlist with color
             const colorIndex = currentList.symbols.length % colorPalette.length;
             currentList.symbols.push({
                 symbol: symbol,
@@ -2681,7 +1903,6 @@
             document.getElementById('searchResults').style.display = 'none';
             document.getElementById('searchBox').value = '';
             
-            // Refresh watchlist display
             await loadWatchlistData();
         }
         
@@ -2697,7 +1918,6 @@
             const watchlist = watchlists[currentWatchlist];
             let sortedSymbols = [...watchlist.symbols];
             
-            // Apply sorting
             if (sortOrder !== 'default') {
                 sortedSymbols = applySorting(sortedSymbols);
             }
@@ -2728,7 +1948,6 @@
                             <div class="symbol-info">
                                 <div class="symbol-name">
                                     ${symbol}
-                                    ${data.is_demo_data ? '<span style="font-size:10px;color:#888;margin-left:5px;">(DEMO)</span>' : ''}
                                     <span class="edit-icon">✏️</span>
                                 </div>
                                 <div class="symbol-fullname">${getSymbolDisplayName(symbol)}</div>
@@ -2750,13 +1969,10 @@
             }).join('');
             
             tbody.innerHTML = rows || '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #666;">No instruments in this watchlist</td></tr>';
-            
-            // Check for significant changes and apply flashing
-            checkForSignificantChanges();
         }
         
         function getFlashClass(data) {
-            const FLASH_THRESHOLD = 15; // 15% change threshold
+            const FLASH_THRESHOLD = 15;
             
             if (!data || !data.changes) return '';
             
@@ -2769,39 +1985,6 @@
             }
             
             return '';
-        }
-        
-        function checkForSignificantChanges() {
-            const FLASH_THRESHOLD = 15; // 15% change threshold
-            
-            Object.keys(watchlistData).forEach(symbol => {
-                const data = watchlistData[symbol];
-                if (!data || !data.changes) return;
-                
-                const dayChange = Math.abs(data.changes['1d'] || 0);
-                const weekChange = Math.abs(data.changes['7d'] || 0);
-                
-                const row = document.querySelector(`[data-symbol="${symbol}"]`);
-                if (!row) return;
-                
-                // Clear existing flash classes
-                row.classList.remove('flash-green', 'flash-red');
-                
-                // Apply flashing for significant changes
-                if (dayChange >= FLASH_THRESHOLD || weekChange >= FLASH_THRESHOLD) {
-                    const isPositive = (data.changes['1d'] || 0) > 0 || (data.changes['7d'] || 0) > 0;
-                    row.classList.add(isPositive ? 'flash-green' : 'flash-red');
-                    
-                    // Auto-remove after 10 seconds
-                    if (flashTimers[symbol]) {
-                        clearTimeout(flashTimers[symbol]);
-                    }
-                    flashTimers[symbol] = setTimeout(() => {
-                        row.classList.remove('flash-green', 'flash-red');
-                        delete flashTimers[symbol];
-                    }, 10000);
-                }
-            });
         }
         
         function applySorting(symbols) {
@@ -2827,12 +2010,10 @@
             const indicator = document.getElementById(`sort-${column}`);
             const currentDirection = columnSort.column === column ? columnSort.direction : null;
             
-            // Clear all indicators
             document.querySelectorAll('.sort-indicator').forEach(ind => {
                 ind.className = 'sort-indicator';
             });
             
-            // Set new sort
             if (currentDirection === 'asc') {
                 columnSort = { column, direction: 'desc' };
                 indicator.className = 'sort-indicator desc';
@@ -2841,7 +2022,6 @@
                 indicator.className = 'sort-indicator asc';
             }
             
-            // Apply column sorting
             const watchlist = watchlists[currentWatchlist];
             const sortedSymbols = [...watchlist.symbols].sort((a, b) => {
                 const aData = watchlistData[a.symbol];
@@ -2855,7 +2035,6 @@
                 return columnSort.direction === 'asc' ? aValue - bValue : bValue - aValue;
             });
             
-            // Update display with sorted data
             displaySortedWatchlist(sortedSymbols);
         }
         
@@ -2899,7 +2078,6 @@
         }
         
         function changeSortOrder(order) {
-            // Update active button
             document.querySelectorAll('.sort-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`sort${order.charAt(0).toUpperCase() + order.slice(1)}`).classList.add('active');
             
@@ -2916,7 +2094,7 @@
                             <div style="font-size: 18px; margin-bottom: 10px;">📊</div>
                             <div>No instruments in ${currentWatchlist} watchlist</div>
                             <div style="font-size: 12px; margin-top: 8px; color: #888;">
-                                Use the search above to add live financial data from all sources
+                                Use the search above to add live financial data
                             </div>
                         </td>
                     </tr>
@@ -2924,19 +2102,12 @@
             }
         }
         
-        // ENHANCED RISK DASHBOARD FUNCTIONALITY - FULLY RESTORED
-        async function initializeRiskDashboard() {
-            console.log('🎯 Initializing Enhanced Risk Dashboard...');
-            await loadRiskDashboardData();
-        }
-        
         async function loadRiskDashboardData() {
             if (!isOnline) return;
             
             try {
-                console.log('📊 Loading comprehensive risk dashboard data...');
+                console.log('📊 Loading risk dashboard data...');
                 
-                // Load liquidity dashboard data - only call working endpoints
                 try {
                     const liquidityResponse = await fetch(`${API_BASE}${API_ENDPOINTS.liquidity_dashboard}`, {
                         method: 'GET',
@@ -2951,95 +2122,14 @@
                         processLiquidityData(liquidityData);
                     }
                 } catch (error) {
-                    console.log('⚠️ Liquidity dashboard endpoint not available, using mock data');
-                    // Use mock data for demonstration
+                    console.log('⚠️ Using mock data for risk dashboard');
                     processLiquidityData({ composite_score: Math.random() * 100, ofr_fsi: Math.random() });
                 }
                 
-                // Try black swan detection - if 404, use mock data
-                try {
-                    const blackSwanResponse = await fetch(`${API_BASE}${API_ENDPOINTS.black_swan_detect}`, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (blackSwanResponse.ok) {
-                        const blackSwanData = await blackSwanResponse.json();
-                        processBlackSwanData(blackSwanData);
-                        displayBlackSwanAlerts(blackSwanData);
-                    }
-                } catch (error) {
-                    console.log('⚠️ Black swan endpoint not available, using mock data');
-                    const mockBlackSwanData = {
-                        risk_score: Math.random() * 100,
-                        events: [
-                            {
-                                symbol: 'VIXCLS',
-                                description: 'Volatility spike detected',
-                                timestamp: new Date().toISOString(),
-                                zscore: 3.2,
-                                severity: 'HIGH'
-                            }
-                        ]
-                    };
-                    processBlackSwanData(mockBlackSwanData);
-                    displayBlackSwanAlerts(mockBlackSwanData);
-                }
-                
-                // Try macro signals - if 404, use mock data
-                try {
-                    const macroResponse = await fetch(`${API_BASE}${API_ENDPOINTS.macro_signals_enhanced}`, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (macroResponse.ok) {
-                        const macroData = await macroResponse.json();
-                        processMacroSignals(macroData);
-                    }
-                } catch (error) {
-                    console.log('⚠️ Macro signals endpoint not available, using mock data');
-                    processMacroSignals({ economic_stress: Math.random() * 100 });
-                }
-                
-                // Try live events - if 404, use mock data
-                try {
-                    await loadLiveEvents();
-                } catch (error) {
-                    console.log('⚠️ Live events endpoint not available, using mock data');
-                    displayLiveEvents({
-                        events: [
-                            {
-                                type: 'peak',
-                                symbol: 'FEDFUNDS',
-                                description: 'Interest rate peak detected',
-                                timestamp: new Date().toISOString(),
-                                value: 5.25,
-                                zscore: 2.1
-                            },
-                            {
-                                type: 'volatility_spike',
-                                symbol: 'VIXCLS',
-                                description: 'Market volatility increased',
-                                timestamp: new Date(Date.now() - 3600000).toISOString(),
-                                value: 28.5,
-                                zscore: 1.8
-                            }
-                        ]
-                    });
-                }
-                
-                // Update dashboard display
                 updateRiskDashboardDisplay();
                 updateLiquidityAlert();
                 
-                console.log('✅ Enhanced risk dashboard data loaded successfully');
+                console.log('✅ Risk dashboard data loaded');
                 
             } catch (error) {
                 console.error('❌ Error loading risk dashboard:', error);
@@ -3047,50 +2137,15 @@
         }
         
         function processLiquidityData(data) {
-            // Process OFR FSI and liquidity stress data
             if (data.composite_score !== undefined) {
                 riskCategories.liquidity_stress.currentScore = data.composite_score;
                 riskCategories.liquidity_stress.alertLevel = getAlertLevel(data.composite_score);
             }
             
             if (data.ofr_fsi !== undefined) {
-                riskCategories.market_risk.currentScore = data.ofr_fsi * 100; // Convert to 0-100 scale
+                riskCategories.market_risk.currentScore = data.ofr_fsi * 100;
                 riskCategories.market_risk.alertLevel = getAlertLevel(data.ofr_fsi * 100);
             }
-        }
-        
-        function processBlackSwanData(data) {
-            // Process black swan indicators
-            if (data.risk_score !== undefined) {
-                riskCategories.global_stability.currentScore = data.risk_score;
-                riskCategories.global_stability.alertLevel = getAlertLevel(data.risk_score);
-            }
-        }
-        
-        function processMacroSignals(data) {
-            // Process macro economic signals
-            if (data.economic_stress !== undefined) {
-                riskCategories.economic_stress.currentScore = data.economic_stress;
-                riskCategories.economic_stress.alertLevel = getAlertLevel(data.economic_stress);
-            }
-        }
-        
-        function displayBlackSwanAlerts(data) {
-            const blackSwanContainer = document.getElementById('blackSwanAlerts');
-            if (!blackSwanContainer || !data || !data.events) return;
-            
-            const alertsHtml = data.events.slice(0, 5).map(event => `
-                <div style="padding: 10px; margin-bottom: 8px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid #8b0000;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: bold; color: #ff4444;">BLACK SWAN ALERT</div>
-                        <div style="font-size: 11px; color: #888;">${formatEventTime(event.timestamp)}</div>
-                    </div>
-                    <div style="margin-top: 5px; color: #ddd;">${event.symbol}: ${event.description}</div>
-                    <div style="margin-top: 3px; font-size: 12px; color: #aaa;">Z-Score: ${event.zscore?.toFixed(2) || 'N/A'} | Severity: ${event.severity || 'HIGH'}</div>
-                </div>
-            `).join('');
-            
-            blackSwanContainer.innerHTML = alertsHtml || '<div style="color: #888; text-align: center; padding: 20px;">No extreme events detected</div>';
         }
         
         function getAlertLevel(score) {
@@ -3098,73 +2153,6 @@
             if (score >= 80) return 'high';
             if (score >= 60) return 'moderate';
             return 'low';
-        }
-        
-        async function loadLiveEvents() {
-            try {
-                const response = await fetch(`${API_BASE}${API_ENDPOINTS.liquidity_events}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const events = await response.json();
-                    displayLiveEvents(events);
-                }
-            } catch (error) {
-                console.error('Error loading live events:', error);
-            }
-        }
-        
-        function displayLiveEvents(events) {
-            const eventsContainer = document.getElementById('liveEvents');
-            if (!eventsContainer || !events || !events.events) return;
-            
-            const eventsHtml = events.events.slice(0, 10).map(event => `
-                <div style="padding: 10px; margin-bottom: 8px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid ${getEventColor(event.type)};">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: bold; color: ${getEventColor(event.type)};">${event.type.toUpperCase()}</div>
-                        <div style="font-size: 11px; color: #888;">${formatEventTime(event.timestamp)}</div>
-                    </div>
-                    <div style="margin-top: 5px; color: #ddd;">${event.symbol}: ${event.description}</div>
-                    <div style="margin-top: 3px; font-size: 12px; color: #aaa;">Value: ${event.value?.toFixed(4) || 'N/A'} | Z-Score: ${event.zscore?.toFixed(2) || 'N/A'}</div>
-                </div>
-            `).join('');
-            
-            eventsContainer.innerHTML = eventsHtml || '<div style="color: #888; text-align: center; padding: 20px;">No recent events</div>';
-        }
-        
-        function getEventColor(type) {
-            const colors = {
-                'peak': '#00dd77',
-                'bottom': '#ff4444',
-                'reversal': '#ffaa00',
-                'black_swan': '#8b0000',
-                'volatility_spike': '#ff7043',
-                'liquidity_stress': '#00aaff',
-                'funding_pressure': '#af7ac5'
-            };
-            return colors[type] || '#888';
-        }
-        
-        function formatEventTime(timestamp) {
-            try {
-                const date = new Date(timestamp);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMins / 60);
-                const diffDays = Math.floor(diffHours / 24);
-                
-                if (diffMins < 60) return `${diffMins}m ago`;
-                if (diffHours < 24) return `${diffHours}h ago`;
-                return `${diffDays}d ago`;
-            } catch (error) {
-                return 'Recently';
-            }
         }
         
         function updateRiskDashboardDisplay() {
@@ -3175,7 +2163,6 @@
             
             if (!gaugeGrid || !alertIndicators) return;
             
-            // Create gauge charts
             const gaugesHtml = Object.entries(riskCategories).map(([key, category]) => {
                 return `
                     <div class="gauge-container">
@@ -3186,13 +2173,11 @@
             }).join('');
             gaugeGrid.innerHTML = gaugesHtml;
             
-            // Create alert indicators
             const alertsHtml = Object.entries(riskCategories).map(([key, category]) => {
                 return `<div class="alert-badge ${category.alertLevel}">${category.alertLevel.toUpperCase()}</div>`;
             }).join('');
             alertIndicators.innerHTML = alertsHtml;
             
-            // Render individual gauge charts
             Object.entries(riskCategories).forEach(([key, category]) => {
                 renderGauge(key, category);
             });
@@ -3251,7 +2236,6 @@
             
             if (!liquidityAlert || !liquidityAlertText) return;
             
-            // Calculate overall risk level using weighted scoring
             let totalScore = 0;
             let totalWeight = 0;
             
@@ -3287,7 +2271,6 @@
         }
         
         async function loadLiquidityDashboard() {
-            // This function is called from the main init, implementing the liquidity monitoring
             await loadRiskDashboardData();
         }
         
@@ -3305,8 +2288,7 @@
                 watchlistSection.style.display = 'none';
                 btn.textContent = '📋 Back to Watchlist';
                 updateRiskDashboardDisplay();
-                loadLiveEvents();
-                loadRiskDashboardData(); // Refresh data when opening
+                loadRiskDashboardData();
             } else {
                 riskDashboard.classList.remove('active');
                 chartsArea.style.display = Object.keys(charts).length > 0 ? 'block' : 'none';
@@ -3315,16 +2297,13 @@
             }
         }
         
-        // ENHANCED CHART FUNCTIONALITY - FULLY RESTORED
         async function addToChart(symbol, provider) {
             showChartView();
             
-            // Find existing chart or create new one
             let targetChartId = null;
             
-            // Look for chart with space
             for (let chartId in charts) {
-                if (charts[chartId].symbols.length < 5) { // Max 5 symbols per chart
+                if (charts[chartId].symbols.length < 5) {
                     targetChartId = chartId;
                     break;
                 }
@@ -3334,7 +2313,6 @@
                 targetChartId = addNewChart();
             }
             
-            // Add symbol to chart
             const chart = charts[targetChartId];
             const existingSymbol = chart.symbols.find(s => s.symbol === symbol && s.provider === provider);
             
@@ -3387,7 +2365,6 @@
                                 </span>
                             </div>
                             <div class="chart-symbols" id="symbols_${chartId}">
-                                <!-- Symbols will be populated here -->
                             </div>
                             <div class="chart-display-controls">
                                 ${Object.entries(CHART_DISPLAY_MODES).map(([mode, info]) => `
@@ -3442,9 +2419,8 @@
             const chart = charts[chartId];
             if (!chart || chart.symbols.length === 0) return;
             
-            console.log(`📊 Loading enhanced chart data for ${chart.symbols.length} symbols...`);
+            console.log(`📊 Loading chart data for ${chart.symbols.length} symbols...`);
             
-            // Load data for each symbol
             chart.data = {};
             
             for (const symbolInfo of chart.symbols) {
@@ -3467,7 +2443,6 @@
             const rawData = data.raw_data;
             let timeSeries = [];
             
-            // Extract time series based on data structure
             if (rawData.observations && Array.isArray(rawData.observations)) {
                 timeSeries = rawData.observations.map(obs => ({
                     date: obs.date,
@@ -3482,14 +2457,12 @@
                 })).filter(point => !isNaN(point.value));
             }
             
-            // Filter by timeframe
             if (timeframe !== 'MAX' && TIMEFRAMES[timeframe]) {
                 const cutoffDate = new Date();
                 cutoffDate.setDate(cutoffDate.getDate() - TIMEFRAMES[timeframe].days);
                 timeSeries = timeSeries.filter(point => point.timestamp >= cutoffDate.getTime());
             }
             
-            // Sort by date
             timeSeries.sort((a, b) => a.timestamp - b.timestamp);
             
             return timeSeries;
@@ -3562,11 +2535,56 @@
             chart.plotlyChart = canvasElement;
         }
         
+        function transformDataForDisplay(data, mode, symbol) {
+            if (!data || data.length === 0) return data;
+            
+            switch (mode) {
+                case 'raw':
+                    return data;
+                
+                case 'pct_change':
+                    const baseValue = data[0].value;
+                    return data.map(point => ({
+                        ...point,
+                        value: baseValue !== 0 ? ((point.value - baseValue) / baseValue * 100) : 0
+                    }));
+                
+                case 'unit_change':
+                    const baseUnit = data[0].value;
+                    return data.map(point => ({
+                        ...point,
+                        value: point.value - baseUnit
+                    }));
+                
+                case 'year_pct':
+                    return data.map((point, i) => {
+                        if (i < 252) return { ...point, value: 0 };
+                        const yearAgoValue = data[i - 252].value;
+                        return {
+                            ...point,
+                            value: yearAgoValue !== 0 ? ((point.value - yearAgoValue) / yearAgoValue * 100) : 0
+                        };
+                    });
+                
+                case 'year_units':
+                    return data.map((point, i) => {
+                        if (i < 252) return { ...point, value: 0 };
+                        const yearAgoValue = data[i - 252].value;
+                        return {
+                            ...point,
+                            value: point.value - yearAgoValue
+                        };
+                    });
+                
+                default:
+                    return data;
+            }
+        }
+        
         function changeTimeframe(chartId, timeframe) {
             const chart = charts[chartId];
             chart.timeframe = timeframe;
             
-            // Update button states
             const chartWindow = document.getElementById(`window_${chartId}`);
             chartWindow.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -3580,14 +2598,12 @@
             const chart = charts[chartId];
             chart.displayMode = mode;
             
-            // Update button states
             const chartWindow = document.getElementById(`window_${chartId}`);
             chartWindow.querySelectorAll('.display-toggle').forEach(btn => {
                 btn.classList.remove('active');
             });
             chartWindow.querySelector(`[onclick="changeDisplayMode('${chartId}', '${mode}')"]`).classList.add('active');
             
-            // Update title
             const titleElement = chartWindow.querySelector('.chart-title span:last-child');
             if (titleElement) {
                 titleElement.textContent = `${TIMEFRAMES[chart.timeframe].name} • ${CHART_DISPLAY_MODES[mode].name}`;
@@ -3633,7 +2649,6 @@
             displayWatchlist();
         }
         
-        // VIEW MANAGEMENT
         function showChartView() {
             document.getElementById('chartsArea').style.display = 'block';
             document.querySelector('.watchlist-section').style.display = 'none';
@@ -3650,7 +2665,6 @@
             riskDashboardActive = false;
         }
         
-        // EVENT LISTENERS
         function setupEventListeners() {
             const searchBox = document.getElementById('searchBox');
             if (searchBox) {
@@ -3679,7 +2693,6 @@
             document.getElementById('sortIncrease').addEventListener('click', () => changeSortOrder('increase'));
             document.getElementById('sortDecrease').addEventListener('click', () => changeSortOrder('decrease'));
             
-            // Column sort headers
             document.querySelectorAll('.sortable').forEach(header => {
                 header.addEventListener('click', () => {
                     const column = header.dataset.column;
@@ -3698,7 +2711,6 @@
             });
         }
         
-        // UTILITY FUNCTIONS
         function updateClock() {
             const now = new Date();
             const timeString = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -3778,8 +2790,8 @@
         
         function getZScoreClass(value) {
             if (value === null || value === undefined) return 'neutral';
-            if (Math.abs(value) > 3) return 'negative'; // Extreme outlier
-            if (Math.abs(value) > 2) return 'moderate'; // Significant
+            if (Math.abs(value) > 3) return 'negative';
+            if (Math.abs(value) > 2) return 'moderate';
             return 'neutral';
         }
         
@@ -3794,10 +2806,8 @@
             }, 3000);
         }
         
-        // Initialize the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', init);
         
-        // Handle online/offline events
         window.addEventListener('online', () => {
             console.log('🌐 Connection restored');
             isOnline = true;
@@ -3811,7 +2821,7 @@
             updateAPIStatus(false);
         });
         
-        console.log('🚀 OpenBB Financial Intelligence Platform Script Loaded - FULL PRODUCTION VERSION');
+        console.log('🚀 OpenBB Financial Intelligence Platform Script Loaded - COMPLETE VERSION');
     </script>
 </body>
 </html>
