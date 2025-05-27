@@ -1,4 +1,894 @@
-<!DOCTYPE html>
+// Enhanced chart data loading with extended timeframes and fixed MACD
+        async function loadChartData(chartId, symbol, provider) {
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            const canvasDiv = document.getElementById(`${chartId}_canvas`);
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
+           
+            try {
+                let url;
+               
+                if (provider === 'liquidity_intelligence') {
+                    // Handle liquidity intelligence endpoints for charts
+                    if (symbol === 'OFR_FSI') {
+                        url = `${API_BASE}/api/v1/ofr/fsi`;
+                    } else if (symbol === 'NYFED_FAILS') {
+                        url = `${API_BASE}/api/v1/nyfed/fails`;
+                    } else {
+                        throw new Error('Chart not available for this liquidity intelligence indicator');
+                    }
+                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
+                    // Handle Treasury auction metrics with historical data
+                    url = `${API_BASE}/api/v1/treasury/auction_history?symbol=${symbol}&limit=500`;
+                } else if (provider === 'polygon_direct') {
+                    // Extended date range for Polygon data
+                    const endDate = new Date().toISOString().split('T')[0];
+                    const startDate = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 10 years
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
+                } else if (provider === 'fred_direct') {
+                    // Extended FRED data - get more historical data
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=5000&sort_order=desc&include_pandas=false`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                }
+               
+                const response = await fetch(url);
+               
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+               
+                const result = await response.json();
+                console.log(`Chart data received for ${symbol}:`, result);
+               
+                let processedData = [];
+               
+                if (result.data && Array.isArray(result.data)) {
+                    processedData = result.data
+                        .map(item => {
+                            let value = item.value || item.close || item.price || item.rate || null;
+                            if (typeof value === 'string') {
+                                value = parseFloat(value);
+                            }
+                           
+                            return {
+                                date: item.date || item.time || item.period,
+                                value: value
+                            };
+                        })
+                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.observations && Array.isArray(result.observations)) {
+                    processedData = result.observations
+                        .map(obs => ({
+                            date: obs.date,
+                            value: obs.value !== '.' ? parseFloat(obs.value) : null
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.auction_data && Array.isArray(result.auction_data)) {
+                    // Handle Treasury auction historical data
+                    processedData = result.auction_data
+                        .map(auction => ({
+                            date: auction.auction_date,
+                            value: symbol.includes('TAIL') ? auction.tail_spread : auction.bid_to_cover_ratio
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
+               
+                if (processedData.length === 0) {
+                    throw new Error('No valid data points found');
+                }
+               
+                // Calculate percentage changes and unit changes for each data point
+                processedData = calculateChartChanges(processedData);
+                
+                // Calculate technical analysis indicators with fixed MACD
+                processedData = calculateTechnicalIndicators(processedData);
+               
+                console.log(`Processed ${processedData.length} data points for ${symbol}`);
+               
+                chart.data[symbol] = processedData;
+                updateChartRender(chartId);
+                updateChartSymbols(chartId);
+               
+            } catch (error) {
+                console.error(`Error loading chart data for ${symbol}:`, error);
+                if (canvasDiv) {
+                    canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
+                }
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+                updateChartSymbols(chartId);
+            }
+        }
+        
+        // Calculate percentage and unit changes for chart data + Technical Analysis
+        function calculateChartChanges(data) {
+            if (!data || data.length < 2) return data;
+            
+            return data.map((item, index) => {
+                const itemDate = new Date(item.date);
+                
+                // Calculate daily change (1 day ago)
+                let dailyPctChange = null;
+                let dailyUnitChange = null;
+                if (index > 0) {
+                    const prevValue = data[index - 1].value;
+                    if (prevValue && prevValue !== 0) {
+                        dailyPctChange = ((item.value - prevValue) / prevValue) * 100;
+                        dailyUnitChange = item.value - prevValue;
+                    }
+                }
+                
+                // Calculate weekly change (7 days ago)
+                let weeklyPctChange = null;
+                let weeklyUnitChange = null;
+                const weekAgo = new Date(itemDate);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                
+                for (let i = index - 1; i >= 0; i--) {
+                    const checkDate = new Date(data[i].date);
+                    if (checkDate <= weekAgo) {
+                        const weekValue = data[i].value;
+                        if (weekValue && weekValue !== 0) {
+                            weeklyPctChange = ((item.value - weekValue) / weekValue) * 100;
+                            weeklyUnitChange = item.value - weekValue;
+                        }
+                        break;
+                    }
+                }
+                
+                // Calculate yearly change (365 days ago)
+                let yearlyPctChange = null;
+                let yearlyUnitChange = null;
+                const yearAgo = new Date(itemDate);
+                yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                
+                for (let i = index - 1; i >= 0; i--) {
+                    const checkDate = new Date(data[i].date);
+                    if (checkDate <= yearAgo) {
+                        const yearValue = data[i].value;
+                        if (yearValue && yearValue !== 0) {
+                            yearlyPctChange = ((item.value - yearValue) / yearValue) * 100;
+                            yearlyUnitChange = item.value - yearValue;
+                        }
+                        break;
+                    }
+                }
+                
+                return {
+                    ...item,
+                    daily_pct_change: dailyPctChange,
+                    daily_change_units: dailyUnitChange,
+                    weekly_pct_change: weeklyPctChange,
+                    weekly_change_units: weeklyUnitChange,
+                    yearly_pct_change: yearlyPctChange,
+                    yearly_change_units: yearlyUnitChange
+                };
+            });
+        }
+        
+        // Fixed Technical Analysis Indicators - MACD calculation corrected
+        function calculateTechnicalIndicators(data) {
+            if (!data || data.length < 50) return data; // Need more data for proper EMA calculation
+            
+            const values = data.map(d => d.value);
+            
+            // Pre-calculate EMAs for MACD
+            const ema12Values = [];
+            const ema26Values = [];
+            const macdLine = [];
+            const signalLine = [];
+            
+            // EMA12 calculation
+            let ema12 = values.slice(0, 12).reduce((a, b) => a + b, 0) / 12;
+            ema12Values.push(ema12);
+            const multiplier12 = 2 / (12 + 1);
+            
+            for (let i = 13; i < values.length; i++) {
+                ema12 = (values[i] - ema12) * multiplier12 + ema12;
+                ema12Values.push(ema12);
+            }
+            
+            // EMA26 calculation
+            let ema26 = values.slice(0, 26).reduce((a, b) => a + b, 0) / 26;
+            ema26Values.push(ema26);
+            const multiplier26 = 2 / (26 + 1);
+            
+            for (let i = 27; i < values.length; i++) {
+                ema26 = (values[i] - ema26) * multiplier26 + ema26;
+                ema26Values.push(ema26);
+            }
+            
+            // MACD Line calculation (EMA12 - EMA26)
+            const startIndex = Math.max(ema12Values.length, ema26Values.length);
+            for (let i = 0; i < Math.min(ema12Values.length, ema26Values.length); i++) {
+                macdLine.push(ema12Values[i + (ema12Values.length - Math.min(ema12Values.length, ema26Values.length))] - 
+                            ema26Values[i + (ema26Values.length - Math.min(ema12Values.length, ema26Values.length))]);
+            }
+            
+            // Signal Line (9-period EMA of MACD)
+            if (macdLine.length >= 9) {
+                let signalEma = macdLine.slice(0, 9).reduce((a, b) => a + b, 0) / 9;
+                signalLine.push(signalEma);
+                const multiplierSignal = 2 / (9 + 1);
+                
+                for (let i = 9; i < macdLine.length; i++) {
+                    signalEma = (macdLine[i] - signalEma) * multiplierSignal + signalEma;
+                    signalLine.push(signalEma);
+                }
+            }
+            
+            return data.map((item, index) => {
+                let slope30 = null;
+                let ema12 = null;
+                let ema26 = null;
+                let macd = null;
+                let macdSignal = null;
+                let zscore30 = null;
+                let signal = null;
+                
+                // Calculate 30-period Rolling Linear Regression Slope
+                if (index >= 29) {
+                    const window = values.slice(index - 29, index + 1);
+                    const n = window.length;
+                    const x = Array.from({length: n}, (_, i) => i);
+                    const sumX = x.reduce((a, b) => a + b, 0);
+                    const sumY = window.reduce((a, b) => a + b, 0);
+                    const sumXY = x.reduce((sum, xi, i) => sum + xi * window[i], 0);
+                    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+                    
+                    slope30 = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                }
+                
+                // Assign pre-calculated EMA and MACD values
+                if (index >= 11 && ema12Values[index - 11]) {
+                    ema12 = ema12Values[index - 11];
+                }
+                
+                if (index >= 25 && ema26Values[index - 25]) {
+                    ema26 = ema26Values[index - 25];
+                }
+                
+                const macdIndex = index - 25; // MACD starts after EMA26 is established
+                if (macdIndex >= 0 && macdIndex < macdLine.length) {
+                    macd = macdLine[macdIndex];
+                }
+                
+                const signalIndex = macdIndex - 8; // Signal line starts 9 periods after MACD
+                if (signalIndex >= 0 && signalIndex < signalLine.length) {
+                    macdSignal = signalLine[signalIndex];
+                }
+                
+                // Calculate 30-period Z-Score
+                if (index >= 29) {
+                    const window = values.slice(index - 29, index + 1);
+                    const mean = window.reduce((a, b) => a + b, 0) / window.length;
+                    const variance = window.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / window.length;
+                    const stdDev = Math.sqrt(variance);
+                    
+                    if (stdDev > 0) {
+                        zscore30 = (item.value - mean) / stdDev;
+                    }
+                }
+                
+                // Calculate Signal (Buy/Sell indicator)
+                if (macd !== null && macdSignal !== null && slope30 !== null && zscore30 !== null) {
+                    // Signal: 1 = Strong Buy, 0 = Neutral, -1 = Strong Sell
+                    if (macd > macdSignal && slope30 > 0 && zscore30 < -1) {
+                        signal = 1; // Strong Buy (MACD above signal, positive trend, oversold)
+                    } else if (macd < macdSignal && slope30 < 0 && zscore30 > 1) {
+                        signal = -1; // Strong Sell (MACD below signal, negative trend, overbought)
+                    } else {
+                        signal = 0; // Neutral
+                    }
+                }
+                
+                return {
+                    ...item,
+                    slope_30: slope30,
+                    ema12: ema12,
+                    ema26: ema26,
+                    macd: macd,
+                    macd_signal: macdSignal,
+                    zscore_30: zscore30,
+                    signal: signal
+                };
+            });
+        }
+       
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            const symbolsDiv = document.getElementById(`${chartId}_symbols`);
+            if (!symbolsDiv) return;
+           
+            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag">
+                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
+                    ${s.symbol}
+                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}')">×</span>
+                </div>`).join('');
+        }
+       
+        function removeSymbolFromChart(event, chartId, symbolToRemove) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+
+            chart.symbols = chart.symbols.filter(s => s.symbol !== symbolToRemove);
+            delete chart.data[symbolToRemove];
+           
+            updateChartRender(chartId);
+            updateChartSymbols(chartId);
+           
+            if (chart.symbols.length === 0) {
+                document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+            }
+        }
+       
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            chart.timeframe = timeframe;
+           
+            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (buttonContainer) {
+                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
+            updateChartRender(chartId);
+        }
+       
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+           
+            const now = new Date();
+            let cutoffDate = new Date();
+           
+            switch(timeframe) {
+                case '1D':
+                    cutoffDate.setDate(now.getDate() - 1);
+                    break;
+                case '1W':
+                    cutoffDate.setDate(now.getDate() - 7);
+                    break;
+                case '1M':
+                    cutoffDate.setMonth(now.getMonth() - 1);
+                    break;
+                case '3M':
+                    cutoffDate.setMonth(now.getMonth() - 3);
+                    break;
+                case '6M':
+                    cutoffDate.setMonth(now.getMonth() - 6);
+                    break;
+                case '1Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 1);
+                    break;
+                case '2Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 2);
+                    break;
+                case '5Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 5);
+                    break;
+                case '10Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 10);
+                    break;
+                case 'MAX':
+                    return data;
+            }
+           
+            return data.filter(item => new Date(item.date) >= cutoffDate);
+        }
+       
+        // Enhanced chart rendering with new display modes and fixed MACD
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            if (!canvasElement || !chart) return;
+           
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
+                return;
+            }
+           
+            const traces = [];
+            const displayMode = chart.displayMode || 'raw';
+            
+            // Initialize yLabel with default value outside the loop
+            let yLabel = 'Value';
+           
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.symbol];
+                if (!symbolData || symbolData.length === 0) return;
+               
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+               
+                const lineColor = colorPalette[index % colorPalette.length];
+               
+                // Declare variables for this symbol
+                let yData;
+                let hoverTemplate;
+               
+                // Determine what data to display based on mode
+                switch (displayMode) {
+                    case 'pct_change':
+                        yData = filteredData.map(d => d.daily_pct_change || 0);
+                        yLabel = '% Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>% Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'unit_change':
+                        yData = filteredData.map(d => d.daily_change_units || 0);
+                        yLabel = 'Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'year_pct':
+                        yData = filteredData.map(d => d.yearly_pct_change || 0);
+                        yLabel = 'Yearly % Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly % Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'year_units':
+                        yData = filteredData.map(d => d.yearly_change_units || 0);
+                        yLabel = 'Yearly Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'slope':
+                        yData = filteredData.map(d => d.slope_30 || 0);
+                        yLabel = 'Slope (30-period)';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Slope: %{y:.6f}<extra></extra>`;
+                        break;
+                    case 'macd':
+                        yData = filteredData.map(d => d.macd || 0);
+                        yLabel = 'MACD';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>MACD: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'zscore':
+                        yData = filteredData.map(d => d.zscore_30 || 0);
+                        yLabel = 'Z-Score (30-period)';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Z-Score: %{y:.2f}<extra></extra>`;
+                        break;
+                    case 'signals':
+                        yData = filteredData.map(d => d.signal || 0);
+                        yLabel = 'Buy/Sell Signals';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Signal: %{y}<extra></extra>`;
+                        break;
+                    default: // 'raw'
+                        yData = filteredData.map(d => d.value);
+                        yLabel = 'Value';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`;
+                        break;
+                }
+               
+                const trace = {
+                    x: filteredData.map(d => d.date),
+                    y: yData,
+                    type: 'scatter',
+                    mode: displayMode === 'signals' ? 'markers' : 'lines',
+                    name: s.symbol,
+                    hovertemplate: hoverTemplate
+                };
+                
+                if (displayMode === 'signals') {
+                    trace.marker = {
+                        color: yData.map(val => val === 1 ? '#00ff88' : val === -1 ? '#ff4444' : '#888888'),
+                        size: yData.map(val => val !== 0 ? 12 : 6),
+                        symbol: yData.map(val => val === 1 ? 'triangle-up' : val === -1 ? 'triangle-down' : 'circle')
+                    };
+                } else {
+                    trace.line = { color: lineColor, width: 2 };
+                }
+                
+                traces.push(trace);
+                
+                // Add MACD Signal line for MACD display mode
+                if (displayMode === 'macd') {
+                    const signalData = filteredData.map(d => d.macd_signal || 0);
+                    const signalTrace = {
+                        x: filteredData.map(d => d.date),
+                        y: signalData,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: `${s.symbol} Signal`,
+                        line: { color: lineColor, width: 1, dash: 'dash' },
+                        hovertemplate: `<b>${s.symbol} Signal</b><br>Date: %{x}<br>Signal: %{y:.4f}<extra></extra>`
+                    };
+                    traces.push(signalTrace);
+                }
+            });
+           
+            if (traces.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
+                return;
+            }
+           
+            const layout = {
+                title: {
+                    text: `${displayMode.replace('_', ' ').toUpperCase()} VIEW`,
+                    font: { color: '#fff', size: 14 },
+                    x: 0.5
+                },
+                paper_bgcolor: '#0a0a0a',
+                plot_bgcolor: '#0a0a0a',
+                font: { color: '#aaa', size: 12 },
+                margin: { t: 60, r: 80, b: 60, l: 80 },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    title: { text: yLabel, font: { color: '#aaa' } },
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    zeroline: true,
+                    zerolinecolor: '#444',
+                    zerolinewidth: 1
+                },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    yanchor: 'bottom',
+                    y: 1.02,
+                    xanchor: 'right',
+                    x: 1,
+                    bgcolor: 'rgba(10,10,10,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1,
+                    font: { size: 11 }
+                },
+                height: 500,
+                autosize: true
+            };
+           
+            const config = {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+                displayModeBar: true
+            };
+           
+            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
+           
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => {
+                    charts[chartId].chartInstance = gd;
+                })
+                .catch(err => {
+                    console.error("Plotly error:", err);
+                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
+                });
+        }
+       
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+           
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block';
+                watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+            }
+        }
+       
+        // Initialize Risk Dashboard
+        function initializeRiskDashboard() {
+            setupRiskConfiguration();
+            loadRiskDashboardData();
+            setInterval(loadRiskDashboardData, 120000); // Update every 2 minutes
+        }
+        
+        // Setup Risk Configuration UI
+        function setupRiskConfiguration() {
+            const categories = ['risk', 'liquidity', 'economic', 'global'];
+            const containers = ['riskSymbols', 'liquiditySymbols', 'economicSymbols', 'globalSymbols'];
+            
+            categories.forEach((category, index) => {
+                const container = document.getElementById(containers[index]);
+                const config = riskCategories[category];
+                
+                config.symbols.forEach(symbol => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'symbol-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="${category}_${symbol}" checked onchange="updateCategoryConfig('${category}', '${symbol}', this.checked)">
+                        <label for="${category}_${symbol}">${getSymbolDescription(symbol, getProviderForSymbol(symbol))}</label>
+                    `;
+                    container.appendChild(checkbox);
+                });
+            });
+        }
+        
+        // Get provider for symbol (helper function)
+        function getProviderForSymbol(symbol) {
+            if (symbol.includes('CISS') || symbol.includes('EXR')) return 'ecb';
+            if (['sofr', 'effr', 'obfr', 'tgcr', 'bgcr'].includes(symbol.toLowerCase())) return 'ny_fed';
+            return 'fred';
+        }
+        
+        // Update category configuration
+        function updateCategoryConfig(category, symbol, enabled) {
+            if (!enabled) {
+                riskCategories[category].symbols = riskCategories[category].symbols.filter(s => s !== symbol);
+            } else if (!riskCategories[category].symbols.includes(symbol)) {
+                riskCategories[category].symbols.push(symbol);
+            }
+        }
+        
+        // Toggle Risk Dashboard
+        function toggleRiskDashboard() {
+            const dashboard = document.getElementById('riskDashboard');
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            
+            if (dashboard.classList.contains('active')) {
+                dashboard.classList.remove('active');
+                watchlistSection.style.flex = '1';
+            } else {
+                dashboard.classList.add('active');
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '0 0 300px';
+                loadRiskDashboardData();
+            }
+        }
+        
+        // Toggle Configuration Panel
+        function toggleConfig() {
+            const config = document.getElementById('watchlistConfig');
+            config.style.display = config.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Load Risk Dashboard Data
+        async function loadRiskDashboardData() {
+            const allSymbols = new Set();
+            Object.values(riskCategories).forEach(category => {
+                category.symbols.forEach(symbol => allSymbols.add(symbol));
+            });
+            
+            // Load data for all symbols
+            for (const symbol of allSymbols) {
+                const provider = getProviderForSymbol(symbol) + '_direct';
+                try {
+                    await loadRiskSymbolData(symbol, provider);
+                } catch (error) {
+                    console.warn(`Failed to load risk data for ${symbol}:`, error);
+                }
+            }
+            
+            // Calculate risk scores and update dashboard
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+        }
+        
+        // Load individual symbol data for risk analysis
+        async function loadRiskSymbolData(symbol, provider, retryCount = 0) {
+            try {
+                let url;
+                
+                if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ny_fed_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ecb_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.metrics && data.metrics.latest_value !== undefined) {
+                    riskDashboardData[symbol] = {
+                        value: data.metrics.latest_value,
+                        daily_change: data.metrics.daily_change || 0,
+                        weekly_change: data.metrics.weekly_change || 0,
+                        monthly_change: data.metrics.monthly_change || 0,
+                        yearly_change: data.metrics.yearly_change || 0,
+                        provider: provider,
+                        timestamp: Date.now()
+                    };
+                }
+            } catch (error) {
+                if (retryCount < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                    return loadRiskSymbolData(symbol, provider, retryCount + 1);
+                }
+                console.error(`Failed to load ${symbol}:`, error);
+            }
+        }
+        
+        // Calculate Risk Scores using Z-Score normalization
+        function calculateRiskScores() {
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const scores = [];
+                
+                category.symbols.forEach(symbol => {
+                    if (riskDashboardData[symbol]) {
+                        // Calculate Z-Score based on recent changes
+                        const data = riskDashboardData[symbol];
+                        const changes = [data.daily_change, data.weekly_change, data.monthly_change].filter(x => x !== null && !isNaN(x));
+                        
+                        if (changes.length > 0) {
+                            const mean = changes.reduce((a, b) => a + b, 0) / changes.length;
+                            const variance = changes.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / changes.length;
+                            const stdDev = Math.sqrt(variance);
+                            
+                            let zScore = 0;
+                            if (stdDev > 0) {
+                                zScore = Math.abs(data.daily_change || 0) / (stdDev + 0.001); // Avoid division by zero
+                            }
+                            
+                            // Convert Z-Score to percentile (0-100)
+                            const percentile = Math.min(100, Math.max(0, (zScore / 3) * 100));
+                            scores.push(percentile);
+                        }
+                    }
+                });
+                
+                // Calculate category average score
+                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                category.currentScore = Math.round(avgScore);
+                
+                // Determine alert level
+                if (avgScore >= category.thresholds.extreme) {
+                    category.alertLevel = 'extreme';
+                } else if (avgScore >= category.thresholds.critical) {
+                    category.alertLevel = 'high';
+                } else if (avgScore >= category.thresholds.warning) {
+                    category.alertLevel = 'moderate';
+                } else {
+                    category.alertLevel = 'low';
+                }
+            });
+        }
+        
+        // Update Risk Gauges
+        function updateRiskGauges() {
+            const gaugeGrid = document.getElementById('gaugeGrid');
+            gaugeGrid.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const gaugeContainer = document.createElement('div');
+                gaugeContainer.className = 'gauge-container';
+                
+                const gaugeId = `gauge_${categoryKey}`;
+                gaugeContainer.innerHTML = `
+                    <div class="gauge-title">${category.name}</div>
+                    <div class="gauge-chart" id="${gaugeId}"></div>
+                `;
+                
+                gaugeGrid.appendChild(gaugeContainer);
+                
+                // Create Plotly gauge
+                const data = [{
+                    type: "indicator",
+                    mode: "gauge+number+delta",
+                    value: category.currentScore,
+                    domain: { x: [0, 1], y: [0, 1] },
+                    title: { text: "Risk Score" },
+                    delta: { reference: 50 },
+                    gauge: {
+                        axis: { range: [null, 100] },
+                        bar: { color: category.color },
+                        steps: [
+                            { range: [0, category.thresholds.warning], color: "#00dd7750" },
+                            { range: [category.thresholds.warning, category.thresholds.critical], color: "#ffaa0050" },
+                            { range: [category.thresholds.critical, category.thresholds.extreme], color: "#ff444450" },
+                            { range: [category.thresholds.extreme, 100], color: "#8b000050" }
+                        ],
+                        threshold: {
+                            line: { color: "white", width: 4 },
+                            thickness: 0.75,
+                            value: category.currentScore
+                        }
+                    }
+                }];
+                
+                const layout = {
+                    width: 350,
+                    height: 250,
+                    margin: { t: 0, r: 25, l: 25, b: 0 },
+                    paper_bgcolor: "#0a0a0a",
+                    plot_bgcolor: "#0a0a0a",
+                    font: { color: "#fff" }
+                };
+                
+                Plotly.newPlot(gaugeId, data, layout, { displayModeBar: false });
+            });
+        }
+        
+        // Update Alert Indicators
+        function updateAlertIndicators() {
+            const alertContainer = document.getElementById('alertIndicators');
+            alertContainer.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const badge = document.createElement('div');
+                badge.className = `alert-badge ${category.alertLevel}`;
+                
+                let alertText = '';
+                switch (category.alertLevel) {
+                    case 'extreme':
+                        alertText = `🚨 EXTREME: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    case 'high':
+                        alertText = `⚠️ HIGH: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    case 'moderate':
+                        alertText = `🟡 WARNING: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    default:
+                        alertText = `✅ ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                }
+                
+                badge.textContent = alertText;
+                alertContainer.appendChild(badge);
+            });
+        }
+        
+        // Update Risk Dashboard (called when config changes)
+        function updateRiskDashboard() {
+            // Update thresholds from inputs
+            const warning = parseInt(document.getElementById('warningThreshold').value);
+            const critical = parseInt(document.getElementById('criticalThreshold').value);
+            const extreme = parseInt(document.getElementById('extremeThreshold').value);
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                riskCategories[categoryKey].thresholds = { warning, critical, extreme };
+            });
+            
+            // Recalculate and update
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+            
+            showTemporaryMessage('Risk Dashboard Updated!', 'info');
+        }
+       
+        // Edit symbol function (placeholder)
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            showTemporaryMessage(`Edit functionality for ${symbol} - implement as needed`, 'info');
+        }
+       
+        // Utility functions
+        function showTemporaryMessage(text, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = text;
+            document.body.appendChild(popup);
+           
+            setTimeout(() => popup.remove(), 3000);
+        }
+       
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox');
+            const searchResults = document.getElementById('searchResults');
+           
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+       
+        // Initialize on page load
+        window.onload = init;
+    </script>
+</body>
+</html><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1511,3 +2401,1239 @@
             } catch (error) {
                 console.warn('Health check failed:', error);
             }
+           
+            // Test each provider with comprehensive checks
+            for (const [source, config] of Object.entries(DATA_SOURCES)) {
+                try {
+                    let testUrl;
+                   
+                    if (source === 'liquidity') {
+                        testUrl = `${API_BASE}/api/v1/liquidity/dashboard`;
+                    } else if (source === 'polygon') {
+                        // Test with polygon reference endpoint
+                        testUrl = `${API_BASE}/api/v1/polygon/reference/tickers?limit=1`;
+                    } else {
+                        const testSymbol = config.searchSymbols[0];
+                       
+                        if (source === 'fred') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=fred_direct&include_changes=false`;
+                        } else if (source === 'ny_fed') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=ny_fed_direct&include_changes=false`;
+                        } else if (source === 'ecb') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        } else if (source === 'ofr') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        } else if (source === 'treasury') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        }
+                    }
+                   
+                    const response = await fetch(testUrl);
+                   
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && (data.metrics || data.data || data.symbol || data.overall_stress_score !== undefined || data.results)) {
+                            document.getElementById(`${source}-indicator`).classList.add('connected');
+                            connectedCount++;
+                            console.log(`${source} connected successfully`);
+                        }
+                    } else if (response.status === 404) {
+                        document.getElementById(`${source}-indicator`).classList.add('connected');
+                        connectedCount++;
+                        console.log(`${source} connected (404 but API responsive)`);
+                    }
+                } catch (error) {
+                    console.warn(`${source} API connection failed:`, error);
+                    document.getElementById(`${source}-indicator`).classList.remove('connected');
+                }
+            }
+           
+            const statusText = `${connectedCount}/${totalSources} APIs Connected`;
+            document.getElementById('apiStatusText').textContent = statusText;
+           
+            if (connectedCount > 0) {
+                document.getElementById('apiStatus').classList.add('connected');
+                showTemporaryMessage(`Connected to ${connectedCount} data sources`, 'info');
+            } else {
+                showTemporaryMessage('No API connections available', 'error');
+            }
+        }
+       
+        // Load liquidity dashboard
+        async function loadLiquidityDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/liquidity/dashboard`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLiquidityAlert(data);
+                    document.getElementById('liquidity-indicator').classList.add('connected');
+                }
+            } catch (error) {
+                console.warn('Liquidity dashboard failed:', error);
+                document.getElementById('liquidity-indicator').classList.remove('connected');
+            }
+        }
+       
+        // Update liquidity alert
+        function updateLiquidityAlert(data) {
+            const alertElement = document.getElementById('liquidityAlert');
+            const alertText = document.getElementById('liquidityAlertText');
+           
+            if (!data || data.overall_stress_score === undefined) {
+                alertElement.style.display = 'none';
+                return;
+            }
+           
+            const stressScore = data.overall_stress_score;
+            const stressLevel = data.stress_level;
+           
+            alertElement.style.display = 'block';
+            alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
+           
+            alertElement.className = 'liquidity-alert';
+            if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') {
+                alertElement.classList.add('high');
+            } else if (stressLevel === 'MODERATE') {
+                alertElement.classList.add('moderate');
+            } else {
+                alertElement.classList.add('low');
+            }
+        }
+       
+        // Show liquidity dashboard
+        function showLiquidityDashboard() {
+            showTemporaryMessage('Loading comprehensive liquidity dashboard...', 'info');
+        }
+       
+        // Toggle data source
+        function toggleDataSource(source) {
+            const button = document.querySelector(`[data-source="${source}"]`);
+            const isActive = button.classList.contains('active');
+           
+            if (isActive) {
+                button.classList.remove('active');
+                activeSources = activeSources.filter(s => s !== source);
+            } else {
+                button.classList.add('active');
+                activeSources.push(source);
+            }
+        }
+       
+        // Enhanced search across all providers and Polygon ticker types
+        async function performSearch(query) {
+            const resultsDiv = document.getElementById('searchResults');
+           
+            if (!query || query.trim().length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+           
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                resultsDiv.innerHTML = '<div class="search-loading">Searching across all data sources and ticker types...</div>';
+                resultsDiv.style.display = 'block';
+               
+                try {
+                    const allResults = [];
+                   
+                    // Enhanced Polygon search with all ticker types
+                    if (activeSources.includes('polygon') && polygonTickersLoaded) {
+                        const filteredTickers = polygonTickers.filter(ticker => {
+                            // Filter by active ticker types
+                            if (!activeTickerTypes.includes(ticker.type)) return false;
+                            
+                            // Search in ticker symbol and name
+                            const queryLower = query.toLowerCase();
+                            return ticker.ticker.toLowerCase().includes(queryLower) ||
+                                   (ticker.name && ticker.name.toLowerCase().includes(queryLower));
+                        });
+                        
+                        // Sort by relevance and take top 50
+                        filteredTickers
+                            .sort((a, b) => {
+                                const aSymbol = a.ticker.toLowerCase();
+                                const bSymbol = b.ticker.toLowerCase();
+                                const queryLower = query.toLowerCase();
+                                
+                                if (aSymbol === queryLower) return -1;
+                                if (bSymbol === queryLower) return 1;
+                                if (aSymbol.startsWith(queryLower)) return -1;
+                                if (bSymbol.startsWith(queryLower)) return 1;
+                                return 0;
+                            })
+                            .slice(0, 50)
+                            .forEach(ticker => {
+                                allResults.push({
+                                    symbol: ticker.ticker,
+                                    name: ticker.name || ticker.ticker,
+                                    provider: 'polygon_direct',
+                                    source: 'polygon',
+                                    type: ticker.type,
+                                    description: getTickerTypeDescription(ticker.type)
+                                });
+                            });
+                    }
+                   
+                    // Search through other data sources
+                    for (const source of activeSources) {
+                        if (source === 'polygon') continue; // Already handled above
+                        
+                        const config = DATA_SOURCES[source];
+                        if (!config) continue;
+                       
+                        const matchingSymbols = config.searchSymbols.filter(symbol =>
+                            symbol.toLowerCase().includes(query.toLowerCase()) ||
+                            getSymbolDescription(symbol, source).toLowerCase().includes(query.toLowerCase())
+                        );
+                       
+                        matchingSymbols.forEach(symbol => {
+                            allResults.push({
+                                symbol: symbol,
+                                name: getSymbolDescription(symbol, source),
+                                provider: config.provider,
+                                source: source,
+                                description: getDetailedDescription(symbol, source)
+                            });
+                        });
+                    }
+                   
+                    displaySearchResults(allResults, query);
+                   
+                } catch (error) {
+                    console.error('Search error:', error);
+                    resultsDiv.innerHTML = `
+                        <div class="search-item" style="text-align:center; color:#888;">
+                            Error searching. Please try again.
+                        </div>
+                    `;
+                }
+            }, 300);
+        }
+        
+        // Get ticker type description
+        function getTickerTypeDescription(type) {
+            const descriptions = {
+                CS: 'Common Stock',
+                ETF: 'Exchange Traded Fund',
+                CRYPTO: 'Cryptocurrency',
+                MF: 'Mutual Fund',
+                BOND: 'Bond',
+                INDEX: 'Index',
+                ADRC: 'American Depositary Receipt',
+                ADRW: 'ADR Warrant',
+                ADRR: 'ADR Rights',
+                FUND: 'Closed-End Fund',
+                SP: 'Structured Product',
+                WARRANT: 'Warrant',
+                RIGHT: 'Rights',
+                UNIT: 'Unit',
+                OTHER: 'Other Security Type'
+            };
+            return descriptions[type] || 'Financial Instrument';
+        }
+       
+        // Enhanced symbol descriptions for all providers
+        function getSymbolDescription(symbol, source) {
+            const descriptions = {
+                polygon: {
+                    'AAPL': 'Apple Inc.',
+                    'MSFT': 'Microsoft Corporation',
+                    'GOOGL': 'Alphabet Inc.',
+                    'AMZN': 'Amazon.com Inc.',
+                    'TSLA': 'Tesla Inc.',
+                    'SPY': 'SPDR S&P 500 ETF',
+                    'QQQ': 'Invesco QQQ Trust',
+                    'IWM': 'iShares Russell 2000 ETF',
+                    'VTI': 'Vanguard Total Stock Market ETF',
+                    'VOO': 'Vanguard S&P 500 ETF',
+                    'NVDA': 'NVIDIA Corporation',
+                    'META': 'Meta Platforms Inc.',
+                    'NFLX': 'Netflix Inc.'
+                },
+                fred: {
+                    'FEDFUNDS': 'Federal Funds Rate',
+                    'UNRATE': 'Unemployment Rate',
+                    'GDP': 'Gross Domestic Product',
+                    'CPIAUCSL': 'Consumer Price Index',
+                    'DFF': 'Daily Federal Funds Rate',
+                    'M2SL': 'M2 Money Supply',
+                    'PAYEMS': 'Total Nonfarm Payrolls',
+                    'HOUST': 'Housing Starts',
+                    'INDPRO': 'Industrial Production Index',
+                    'DTWEXBGS': 'Trade Weighted U.S. Dollar Index: Broad, Goods and Services',
+                    'DTWEXAFEGS': 'Trade Weighted U.S. Dollar Index: Advanced Foreign Economies',
+                    'DTWEXEMEGS': 'Trade Weighted U.S. Dollar Index: Emerging Market Economies',
+                    'RESPPNTEPNWW': 'Central Bank Assets to GDP for World',
+                    'RESPPALGUOXAWXCH52NWW': 'Central Bank Assets for World',
+                    'RESPPALGUONNWW': 'Central Bank Assets for World (Narrow)',
+                    'SWP1690': 'Central Bank Liquidity Swaps',
+                    'OTHL1690': 'Other Liquid Assets',
+                    'RMFSL': 'Reserve Bank Credit',
+                    'BOGMBASE': 'Monetary Base',
+                    'WSHOSHO': 'Wholesale Short-Term Funding',
+                    'WRESBAL': 'Reserve Balances',
+                    'TOTRESNS': 'Total Reserves',
+                    'NONBORRES': 'Non-borrowed Reserves',
+                    'NFCINONFINLEVERAGE': 'National Financial Conditions Index: Nonfinancial Leverage',
+                    'FRBKCLMCIM': 'Bank Commercial and Industrial Loans',
+                    'AMTMUO': 'Margin Trading Outstanding',
+                    'T10YIE': '10-Year Breakeven Inflation Rate',
+                    'WLCFLPCL': 'Crude Oil Prices: West Texas Intermediate',
+                    'CC4WSA': 'Credit Card Charge-Off Rate',
+                    'VIXCLS': 'CBOE Volatility Index: VIX',
+                    'ISRATIO': 'Total Business Inventories to Sales Ratio',
+                    'MNFCTRIRSA': 'Manufacturers: Inventories to Sales Ratio'
+                },
+                ny_fed: {
+                    'sofr': 'Secured Overnight Financing Rate',
+                    'effr': 'Effective Federal Funds Rate',
+                    'obfr': 'Overnight Bank Funding Rate',
+                    'tgcr': 'Tri-party General Collateral Rate',
+                    'bgcr': 'Broad General Collateral Rate'
+                },
+                ecb: {
+                    'EXR.D.USD.EUR.SP00.A': 'EUR/USD Exchange Rate',
+                    'EXR.D.GBP.EUR.SP00.A': 'EUR/GBP Exchange Rate',
+                    'EXR.D.JPY.EUR.SP00.A': 'EUR/JPY Exchange Rate',
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX': 'China Daily Systemic Stress Index',
+                    'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX': 'Euro Area Daily Systemic Stress Index',
+                    'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX': 'US Daily Systemic Stress Index',
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX': 'Sweden Monthly Sovereign Stress Index',
+                    'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX': 'France Monthly Sovereign Stress Index',
+                    'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX': 'Finland Monthly Sovereign Stress Index',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX': 'Denmark Monthly Sovereign Stress Index',
+                    'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX': 'UK Monthly Sovereign Stress Index',
+                    'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX': 'Belgium Monthly Sovereign Stress Index',
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX': 'Germany Country-Level Financial Stress Index',
+                    'ILM.W.U2.C.A030000.U2.Z06': 'Euro Area Weekly Liquidity Measures',
+                    'ILM.W.U2.C.L060000.U4.EUR': 'Euro Area Weekly Interest Rate Measures'
+                },
+                ofr: {
+                    'NYPD-PD_AFtR_T-A': 'NY Primary Dealer After-Fed Total Amount',
+                    'NYPD-PD_AFtD_TOT-A': 'NY Primary Dealer After-Fed Total Daily Amount',
+                    'REPO_OV_TOT_P75': 'Repo Market Overall Total 75th Percentile',
+                    'REPO_OV_TOT_P25': 'Repo Market Overall Total 25th Percentile',
+                    'MMF_OV_TOT': 'Money Market Fund Overall Total',
+                    'DEALER_OV_TOT': 'Dealer Overall Total',
+                    'BANK_OV_TOT': 'Bank Overall Total',
+                    'TGCR_VOL': 'Tri-party General Collateral Rate Volume',
+                    'SOFR_VOL': 'SOFR Volume'
+                },
+                treasury: {
+                    'BILLS_4W': '4-Week Treasury Bills',
+                    'BILLS_8W': '8-Week Treasury Bills',
+                    'BILLS_13W': '13-Week Treasury Bills',
+                    'BILLS_17W': '17-Week Treasury Bills',
+                    'BILLS_26W': '26-Week Treasury Bills',
+                    'BILLS_52W': '52-Week Treasury Bills',
+                    'NOTES_2Y': '2-Year Treasury Notes',
+                    'NOTES_3Y': '3-Year Treasury Notes',
+                    'NOTES_5Y': '5-Year Treasury Notes',
+                    'NOTES_7Y': '7-Year Treasury Notes',
+                    'NOTES_10Y': '10-Year Treasury Notes',
+                    'BONDS_20Y': '20-Year Treasury Bonds',
+                    'BONDS_30Y': '30-Year Treasury Bonds',
+                    'TIPS_5Y': '5-Year TIPS',
+                    'TIPS_10Y': '10-Year TIPS',
+                    'TIPS_20Y': '20-Year TIPS',
+                    'TIPS_30Y': '30-Year TIPS',
+                    // New auction metrics
+                    'AUCTION_TAIL_4W': '4-Week Auction Tail Spread',
+                    'AUCTION_BTC_4W': '4-Week Bid-to-Cover Ratio',
+                    'AUCTION_TAIL_13W': '13-Week Auction Tail Spread',
+                    'AUCTION_BTC_13W': '13-Week Bid-to-Cover Ratio',
+                    'AUCTION_TAIL_2Y': '2-Year Auction Tail Spread',
+                    'AUCTION_BTC_2Y': '2-Year Bid-to-Cover Ratio',
+                    'AUCTION_TAIL_10Y': '10-Year Auction Tail Spread',
+                    'AUCTION_BTC_10Y': '10-Year Bid-to-Cover Ratio'
+                },
+                liquidity: {
+                    'OFR_FSI': 'OFR Financial Stress Index',
+                    'TREASURY_MONITOR': 'Treasury Auction Monitor (Tail & Record Flags)',
+                    'NYFED_FAILS': 'NY Fed Primary Dealer Fails (Deliver/Receive)',
+                    'LIQUIDITY_DASHBOARD': 'Unified Liquidity Intelligence Dashboard'
+                }
+            };
+           
+            return descriptions[source]?.[symbol] || symbol;
+        }
+       
+        // Enhanced detailed descriptions
+        function getDetailedDescription(symbol, source) {
+            const details = {
+                polygon: 'Stock market data',
+                fred: 'Economic indicator',
+                ny_fed: 'Reference rate',
+                ecb: 'European financial indicator',
+                ofr: 'Financial research data',
+                treasury: 'Treasury auction data',
+                liquidity: 'Liquidity stress intelligence'
+            };
+           
+            return details[source] || '';
+        }
+       
+        // Display enhanced search results
+        function displaySearchResults(results, query) {
+            const resultsDiv = document.getElementById('searchResults');
+           
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="search-item" style="text-align:center; color:#888; padding: 20px;">
+                        No results found for "${query}"
+                        <div style="margin-top: 10px; font-size: 12px;">
+                            Try: AAPL, BTC, SPY, FEDFUNDS, sofr, EUR/USD, CISS, OFR FSI
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+           
+            // Sort results by relevance
+            results.sort((a, b) => {
+                const symbolA = a.symbol.toLowerCase();
+                const symbolB = b.symbol.toLowerCase();
+                const queryLower = query.toLowerCase();
+               
+                if (symbolA === queryLower) return -1;
+                if (symbolB === queryLower) return 1;
+                if (symbolA.startsWith(queryLower)) return -1;
+                if (symbolB.startsWith(queryLower)) return 1;
+                return 0;
+            });
+           
+            const displayResults = results.slice(0, 100);
+           
+            let html = '';
+            displayResults.forEach(result => {
+                const highlightMatch = (text) => {
+                    if (!text) return '';
+                    const regex = new RegExp(`(${query.split(' ').join('|')})`, 'gi');
+                    return text.replace(regex, '<span style="color: #00ff88; font-weight: bold;">$1</span>');
+                };
+               
+                const typeTag = result.type ? `<span class="search-item-type">${result.type}</span>` : '';
+               
+                html += `
+                    <div class="search-item" onclick="addToWatchlistFromSearch('${result.symbol}', '${result.provider}', '${result.name.replace(/'/g, "\\'")}')">
+                        <div class="search-item-left">
+                            <div class="search-item-symbol">${highlightMatch(result.symbol)}${typeTag}</div>
+                            <div class="search-item-name">${highlightMatch(result.name)}</div>
+                            ${result.description ? `<div class="search-item-description">${result.description}</div>` : ''}
+                        </div>
+                        <div class="search-item-source">${result.source.toUpperCase()}</div>
+                    </div>
+                `;
+            });
+           
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+       
+        // Add to watchlist from search
+        function addToWatchlistFromSearch(symbol, provider, name) {
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+           
+            if (!currentSymbols.find(s => s.symbol === symbol)) {
+                currentSymbols.push({ symbol, provider });
+                watchlistSymbols = [...currentSymbols];
+                saveWatchlists();
+               
+                watchlistData[symbol] = {
+                    name: name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': 0, '1w': 0, '1m': 0, '3m': 0, '1y': 0 },
+                    changeUnits: { 'daily': 0, 'yearly': 0 },
+                    hasData: false
+                };
+               
+                renderWatchlist();
+                loadSingleWatchlistItem(symbol, provider);
+               
+                const sourceLabel = provider.replace('_direct', '').replace('_intelligence', '').toUpperCase();
+                showTemporaryMessage(`Added ${symbol} from ${sourceLabel} to ${currentWatchlist} watchlist`, 'info');
+            } else {
+                showTemporaryMessage(`${symbol} is already in ${currentWatchlist} watchlist`, 'info');
+            }
+           
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('searchBox').value = '';
+        }
+       
+        // Enhanced data loading for all providers including Treasury auction metrics
+        async function loadSingleWatchlistItem(symbol, provider, retryCount = 0) {
+            const maxRetries = 2;
+           
+            try {
+                console.log(`Loading ${symbol} from ${provider} (attempt ${retryCount + 1})`);
+               
+                let url;
+               
+                // Build URL based on provider type
+                if (provider === 'liquidity_intelligence') {
+                    // Handle liquidity intelligence endpoints
+                    if (symbol === 'OFR_FSI') {
+                        url = `${API_BASE}/api/v1/ofr/fsi`;
+                    } else if (symbol === 'TREASURY_MONITOR') {
+                        url = `${API_BASE}/api/v1/treasury/monitor`;
+                    } else if (symbol === 'NYFED_FAILS') {
+                        url = `${API_BASE}/api/v1/nyfed/fails`;
+                    } else if (symbol === 'LIQUIDITY_DASHBOARD') {
+                        url = `${API_BASE}/api/v1/liquidity/dashboard`;
+                    }
+                } else if (provider === 'polygon_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=quote`;
+                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
+                    // Handle Treasury auction metrics
+                    url = `${API_BASE}/api/v1/treasury/auction_metrics?symbol=${symbol}`;
+                } else if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ny_fed_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ecb_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ofr_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'treasury_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}`;
+                }
+               
+                const response = await fetch(url);
+               
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+               
+                const data = await response.json();
+                console.log(`Data received for ${symbol}:`, data);
+               
+                if (provider === 'liquidity_intelligence') {
+                    processLiquidityIntelligenceData(symbol, data, provider);
+                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
+                    processTreasuryAuctionData(symbol, data, provider);
+                } else if (data.metrics && data.metrics.latest_value !== undefined) {
+                    processWatchlistData(symbol, data, provider);
+                } else if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    processWatchlistDataArray(symbol, data.data, provider);
+                } else {
+                    throw new Error('No data available');
+                }
+               
+            } catch (error) {
+                console.error(`Error loading ${symbol} from ${provider}:`, error);
+               
+                if (retryCount < maxRetries) {
+                    console.log(`Retrying ${symbol} after delay...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+                    return loadSingleWatchlistItem(symbol, provider, retryCount + 1);
+                }
+               
+                // Show error state
+                watchlistData[symbol] = {
+                    name: watchlistData[symbol]?.name || symbol,
+                    provider: provider,
+                    price: 0,
+                    changes: { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null },
+                    changeUnits: { 'daily': null, 'yearly': null },
+                    hasData: false,
+                    error: error.message
+                };
+                renderWatchlist();
+            }
+        }
+        
+        // Process Treasury auction data
+        function processTreasuryAuctionData(symbol, data, provider) {
+            let latestValue = 0;
+            let changes = { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            let changeUnits = { 'daily': null, 'yearly': null };
+           
+            if (symbol.includes('TAIL')) {
+                latestValue = data.tail_spread || 0;
+                changes['1d'] = data.tail_change_bps || null;
+            } else if (symbol.includes('BTC')) {
+                latestValue = data.bid_to_cover_ratio || 0;
+                changes['1d'] = data.btc_change_percent || null;
+            }
+           
+            watchlistData[symbol] = {
+                name: watchlistData[symbol]?.name || symbol,
+                provider: provider,
+                price: latestValue,
+                changes: changes,
+                changeUnits: changeUnits,
+                hasData: true,
+                latestDate: data.auction_date || new Date().toISOString().split('T')[0],
+                actualSymbol: symbol,
+                lastUpdateTime: Date.now()
+            };
+           
+            checkForSignificantChanges(symbol, changes);
+            renderWatchlist();
+        }
+       
+        // Process liquidity intelligence data
+        function processLiquidityIntelligenceData(symbol, data, provider) {
+            let latestValue = 0;
+            let changes = { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            let changeUnits = { 'daily': null, 'yearly': null };
+           
+            if (symbol === 'OFR_FSI' && data.metrics) {
+                latestValue = data.metrics.latest_value || 0;
+                changes = {
+                    '1d': data.metrics.daily_change || null,
+                    '1w': data.metrics.weekly_change || null,
+                    '1m': data.metrics.monthly_change || null,
+                    '3m': null,
+                    '1y': data.metrics.yearly_change || null
+                };
+                changeUnits = {
+                    'daily': data.metrics.daily_change_units || null,
+                    'yearly': data.metrics.yearly_change_units || null
+                };
+            } else if (symbol === 'TREASURY_MONITOR') {
+                latestValue = data.auction_tail_estimate || 0;
+                changes['1d'] = data.record_auction_flag ? 100 : 0;
+            } else if (symbol === 'NYFED_FAILS' && data.metrics) {
+                latestValue = data.metrics.latest_total_fails || 0;
+                changes = {
+                    '1d': null,
+                    '1w': data.metrics.weekly_change || null,
+                    '1m': null,
+                    '3m': null,
+                    '1y': null
+                };
+            } else if (symbol === 'LIQUIDITY_DASHBOARD') {
+                latestValue = data.overall_stress_score || 0;
+                changes['1d'] = latestValue * 100;
+            }
+           
+            watchlistData[symbol] = {
+                name: watchlistData[symbol]?.name || symbol,
+                provider: provider,
+                price: latestValue,
+                changes: changes,
+                changeUnits: changeUnits,
+                hasData: true,
+                latestDate: new Date().toISOString().split('T')[0],
+                actualSymbol: symbol,
+                lastUpdateTime: Date.now()
+            };
+           
+            checkForSignificantChanges(symbol, changes);
+            renderWatchlist();
+        }
+       
+        // Process watchlist data from your API response with new unit changes
+        function processWatchlistData(symbol, data, provider) {
+            const metrics = data.metrics || {};
+            const latestValue = metrics.latest_value || 0;
+           
+            // Extract percentage changes if available
+            const changes = {
+                '1d': metrics.daily_change || null,
+                '1w': metrics.weekly_change || null,
+                '1m': metrics.monthly_change || null,
+                '3m': metrics.quarterly_change || null,
+                '1y': metrics.yearly_change || null
+            };
+           
+            // Extract unit changes
+            const changeUnits = {
+                'daily': metrics.daily_change_units || null,
+                'yearly': metrics.yearly_change_units || null
+            };
+           
+            watchlistData[symbol] = {
+                name: watchlistData[symbol]?.name || symbol,
+                provider: provider,
+                price: latestValue,
+                changes: changes,
+                changeUnits: changeUnits,
+                hasData: true,
+                latestDate: data.latest_date || new Date().toISOString().split('T')[0],
+                actualSymbol: symbol,
+                lastUpdateTime: Date.now()
+            };
+           
+            checkForSignificantChanges(symbol, changes);
+            renderWatchlist();
+        }
+       
+        // Process raw data array with unit changes
+        function processWatchlistDataArray(symbol, dataArray, provider) {
+            if (!dataArray || dataArray.length === 0) return;
+           
+            // Sort by date
+            dataArray.sort((a, b) => new Date(a.date) - new Date(b.date));
+           
+            const latestItem = dataArray[dataArray.length - 1];
+            const latestValue = latestItem.value || latestItem.close || latestItem.price || 0;
+           
+            // Calculate percentage changes and unit changes
+            const changes = calculatePercentageChanges(dataArray);
+            const changeUnits = calculateUnitChanges(dataArray);
+           
+            watchlistData[symbol] = {
+                name: watchlistData[symbol]?.name || symbol,
+                provider: provider,
+                price: latestValue,
+                changes: changes,
+                changeUnits: changeUnits,
+                hasData: true,
+                fullData: dataArray,
+                latestDate: latestItem.date,
+                actualSymbol: symbol,
+                lastUpdateTime: Date.now()
+            };
+           
+            checkForSignificantChanges(symbol, changes);
+            renderWatchlist();
+        }
+       
+        // Calculate unit changes from data array
+        function calculateUnitChanges(data) {
+            if (!data || data.length < 2) {
+                return { 'daily': null, 'yearly': null };
+            }
+           
+            const latestItem = data[data.length - 1];
+            const latestValue = latestItem.value || latestItem.close || latestItem.price || 0;
+            const latestDate = new Date(latestItem.date);
+           
+            if (!latestValue || latestValue === 0) {
+                return { 'daily': null, 'yearly': null };
+            }
+           
+            const changeUnits = {};
+            const periods = {
+                'daily': 1,
+                'yearly': 365
+            };
+           
+            for (const [period, days] of Object.entries(periods)) {
+                const targetDate = new Date(latestDate);
+                targetDate.setDate(targetDate.getDate() - days);
+               
+                // Find closest data point
+                let closestItem = null;
+                let minDiff = Infinity;
+               
+                for (const item of data) {
+                    const itemDate = new Date(item.date);
+                    const diff = Math.abs(itemDate - targetDate);
+                   
+                    if (diff < minDiff && itemDate <= targetDate) {
+                        minDiff = diff;
+                        closestItem = item;
+                    }
+                }
+               
+                if (closestItem) {
+                    const historicalValue = closestItem.value || closestItem.close || closestItem.price || 0;
+                    if (historicalValue !== null && !isNaN(historicalValue)) {
+                        changeUnits[period] = latestValue - historicalValue;
+                    } else {
+                        changeUnits[period] = null;
+                    }
+                } else {
+                    changeUnits[period] = null;
+                }
+            }
+           
+            return changeUnits;
+        }
+       
+        // Calculate percentage changes from data array
+        function calculatePercentageChanges(data) {
+            if (!data || data.length < 2) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
+           
+            const latestItem = data[data.length - 1];
+            const latestValue = latestItem.value || latestItem.close || latestItem.price || 0;
+            const latestDate = new Date(latestItem.date);
+           
+            if (!latestValue || latestValue === 0) {
+                return { '1d': null, '1w': null, '1m': null, '3m': null, '1y': null };
+            }
+           
+            const changes = {};
+            const periods = {
+                '1d': 1,
+                '1w': 7,
+                '1m': 30,
+                '3m': 90,
+                '1y': 365
+            };
+           
+            for (const [period, days] of Object.entries(periods)) {
+                const targetDate = new Date(latestDate);
+                targetDate.setDate(targetDate.getDate() - days);
+               
+                // Find closest data point
+                let closestItem = null;
+                let minDiff = Infinity;
+               
+                for (const item of data) {
+                    const itemDate = new Date(item.date);
+                    const diff = Math.abs(itemDate - targetDate);
+                   
+                    if (diff < minDiff && itemDate <= targetDate) {
+                        minDiff = diff;
+                        closestItem = item;
+                    }
+                }
+               
+                if (closestItem) {
+                    const historicalValue = closestItem.value || closestItem.close || closestItem.price || 0;
+                    if (historicalValue && historicalValue !== 0) {
+                        changes[period] = ((latestValue - historicalValue) / historicalValue * 100);
+                    } else {
+                        changes[period] = null;
+                    }
+                } else {
+                    changes[period] = null;
+                }
+            }
+           
+            return changes;
+        }
+       
+        // Enhanced flashing logic - only flash for 15%+ changes for 1 week
+        function checkForSignificantChanges(symbol, changes) {
+            const significantThreshold = 15; // 15% threshold
+            const flashDuration = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+           
+            // Check daily and weekly changes
+            const dailyChange = changes['1d'];
+            const weeklyChange = changes['1w'];
+           
+            let shouldFlash = false;
+            let flashType = null;
+           
+            // Check if daily or weekly change exceeds 15%
+            if (dailyChange !== null && Math.abs(dailyChange) >= significantThreshold) {
+                shouldFlash = true;
+                flashType = dailyChange > 0 ? 'green' : 'red';
+            } else if (weeklyChange !== null && Math.abs(weeklyChange) >= significantThreshold) {
+                shouldFlash = true;
+                flashType = weeklyChange > 0 ? 'green' : 'red';
+            }
+           
+            if (shouldFlash) {
+                const currentTime = Date.now();
+               
+                // Set flash timer for this symbol
+                flashTimers[symbol] = {
+                    startTime: currentTime,
+                    endTime: currentTime + flashDuration,
+                    type: flashType
+                };
+               
+                console.log(`🚨 Significant change detected for ${symbol}: ${dailyChange?.toFixed(2)}% daily, ${weeklyChange?.toFixed(2)}% weekly`);
+               
+                // Clear flash after 1 week
+                setTimeout(() => {
+                    if (flashTimers[symbol]) {
+                        delete flashTimers[symbol];
+                        renderWatchlist(); // Re-render to remove flash
+                    }
+                }, flashDuration);
+            }
+        }
+       
+        // Check if symbol should flash
+        function shouldSymbolFlash(symbol) {
+            const flashInfo = flashTimers[symbol];
+            if (!flashInfo) return { flash: false, type: null };
+           
+            const currentTime = Date.now();
+            if (currentTime <= flashInfo.endTime) {
+                return { flash: true, type: flashInfo.type };
+            } else {
+                // Clean up expired flash timer
+                delete flashTimers[symbol];
+                return { flash: false, type: null };
+            }
+        }
+       
+        // Load watchlists from storage
+        function loadWatchlists() {
+            const saved = localStorage.getItem('openbbWatchlists');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    Object.keys(savedData).forEach(name => {
+                        if (watchlists[name]) {
+                            watchlists[name].symbols = savedData[name].symbols || watchlists[name].symbols;
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading saved watchlists:', e);
+                }
+            }
+           
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+        }
+       
+        // Save watchlists to storage
+        function saveWatchlists() {
+            const toSave = {};
+            Object.keys(watchlists).forEach(name => {
+                toSave[name] = { symbols: watchlists[name].symbols };
+            });
+            localStorage.setItem('openbbWatchlists', JSON.stringify(toSave));
+        }
+       
+        // Switch watchlist
+        function switchWatchlist(watchlistName) {
+            currentWatchlist = watchlistName;
+            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+            watchlistData = {};
+            loadWatchlistData();
+        }
+       
+        // Load watchlist data
+        async function loadWatchlistData() {
+            const tbody = document.getElementById('watchlistBody');
+           
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
+                return;
+            }
+           
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
+           
+            for (const symbolObj of watchlistSymbols) {
+                const symbol = symbolObj.symbol || symbolObj;
+                const provider = symbolObj.provider || 'fred_direct';
+                await loadSingleWatchlistItem(symbol, provider);
+            }
+        }
+       
+        // Enhanced render watchlist with new columns and flashing logic
+        function renderWatchlist() {
+            const tbody = document.getElementById('watchlistBody');
+           
+            if (watchlistSymbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">No symbols in this watchlist. Use search to add symbols.</td></tr>';
+                return;
+            }
+           
+            let symbolsToRender = watchlistSymbols.map(symbolObj => {
+                const symbol = symbolObj.symbol || symbolObj;
+                const data = watchlistData[symbol];
+                if (!data) return null;
+               
+                let maxChange = 0;
+                if (data.changes) {
+                    const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v));
+                    if (changes.length > 0) {
+                        maxChange = changes.reduce((max, change) => {
+                            return Math.abs(change) > Math.abs(max) ? change : max;
+                        }, 0);
+                    }
+                }
+               
+                // Check if symbol should flash
+                const flashInfo = shouldSymbolFlash(symbol);
+               
+                return {
+                    symbol,
+                    data,
+                    maxChange,
+                    flashInfo
+                };
+            }).filter(item => item !== null);
+           
+            // Sort based on current sort order
+            if (columnSort.column && columnSort.direction) {
+                symbolsToRender.sort((a, b) => {
+                    const aValue = a.data.changes[columnSort.column];
+                    const bValue = b.data.changes[columnSort.column];
+                   
+                    if (aValue === null || aValue === undefined) return 1;
+                    if (bValue === null || bValue === undefined) return -1;
+                   
+                    return columnSort.direction === 'asc' ? aValue - bValue : bValue - aValue;
+                });
+            } else if (sortOrder === 'increase') {
+                symbolsToRender.sort((a, b) => b.maxChange - a.maxChange);
+            } else if (sortOrder === 'decrease') {
+                symbolsToRender.sort((a, b) => a.maxChange - b.maxChange);
+            }
+           
+            const formatPrice = (price) => {
+                if (price === 0) return 'Loading...';
+                if (price >= 1000) return price.toFixed(0);
+                if (price >= 1) return price.toFixed(2);
+                return price.toFixed(4);
+            };
+           
+            const formatChange = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return '—';
+                const val = parseFloat(change);
+                return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+            };
+           
+            const formatUnits = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return '—';
+                const val = parseFloat(change);
+                return (val >= 0 ? '+' : '') + val.toFixed(4);
+            };
+           
+            const getChangeClass = (change) => {
+                if (change === null || change === undefined || isNaN(change)) return 'neutral';
+                return parseFloat(change) >= 0 ? 'positive' : 'negative';
+            };
+           
+            const html = symbolsToRender.map(({ symbol, data, flashInfo }) => {
+                const flashClass = flashInfo.flash ?
+                    (flashInfo.type === 'green' ? 'flash-green' : 'flash-red') : '';
+               
+                const displayName = data.customName || symbol;
+                const colorStyle = data.color ? `background-color: ${data.color};` : 'display: none;';
+                const providerLabel = data.provider?.replace('_direct', '').replace('_intelligence', '').toUpperCase() || 'API';
+               
+                return `
+                    <tr ondblclick="openChartForSymbol('${symbol}', '${data.provider || 'fred_direct'}')"
+                        class="${flashClass}"
+                        style="cursor: pointer;"
+                        title="Double-click to view chart">
+                        <td>
+                            <div class="symbol-cell">
+                                <div class="color-tag" style="${colorStyle}" onclick="editSymbol(event, '${symbol}')"></div>
+                                <div class="symbol-icon">${symbol.charAt(0)}</div>
+                                <div class="symbol-info">
+                                    <div class="symbol-name">
+                                        ${displayName}
+                                        <span class="edit-icon" onclick="editSymbol(event, '${symbol}')">✏️</span>
+                                    </div>
+                                    <div class="symbol-fullname">${data.name} (${providerLabel})</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="price-cell">${formatPrice(data.price)}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">${formatUnits(data.changeUnits?.daily)}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
+                        <td class="change-cell ${getChangeClass(data.changeUnits?.yearly)}">${formatUnits(data.changeUnits?.yearly)}</td>
+                        <td style="padding: 5px;">
+                            <button class="control-btn" style="padding: 4px 8px; font-size: 11px; background: #f5f5f5; color: #333; border: 1px solid #ddd;"
+                                    onclick="removeFromWatchlist(event, '${symbol}')">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+           
+            tbody.innerHTML = html || '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">Loading data...</td></tr>';
+           
+            updateSortIndicators();
+        }
+       
+        // Remove from watchlist
+        function removeFromWatchlist(event, symbol) {
+            event.stopPropagation();
+            const currentSymbols = watchlists[currentWatchlist].symbols;
+            const index = currentSymbols.findIndex(s => (s.symbol || s) === symbol);
+            if (index > -1) {
+                currentSymbols.splice(index, 1);
+                watchlistSymbols = [...currentSymbols];
+                delete watchlistData[symbol];
+               
+                // Clear flash timer if exists
+                if (flashTimers[symbol]) {
+                    delete flashTimers[symbol];
+                }
+               
+                saveWatchlists();
+                renderWatchlist();
+                showTemporaryMessage(`Removed ${symbol} from ${currentWatchlist} watchlist`, 'info');
+            }
+        }
+       
+        // Sort by column
+        function sortByColumn(period) {
+            if (columnSort.column === period) {
+                columnSort.direction = columnSort.direction === 'desc' ? 'asc' : 'desc';
+            } else {
+                columnSort.column = period;
+                columnSort.direction = 'desc';
+            }
+           
+            sortOrder = 'default';
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        // Update sort indicators
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.className = 'sort-indicator';
+            });
+           
+            if (columnSort.column && columnSort.direction) {
+                const indicator = document.getElementById(`sort-${columnSort.column}`);
+                if (indicator) {
+                    indicator.className = `sort-indicator ${columnSort.direction}`;
+                }
+            }
+        }
+       
+        // Change sort order
+        function changeSortOrder(order) {
+            sortOrder = order;
+            columnSort = { column: null, direction: null };
+            updateSortButtons();
+            renderWatchlist();
+        }
+       
+        // Update sort buttons
+        function updateSortButtons() {
+            document.getElementById('sortDefault').classList.toggle('active', sortOrder === 'default');
+            document.getElementById('sortIncrease').classList.toggle('active', sortOrder === 'increase');
+            document.getElementById('sortDecrease').classList.toggle('active', sortOrder === 'decrease');
+        }
+       
+        // Enhanced chart functions with new data display options
+        function addNewChart() {
+            const chartId = `chart_${chartIdCounter++}`;
+           
+            const chartHtml = `
+                <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
+                    <div class="chart-header">
+                        <div class="chart-title-section">
+                            <div class="chart-title" id="${chartId}_title">Chart ${chartIdCounter}</div>
+                            <div class="chart-symbols" id="${chartId}_symbols"></div>
+                            <div class="chart-display-controls">
+                                <button class="display-toggle active" onclick="toggleChartDisplay(event, '${chartId}', 'raw')" data-display="raw">Raw Data</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'pct_change')" data-display="pct_change">% Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'unit_change')" data-display="unit_change">Unit Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'year_pct')" data-display="year_pct">Year % Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'year_units')" data-display="year_units">Year Unit Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'slope')" data-display="slope">Slope (30)</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'macd')" data-display="macd">MACD</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'zscore')" data-display="zscore">Z-Score (30)</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'signals')" data-display="signals">Buy/Sell Signals</button>
+                            </div>
+                        </div>
+                        <div class="chart-controls">
+                            <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','10Y','MAX'].map(tf =>
+                                    `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}"
+                                             onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
+                                ).join('')}
+                            </div>
+                            <button class="close-btn" onclick="removeChart(event, '${chartId}')">×</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas" id="${chartId}_canvas">
+                        <div class="chart-message">Search for a financial indicator to add to this chart</div>
+                    </div>
+                </div>`;
+           
+            document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
+            charts[chartId] = {
+                symbols: [],
+                data: {},
+                timeframe: '1Y',
+                chartInstance: null,
+                displayMode: 'raw'
+            };
+            setActiveChart(chartId);
+           
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+           
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+        }
+       
+        // Toggle chart display mode
+        function toggleChartDisplay(event, chartId, displayMode) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            chart.displayMode = displayMode;
+           
+            // Update button states
+            const controlsDiv = event.target.parentElement;
+            controlsDiv.querySelectorAll('.display-toggle').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+           
+            updateChartRender(chartId);
+        }
+       
+        function setActiveChart(chartId) {
+            if (activeChartId === chartId) return;
+            activeChartId = chartId;
+            document.querySelectorAll('.chart-window').forEach(c => c.classList.remove('active-chart'));
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.classList.add('active-chart');
+            }
+        }
+       
+        function removeChart(event, chartIdToRemove) {
+            event.stopPropagation();
+            if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
+                Plotly.purge(`${chartIdToRemove}_canvas`);
+            }
+            delete charts[chartIdToRemove];
+            document.getElementById(chartIdToRemove)?.remove();
+           
+            if (activeChartId === chartIdToRemove) {
+                const chartKeys = Object.keys(charts);
+                activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
+                if(activeChartId) setActiveChart(activeChartId);
+            }
+           
+            if (Object.keys(charts).length === 0) {
+                const chartsArea = document.getElementById('chartsArea');
+                const watchlistSection = document.querySelector('.watchlist-section');
+                const chartViewBtn = document.getElementById('chartViewBtn');
+               
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+                chartViewBtn.style.display = 'none';
+            }
+        }
+       
+        function openChartForSymbol(symbol, provider) {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            const chartViewBtn = document.getElementById('chartViewBtn');
+           
+            chartsArea.style.display = 'block';
+            watchlistSection.style.flex = '0 0 300px';
+            chartViewBtn.style.display = 'block';
+           
+            if (Object.keys(charts).length === 0) {
+                addNewChart();
+            }
+           
+            if (activeChartId) {
+                const data = watchlistData[symbol];
+                addToChart(activeChartId, symbol, provider, data?.name || symbol);
+            }
+        }
+       
+        function addToChart(chartId, symbol, provider, name) {
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            if (!chart.symbols.find(s => s.symbol === symbol)) {
+                chart.symbols.push({ symbol, provider, name });
+                loadChartData(chartId, symbol, provider);
+            }
+            setActiveChart(chartId);
+        }
