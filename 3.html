@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenBB Financial Intelligence Platform</title>
+   
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+   
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+       
+        /* Header */
+        .header {
+            background: #121212;
+            padding: 15px 20px;
+            border-bottom: 1px solid #282828;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+       
+        /* Main Container */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 71px);
+        }
+       
+        /* Enhanced Search Section */
+        .search-section {
+            background: #121212;
+            padding: 20px;
+            border-bottom: 1px solid #282828;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            background: #222;
+            border: 2px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+            font-size: 18px;
+        }
+       
+        /* Enhanced Ticker Type Filter */
+        .ticker-type-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .type-toggle {
+            background: #252525;
+            border: 1px solid #383838;
+            color: #ccc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .type-toggle:hover {
+            background: #333;
+            border-color: #555;
+        }
+        .type-toggle.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+        
+        /* Data Source Filter */
+        .data-source-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .source-toggle {
+            background: #252525;
+            border: 1px solid #383838;
+            color: #ccc;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .source-toggle:hover {
+            background: #333;
+            border-color: #555;
+        }
+        .source-toggle.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+        .source-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+        .source-indicator.connected {
+            background: #00dd77;
+        }
+       
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            margin-top: 5px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: #181818;
+            border: 1px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .search-loading {
+            padding: 20px;
+            text-align: center;
+            color: #00ff88;
+        }
+        .search-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid #222;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: #252525; }
+        .search-item-left {
+            flex: 1;
+        }
+        .search-item-symbol {
+            font-weight: bold;
+            color: #00dd77;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .search-item-name {
+            font-size: 14px;
+            color: #ddd;
+            margin-bottom: 4px;
+        }
+        .search-item-description {
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.3;
+        }
+        .search-item-source {
+            font-size: 11px;
+            color: #888;
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .search-item-type {
+            font-size: 10px;
+            color: #fff;
+            background: #0066cc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+       
+        /* Charts and Watchlist Container */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+       
+        /* Charts Area */
+        .charts-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #0f0f0f;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+        }
+        .chart-window {
+            background: #131313;
+            border: 1px solid #282828;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: border-color 0.3s;
+            min-height: 500px;
+        }
+        .chart-window.active-chart {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .chart-title-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+        .chart-title {
+            font-size: 18px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chart-symbols {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .chart-symbol-tag {
+            background: #252525;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #333;
+        }
+        .symbol-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .remove-symbol {
+            cursor: pointer;
+            color: #ff5555;
+            font-weight: bold;
+            margin-left: 5px;
+            opacity: 0.7;
+            font-size: 14px;
+        }
+        .remove-symbol:hover { opacity: 1; }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .timeframe-buttons {
+            display: flex;
+            gap: 2px;
+            background: #080808;
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid #252525;
+        }
+        .timeframe-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        .timeframe-btn:hover {
+            background: #2e2e2e;
+            color: #fff;
+        }
+        .timeframe-btn.active {
+            background: #00dd77;
+            color: #000;
+            font-weight: bold;
+        }
+       
+        /* Chart Display Controls */
+        .chart-display-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .display-toggle {
+            background: #252525;
+            border: 1px solid #383838;
+            color: #ccc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .display-toggle:hover {
+            background: #333;
+            border-color: #555;
+        }
+        .display-toggle.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+       
+        .chart-canvas {
+            background: #0a0a0a;
+            border-radius: 6px;
+            height: 500px;
+            flex-grow: 1;
+            min-height: 450px;
+        }
+        .chart-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            font-size: 16px;
+            text-align: center;
+            padding: 20px;
+        }
+       
+        .control-btn {
+            background: #252525;
+            border: 1px solid #383838;
+            color: #ccc;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .control-btn:hover {
+            background: #333;
+            border-color: #555;
+            color: #fff;
+        }
+        .close-btn {
+            background: #dd4444;
+            border-color: #dd4444;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .close-btn:hover { background: #ff5555; }
+       
+        /* Watchlist Section */
+        .watchlist-section {
+            background: #121212;
+            border-top: 1px solid #282828;
+            height: 300px;
+            overflow-y: auto;
+        }
+       
+        .watchlist-header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #282828;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+       
+        .watchlist-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+       
+        .watchlist-selector {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+       
+        .watchlist-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+       
+        .sort-button {
+            background: #252525;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+       
+        .sort-button:hover {
+            background: #333;
+            border-color: #555;
+        }
+       
+        .sort-button.active {
+            background: #00dd77;
+            color: #000;
+            border-color: #00dd77;
+        }
+       
+        .add-watchlist {
+            background: #00dd77;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .add-watchlist:hover { background: #00ff88; }
+       
+        /* CoinMarketCap Style Table */
+        .watchlist-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+       
+        .watchlist-table th {
+            background: #f5f5f5;
+            color: #333;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+            position: sticky;
+            top: 57px;
+            z-index: 5;
+        }
+       
+        .watchlist-table th.sortable:hover {
+            background: #e8e8e8;
+        }
+       
+        .sort-indicator {
+            font-size: 10px;
+            margin-left: 4px;
+            color: #999;
+        }
+       
+        .sort-indicator.asc::after {
+            content: "▲";
+            color: #00dd77;
+        }
+       
+        .sort-indicator.desc::after {
+            content: "▼";
+            color: #ff4444;
+        }
+       
+        .watchlist-table tbody tr {
+            transition: background-color 0.2s;
+            cursor: pointer;
+            background: #fff;
+            color: #333;
+        }
+       
+        .watchlist-table tbody tr:hover {
+            background: #f8f8f8;
+        }
+       
+        .watchlist-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #333;
+        }
+       
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+       
+        .symbol-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 10px;
+        }
+       
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+       
+        .symbol-name {
+            font-weight: bold;
+            color: #000;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+       
+        .symbol-fullname {
+            color: #666;
+            font-size: 11px;
+        }
+       
+        .edit-icon {
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            color: #666;
+        }
+       
+        .symbol-cell:hover .edit-icon {
+            opacity: 1;
+        }
+       
+        .color-tag {
+            width: 8px;
+            height: 24px;
+            border-radius: 2px;
+            margin-right: 4px;
+            cursor: pointer;
+        }
+       
+        .price-cell {
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+       
+        .change-cell {
+            text-align: right;
+            font-weight: bold;
+        }
+       
+        .positive { color: #00dd77; }
+        .negative { color: #ff4444; }
+        .neutral { color: #666; }
+       
+        /* Enhanced flashing animations for significant changes (15%+) */
+        @keyframes flashGreen {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #00ff8830; }
+        }
+       
+        @keyframes flashRed {
+            0%, 100% { background-color: #fff; }
+            50% { background-color: #ff444430; }
+        }
+       
+        .flash-green {
+            animation: flashGreen 2s ease-in-out infinite;
+        }
+       
+        .flash-red {
+            animation: flashRed 2s ease-in-out infinite;
+        }
+       
+        /* Loading */
+        .loading-pulse { animation: pulse 1.5s infinite ease-in-out; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+       
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+       
+        /* Message Popup */
+        .message-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #222;
+            border: 1px solid #333;
+            padding: 15px 20px;
+            border-radius: 6px;
+            z-index: 2000;
+            animation: slideInAndOut 3s ease-in-out forwards;
+        }
+        .message-popup.info { border-color: #00dd77; }
+        .message-popup.error { border-color: #ff4444; color: #ff6666; }
+       
+        @keyframes slideInAndOut {
+            0% { transform: translateX(120%); opacity: 0; }
+            15%, 85% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(120%); opacity: 0; }
+        }
+       
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+       
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+       
+        .status-dot.connected {
+            background: #00dd77;
+        }
+       
+        /* Liquidity Dashboard Alert */
+        .liquidity-alert {
+            background: linear-gradient(45deg, #ff4444, #ff6666);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+        }
+       
+        .liquidity-alert.moderate {
+            background: linear-gradient(45deg, #ffaa00, #ffcc00);
+            color: #000;
+        }
+       
+        /* Risk/Liquidity Histogram Dashboard */
+        .risk-dashboard {
+            background: #131313;
+            border: 1px solid #282828;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px;
+            display: none;
+        }
+        
+        .risk-dashboard.active {
+            display: block;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .dashboard-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-indicators {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .alert-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        .alert-badge.low {
+            background: #00dd77;
+            color: #000;
+        }
+        
+        .alert-badge.moderate {
+            background: #ffaa00;
+            color: #000;
+        }
+        
+        .alert-badge.high {
+            background: #ff4444;
+            color: #fff;
+        }
+        
+        .alert-badge.extreme {
+            background: #8b0000;
+            color: #fff;
+            animation: flashAlert 1s infinite;
+        }
+        
+        @keyframes flashAlert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .gauge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .gauge-container {
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+        
+        .gauge-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .gauge-chart {
+            height: 300px;
+            width: 100%;
+        }
+        
+        .watchlist-config {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .config-header {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .config-toggle {
+            background: #252525;
+            border: 1px solid #383838;
+            color: #ccc;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .config-category {
+            background: #252525;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .category-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #00dd77;
+            margin-bottom: 10px;
+        }
+        
+        .symbol-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .symbol-checkbox input[type="checkbox"] {
+            accent-color: #00dd77;
+        }
+        
+        .threshold-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .threshold-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .threshold-input input {
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 60px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📊 OPENBB FINANCIAL INTELLIGENCE</div>
+        <div class="header-controls">
+            <div class="liquidity-alert" id="liquidityAlert" onclick="showLiquidityDashboard()" style="display: none;">
+                <span id="liquidityAlertText">Checking Liquidity...</span>
+            </div>
+            <div class="api-status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="apiStatusText">Checking connections...</span>
+            </div>
+            <button class="control-btn" onclick="addNewChart()">+ New Chart</button>
+            <span id="clock" style="color: #888; font-size: 14px;"></span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchBox"
+                       placeholder="Search all financial instruments (Stocks, ETFs, Crypto, Bonds, Indices, Economic Data)..."
+                       onkeyup="performSearch(this.value)"
+                       autocomplete="off">
+                <span class="search-icon">🔍</span>
+                <div class="search-results" id="searchResults" style="display: none;"></div>
+            </div>
+            
+            <!-- Enhanced Ticker Type Filter -->
+            <div class="ticker-type-filter">
+                <button class="type-toggle active" data-type="CS" onclick="toggleTickerType('CS')">📈 Stocks</button>
+                <button class="type-toggle active" data-type="ETF" onclick="toggleTickerType('ETF')">🎯 ETFs</button>
+                <button class="type-toggle active" data-type="CRYPTO" onclick="toggleTickerType('CRYPTO')">₿ Crypto</button>
+                <button class="type-toggle active" data-type="MF" onclick="toggleTickerType('MF')">🏛️ Mutual Funds</button>
+                <button class="type-toggle active" data-type="BOND" onclick="toggleTickerType('BOND')">🏦 Bonds</button>
+                <button class="type-toggle active" data-type="INDEX" onclick="toggleTickerType('INDEX')">📊 Indices</button>
+                <button class="type-toggle active" data-type="OTHER" onclick="toggleTickerType('OTHER')">🔧 Other</button>
+            </div>
+            
+            <div class="data-source-filter">
+                <button class="source-toggle active" data-source="polygon" onclick="toggleDataSource('polygon')">
+                    <span class="source-indicator" id="polygon-indicator"></span>
+                    Polygon
+                </button>
+                <button class="source-toggle active" data-source="fred" onclick="toggleDataSource('fred')">
+                    <span class="source-indicator" id="fred-indicator"></span>
+                    FRED
+                </button>
+                <button class="source-toggle active" data-source="ny_fed" onclick="toggleDataSource('ny_fed')">
+                    <span class="source-indicator" id="ny_fed-indicator"></span>
+                    NY Fed
+                </button>
+                <button class="source-toggle active" data-source="ecb" onclick="toggleDataSource('ecb')">
+                    <span class="source-indicator" id="ecb-indicator"></span>
+                    ECB
+                </button>
+                <button class="source-toggle active" data-source="ofr" onclick="toggleDataSource('ofr')">
+                    <span class="source-indicator" id="ofr-indicator"></span>
+                    OFR
+                </button>
+                <button class="source-toggle active" data-source="treasury" onclick="toggleDataSource('treasury')">
+                    <span class="source-indicator" id="treasury-indicator"></span>
+                    Treasury
+                </button>
+                <button class="source-toggle active" data-source="liquidity" onclick="toggleDataSource('liquidity')">
+                    <span class="source-indicator" id="liquidity-indicator"></span>
+                    Liquidity Intelligence
+                </button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="charts-area" style="display: none;" id="chartsArea">
+                <div class="chart-grid" id="chartGrid"></div>
+            </div>
+            
+            <!-- Risk/Liquidity Dashboard -->
+            <div class="risk-dashboard" id="riskDashboard">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        🎯 Market Risk & Liquidity Intelligence
+                    </div>
+                    <div class="alert-indicators" id="alertIndicators">
+                        <!-- Alert badges will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="gauge-grid" id="gaugeGrid">
+                    <!-- Gauge charts will be populated here -->
+                </div>
+                
+                <div class="watchlist-config" id="watchlistConfig" style="display: none;">
+                    <div class="config-header">
+                        📝 Configure Risk Categories
+                        <button class="config-toggle" onclick="toggleConfig()">Toggle Config</button>
+                    </div>
+                    
+                    <div class="config-grid">
+                        <div class="config-category">
+                            <div class="category-title">🔴 Risk Indicators</div>
+                            <div id="riskSymbols">
+                                <!-- Risk symbols checkboxes -->
+                            </div>
+                        </div>
+                        
+                        <div class="config-category">
+                            <div class="category-title">💧 Liquidity Indicators</div>
+                            <div id="liquiditySymbols">
+                                <!-- Liquidity symbols checkboxes -->
+                            </div>
+                        </div>
+                        
+                        <div class="config-category">
+                            <div class="category-title">📈 Economic Stress</div>
+                            <div id="economicSymbols">
+                                <!-- Economic symbols checkboxes -->
+                            </div>
+                        </div>
+                        
+                        <div class="config-category">
+                            <div class="category-title">🌍 Global Stability</div>
+                            <div id="globalSymbols">
+                                <!-- Global symbols checkboxes -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="threshold-controls">
+                        <div class="threshold-input">
+                            <label>🟡 Warning:</label>
+                            <input type="number" id="warningThreshold" value="60" min="0" max="100">%
+                        </div>
+                        <div class="threshold-input">
+                            <label>🔴 Critical:</label>
+                            <input type="number" id="criticalThreshold" value="80" min="0" max="100">%
+                        </div>
+                        <div class="threshold-input">
+                            <label>⚫ Extreme:</label>
+                            <input type="number" id="extremeThreshold" value="95" min="0" max="100">%
+                        </div>
+                        <button class="control-btn" onclick="updateRiskDashboard()">Update Dashboard</button>
+                    </div>
+                </div>
+            </div>
+           
+            <div class="watchlist-section" style="flex: 1;">
+                <div class="watchlist-header">
+                    <div class="watchlist-title">
+                        <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
+                            <option value="MAIN">MAIN</option>
+                            <option value="STOCKS">STOCKS</option>
+                            <option value="NY FED RATES">NY FED RATES</option>
+                            <option value="ECB SYSTEMIC STRESS">ECB SYSTEMIC STRESS</option>
+                            <option value="DOLLAR & EXCHANGE">DOLLAR & EXCHANGE</option>
+                            <option value="GLOBAL LIQUIDITY">GLOBAL LIQUIDITY</option>
+                            <option value="BLACK SWAN INDICATORS">BLACK SWAN INDICATORS</option>
+                            <option value="ECONOMIC INDICATORS">ECONOMIC INDICATORS</option>
+                            <option value="RATES & MONETARY">RATES & MONETARY</option>
+                            <option value="OFR FUNDING MONITOR">OFR FUNDING MONITOR</option>
+                            <option value="TREASURY AUCTIONS">TREASURY AUCTIONS</option>
+                            <option value="LIQUIDITY INTELLIGENCE">LIQUIDITY INTELLIGENCE</option>
+                        </select>
+                    </div>
+                    <div class="watchlist-controls">
+                        <button class="sort-button" onclick="changeSortOrder('default')" id="sortDefault">Default</button>
+                        <button class="sort-button" onclick="changeSortOrder('increase')" id="sortIncrease">↑ Largest Increase</button>
+                        <button class="sort-button" onclick="changeSortOrder('decrease')" id="sortDecrease">↓ Largest Decrease</button>
+                        <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
+                        <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
+            <button class="control-btn" onclick="toggleRiskDashboard()" id="riskDashboardBtn">📊 Risk Dashboard</button>
+                    </div>
+                </div>
+                <table class="watchlist-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th class="text-right">Price / Value</th>
+                            <th class="text-right">Daily Change (Units)</th>
+                            <th class="text-right sortable" onclick="sortByColumn('1d')" style="cursor: pointer;">
+                                1D % <span class="sort-indicator" id="sort-1d"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1w')" style="cursor: pointer;">
+                                1W % <span class="sort-indicator" id="sort-1w"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1m')" style="cursor: pointer;">
+                                1M % <span class="sort-indicator" id="sort-1m"></span>
+                            </th>
+                            <th class="text-right sortable" onclick="sortByColumn('1y')" style="cursor: pointer;">
+                                1Y % <span class="sort-indicator" id="sort-1y"></span>
+                            </th>
+                            <th class="text-right">Yearly Change (Units)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="watchlistBody">
+                        <!-- Watchlist items will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration matching your exact backend
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
+       
+        // Enhanced data source configurations
+        const DATA_SOURCES = {
+            polygon: {
+                name: 'Polygon Financial Data',
+                provider: 'polygon_direct',
+                active: true,
+                searchSymbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD']
+            },
+            fred: {
+                name: 'Federal Reserve Economic Data',
+                provider: 'fred_direct',
+                active: true,
+                searchSymbols: [
+                    // Core Economic Indicators
+                    'FEDFUNDS', 'UNRATE', 'GDP', 'CPIAUCSL', 'DFF', 'M2SL', 'PAYEMS', 'HOUST', 'INDPRO',
+                    // Dollar & Exchange Rates
+                    'DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS',
+                    // Treasury Rates
+                    'DGS10', 'DGS2', 'DGS30', 'DGS5', 'DGS1',
+                    // Global Liquidity Indicators
+                    'RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690',
+                    'SUBLPDCISTQNQ', 'DRISCFLM', 'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S',
+                    'DRISCFS', 'MABMM301JPM189S', 'TREAS911Y', 'RREP15', 'OTHL15', 'RESH4MFNWW',
+                    'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES',
+                    // Black Swan Indicators
+                    'NFCINONFINLEVERAGE', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'T10YIE', 'AMERIBOR',
+                    'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 'VIXCLS',
+                    // Additional Economic Data
+                    'ISRATIO', 'MNFCTRIRSA', 'SOFR', 'EFFR', 'OBFR'
+                ]
+            },
+            ny_fed: {
+                name: 'New York Federal Reserve',
+                provider: 'ny_fed_direct',
+                active: true,
+                searchSymbols: ['sofr', 'effr', 'obfr', 'tgcr', 'bgcr']
+            },
+            ecb: {
+                name: 'European Central Bank',
+                provider: 'ecb_direct',
+                active: true,
+                searchSymbols: [
+                    'EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A',
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX',
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX',
+                    'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR'
+                ]
+            },
+            ofr: {
+                name: 'Office of Financial Research',
+                provider: 'ofr_direct',
+                active: true,
+                searchSymbols: [
+                    'NYPD-PD_AFtR_T-A', 'NYPD-PD_AFtD_TOT-A', 'REPO_OV_TOT_P75', 'REPO_OV_TOT_P25',
+                    'MMF_OV_TOT', 'DEALER_OV_TOT', 'BANK_OV_TOT', 'TGCR_VOL', 'SOFR_VOL'
+                ]
+            },
+            treasury: {
+                name: 'US Treasury Direct',
+                provider: 'treasury_direct',
+                active: true,
+                searchSymbols: [
+                    'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_17W', 'BILLS_26W', 'BILLS_52W',
+                    'NOTES_2Y', 'NOTES_3Y', 'NOTES_5Y', 'NOTES_7Y', 'NOTES_10Y',
+                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y',
+                    // New Treasury Auction Metrics
+                    'AUCTION_TAIL_4W', 'AUCTION_BTC_4W', 'AUCTION_TAIL_13W', 'AUCTION_BTC_13W',
+                    'AUCTION_TAIL_2Y', 'AUCTION_BTC_2Y', 'AUCTION_TAIL_10Y', 'AUCTION_BTC_10Y'
+                ]
+            },
+            liquidity: {
+                name: 'Liquidity Intelligence Layer',
+                provider: 'liquidity_intelligence',
+                active: true,
+                searchSymbols: ['OFR_FSI', 'TREASURY_MONITOR', 'NYFED_FAILS', 'LIQUIDITY_DASHBOARD']
+            }
+        };
+       
+        // Ticker type configuration for Polygon
+        const TICKER_TYPES = {
+            CS: { name: 'Common Stock', active: true },
+            ETF: { name: 'Exchange Traded Fund', active: true },
+            CRYPTO: { name: 'Cryptocurrency', active: true },
+            MF: { name: 'Mutual Fund', active: true },
+            BOND: { name: 'Bond', active: true },
+            INDEX: { name: 'Index', active: true },
+            OTHER: { name: 'Other (ADR, REIT, etc.)', active: true }
+        };
+        
+        let activeTickerTypes = Object.keys(TICKER_TYPES);
+        let polygonTickers = []; // Cache for Polygon tickers
+        let polygonTickersLoaded = false;
+        
+        const charts = {};
+        let chartIdCounter = 0;
+        let activeChartId = null;
+        let searchTimeout = null;
+        let activeSources = ['polygon', 'fred', 'ny_fed', 'ecb', 'ofr', 'treasury', 'liquidity'];
+       
+        // Enhanced watchlists with comprehensive coverage
+        const watchlists = {
+            'MAIN': {
+                symbols: [
+                    { symbol: 'AAPL', provider: 'polygon_direct' },
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct' },
+                    { symbol: 'UNRATE', provider: 'fred_direct' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' }
+                ],
+                active: true
+            },
+            'STOCKS': {
+                symbols: [
+                    { symbol: 'AAPL', provider: 'polygon_direct' },
+                    { symbol: 'MSFT', provider: 'polygon_direct' },
+                    { symbol: 'GOOGL', provider: 'polygon_direct' },
+                    { symbol: 'AMZN', provider: 'polygon_direct' },
+                    { symbol: 'TSLA', provider: 'polygon_direct' },
+                    { symbol: 'SPY', provider: 'polygon_direct' },
+                    { symbol: 'QQQ', provider: 'polygon_direct' },
+                    { symbol: 'NVDA', provider: 'polygon_direct' },
+                    { symbol: 'META', provider: 'polygon_direct' },
+                    { symbol: 'NFLX', provider: 'polygon_direct' }
+                ],
+                active: false
+            },
+            'NY FED RATES': {
+                symbols: [
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
+                    { symbol: 'obfr', provider: 'ny_fed_direct' },
+                    { symbol: 'tgcr', provider: 'ny_fed_direct' },
+                    { symbol: 'bgcr', provider: 'ny_fed_direct' }
+                ],
+                active: false
+            },
+            'ECB SYSTEMIC STRESS': {
+                symbols: [
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'DOLLAR & EXCHANGE': {
+                symbols: [
+                    { symbol: 'DTWEXBGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXEMEGS', provider: 'fred_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'GLOBAL LIQUIDITY': {
+                symbols: [
+                    { symbol: 'RESPPNTEPNWW', provider: 'fred_direct' },
+                    { symbol: 'RESPPALGUOXAWXCH52NWW', provider: 'fred_direct' },
+                    { symbol: 'RESPPALGUONNWW', provider: 'fred_direct' },
+                    { symbol: 'SWP1690', provider: 'fred_direct' },
+                    { symbol: 'OTHL1690', provider: 'fred_direct' },
+                    { symbol: 'RMFSL', provider: 'fred_direct' },
+                    { symbol: 'BOGMBASE', provider: 'fred_direct' },
+                    { symbol: 'WSHOSHO', provider: 'fred_direct' },
+                    { symbol: 'WRESBAL', provider: 'fred_direct' },
+                    { symbol: 'TOTRESNS', provider: 'fred_direct' },
+                    { symbol: 'NONBORRES', provider: 'fred_direct' },
+                    { symbol: 'ILM.W.U2.C.A030000.U2.Z06', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'BLACK SWAN INDICATORS': {
+                symbols: [
+                    { symbol: 'NFCINONFINLEVERAGE', provider: 'fred_direct' },
+                    { symbol: 'FRBKCLMCIM', provider: 'fred_direct' },
+                    { symbol: 'AMTMUO', provider: 'fred_direct' },
+                    { symbol: 'T10YIE', provider: 'fred_direct' },
+                    { symbol: 'WLCFLPCL', provider: 'fred_direct' },
+                    { symbol: 'CC4WSA', provider: 'fred_direct' },
+                    { symbol: 'VIXCLS', provider: 'fred_direct' },
+                    { symbol: 'TREAS1590', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'ECONOMIC INDICATORS': {
+                symbols: [
+                    { symbol: 'GDP', provider: 'fred_direct' },
+                    { symbol: 'UNRATE', provider: 'fred_direct' },
+                    { symbol: 'CPIAUCSL', provider: 'fred_direct' },
+                    { symbol: 'PAYEMS', provider: 'fred_direct' },
+                    { symbol: 'INDPRO', provider: 'fred_direct' },
+                    { symbol: 'HOUST', provider: 'fred_direct' },
+                    { symbol: 'ISRATIO', provider: 'fred_direct' },
+                    { symbol: 'MNFCTRIRSA', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'RATES & MONETARY': {
+                symbols: [
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct' },
+                    { symbol: 'DGS10', provider: 'fred_direct' },
+                    { symbol: 'DGS2', provider: 'fred_direct' },
+                    { symbol: 'DGS30', provider: 'fred_direct' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
+                    { symbol: 'M2SL', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'OFR FUNDING MONITOR': {
+                symbols: [
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'NYPD-PD_AFtD_TOT-A', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P75', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P25', provider: 'ofr_direct' },
+                    { symbol: 'MMF_OV_TOT', provider: 'ofr_direct' },
+                    { symbol: 'DEALER_OV_TOT', provider: 'ofr_direct' }
+                ],
+                active: false
+            },
+            'TREASURY AUCTIONS': {
+                symbols: [
+                    { symbol: 'BILLS_4W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_26W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_52W', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_2Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_5Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_10Y', provider: 'treasury_direct' },
+                    { symbol: 'BONDS_30Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_10Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_30Y', provider: 'treasury_direct' },
+                    // New auction metrics
+                    { symbol: 'AUCTION_TAIL_4W', provider: 'treasury_direct' },
+                    { symbol: 'AUCTION_BTC_13W', provider: 'treasury_direct' },
+                    { symbol: 'AUCTION_TAIL_10Y', provider: 'treasury_direct' }
+                ],
+                active: false
+            },
+            'LIQUIDITY INTELLIGENCE': {
+                symbols: [
+                    { symbol: 'OFR_FSI', provider: 'liquidity_intelligence' },
+                    { symbol: 'TREASURY_MONITOR', provider: 'liquidity_intelligence' },
+                    { symbol: 'NYFED_FAILS', provider: 'liquidity_intelligence' },
+                    { symbol: 'LIQUIDITY_DASHBOARD', provider: 'liquidity_intelligence' }
+                ],
+                active: false
+            }
+        };
+       
+        let currentWatchlist = 'MAIN';
+        let watchlistSymbols = [];
+        let watchlistData = {};
+        let sortOrder = 'default';
+        let columnSort = { column: null, direction: null };
+       
+        // Color palette for charts
+        const colorPalette = [
+            '#00AEEF', '#FF4444', '#F4D03F', '#58D68D', '#FF7043',
+            '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
+        ];
+       
+                
+        // Risk/Liquidity Dashboard Configuration
+        const riskCategories = {
+            'risk': {
+                name: '🔴 Market Risk',
+                symbols: ['VIXCLS', 'T10YIE', 'NFCINONFINLEVERAGE', 'CC4WSA', 'WLCFLPCL', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX'],
+                color: '#ff4444',
+                thresholds: { warning: 60, critical: 80, extreme: 95 }
+            },
+            'liquidity': {
+                name: '💧 Liquidity Stress',
+                symbols: ['M2SL', 'TOTRESNS', 'WRESBAL', 'RMFSL', 'BOGMBASE', 'sofr', 'effr'],
+                color: '#00aaff',
+                thresholds: { warning: 65, critical: 85, extreme: 95 }
+            },
+            'economic': {
+                name: '📈 Economic Stress',
+                symbols: ['UNRATE', 'CPIAUCSL', 'PAYEMS', 'INDPRO', 'FEDFUNDS', 'DGS10'],
+                color: '#ffaa00',
+                thresholds: { warning: 70, critical: 85, extreme: 95 }
+            },
+            'global': {
+                name: '🌍 Global Stability',
+                symbols: ['DTWEXBGS', 'EXR.D.USD.EUR.SP00.A', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX'],
+                color: '#aa00ff',
+                thresholds: { warning: 60, critical: 80, extreme: 90 }
+            }
+        };
+        
+        let riskDashboardData = {};
+        let riskAlerts = {};
+        let flashTimers = {};
+       
+        // Initialize the dashboard
+        async function init() {
+            updateClock();
+            setInterval(updateClock, 1000);
+           
+            loadWatchlists();
+            await checkAPIConnections();
+            loadWatchlistData();
+            setInterval(loadWatchlistData, 60000);
+           
+            // Load liquidity dashboard
+            setInterval(loadLiquidityDashboard, 300000); // Every 5 minutes
+            loadLiquidityDashboard();
+           
+            updateSortButtons();
+            document.getElementById('searchBox').focus();
+            
+            // Initialize Risk Dashboard
+            initializeRiskDashboard();
+            
+            // Load Polygon tickers on first search
+            loadPolygonTickers();
+        }
+        
+        // Load Polygon tickers for enhanced search
+        async function loadPolygonTickers() {
+            if (polygonTickersLoaded) return;
+            
+            try {
+                console.log('Loading Polygon tickers...');
+                const response = await fetch(`${API_BASE}/api/v1/polygon/tickers?limit=5000&active=true`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.results) {
+                        polygonTickers = data.results.map(ticker => ({
+                            ticker: ticker.ticker,
+                            name: ticker.name,
+                            type: ticker.type || 'CS',
+                            market: ticker.market || 'stocks',
+                            active: ticker.active
+                        }));
+                        polygonTickersLoaded = true;
+                        console.log(`Loaded ${polygonTickers.length} Polygon tickers`);
+                    }
+                } else {
+                    console.warn('Failed to load Polygon tickers:', response.status);
+                    // Fallback to basic tickers if API fails
+                    polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
+                        ticker: symbol,
+                        name: symbol,
+                        type: 'CS',
+                        market: 'stocks',
+                        active: true
+                    }));
+                }
+            } catch (error) {
+                console.warn('Error loading Polygon tickers:', error);
+                // Fallback to basic tickers
+                polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
+                    ticker: symbol,
+                    name: symbol,
+                    type: 'CS',
+                    market: 'stocks',
+                    active: true
+                }));
+            }
+        }
+        
+        // Toggle ticker type
+        function toggleTickerType(type) {
+            const button = document.querySelector(`[data-type="${type}"]`);
+            const isActive = button.classList.contains('active');
+            
+            if (isActive) {
+                button.classList.remove('active');
+                activeTickerTypes = activeTickerTypes.filter(t => t !== type);
+            } else {
+                button.classList.add('active');
+                activeTickerTypes.push(type);
+            }
+        }
+       
+        // Enhanced API connection check for all providers
+        async function checkAPIConnections() {
+            let connectedCount = 0;
+            const totalSources = Object.keys(DATA_SOURCES).length;
+           
+            // Test health endpoint first
+            try {
+                const healthResponse = await fetch(`${API_BASE}/api/v1/health`);
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.json();
+                    console.log('Health check:', healthData);
+                }
+            } catch (error) {
+                console.warn('Health check failed:', error);
+            }
