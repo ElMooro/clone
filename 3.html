@@ -3376,7 +3376,17 @@
             }
         });
        
-        // Initialize on page load
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox');
+            const searchResults = document.getElementById('searchResults');
+           
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+       
+        // Initialize on page load - moved to end to ensure all functions are defined
         window.onload = init;
     </script>
 </body>
