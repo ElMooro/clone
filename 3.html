@@ -1413,6 +1413,26 @@
         let riskAlerts = {};
         let flashTimers = {};
        
+        // Update clock function
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            const dateString = now.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const clockElement = document.getElementById('clock');
+            if (clockElement) {
+                clockElement.textContent = `${dateString} ${timeString}`;
+            }
+        }
+
         // Initialize the dashboard
         async function init() {
             updateClock();
@@ -1435,26 +1455,6 @@
             
             // Load Polygon tickers on first search
             loadPolygonTickers();
-        }
-        
-        // Update clock
-        function updateClock() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            });
-            const dateString = now.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
-            });
-            const clockElement = document.getElementById('clock');
-            if (clockElement) {
-                clockElement.textContent = `${dateString} ${timeString}`;
-            }
         }
         
         // Get ticker type description
