@@ -2182,18 +2182,10 @@
                     break;
                     
                 case 'ecb':
-                    // For demo, use universal API
-                    url = `${API_BASE}${API_ENDPOINTS.universal_data}`;
-                    params.append('provider', 'ecb');
-                    params.append('symbol', symbol);
-                    break;
-                    
                 case 'polygon':
-                    // For demo, use universal API  
-                    url = `${API_BASE}${API_ENDPOINTS.universal_data}`;
-                    params.append('provider', 'polygon');
-                    params.append('symbol', symbol);
-                    break;
+                    // These endpoints return 404, so use mock data instead
+                    console.log(`⚠️ ${provider} endpoint not available, generating realistic demo data for ${symbol}`);
+                    return generateMockSymbolData(symbol, provider);
                     
                 default:
                     throw new Error(`Unsupported provider: ${provider}`);
@@ -2202,20 +2194,92 @@
             const fullUrl = `${url}?${params.toString()}`;
             console.log(`🔄 Fetching: ${fullUrl}`);
             
-            const response = await fetch(fullUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+            try {
+                const response = await fetch(fullUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.log(`⚠️ Endpoint not available (404): ${fullUrl}, using demo data for ${symbol}`);
+                        return generateMockSymbolData(symbol, provider);
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-            });
+                
+                const data = await response.json();
+                return processSymbolData(symbol, provider, data);
+            } catch (error) {
+                console.log(`⚠️ API call failed for ${symbol}, using demo data:`, error.message);
+                return generateMockSymbolData(symbol, provider);
+            }
+        }
+        
+        function generateMockSymbolData(symbol, provider) {
+            // Generate realistic mock data based on symbol and provider
+            const baseValue = getBaseValueForSymbol(symbol);
+            const volatility = getVolatilityForSymbol(symbol);
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Generate realistic time series data
+            const observations = [];
+            const now = new Date();
+            let currentValue = baseValue;
+            
+            for (let i = 365; i >= 0; i--) {
+                const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
+                const change = (Math.random() - 0.5) * volatility * currentValue * 0.02;
+                currentValue = Math.max(currentValue + change, 0.01);
+                
+                observations.push({
+                    date: date.toISOString().split('T')[0],
+                    value: currentValue.toFixed(4),
+                    realtime_start: date.toISOString().split('T')[0],
+                    realtime_end: date.toISOString().split('T')[0]
+                });
             }
             
-            const data = await response.json();
-            return processSymbolData(symbol, provider, data);
+            return processSymbolData(symbol, provider, {
+                observations: observations,
+                mock_data: true
+            });
+        }
+        
+        function getBaseValueForSymbol(symbol) {
+            // Return realistic base values for different symbols
+            const symbolValues = {
+                'AAPL': 180,
+                'MSFT': 350,
+                'GOOGL': 140,
+                'TSLA': 250,
+                'SPY': 450,
+                'QQQ': 380,
+                'FEDFUNDS': 5.25,
+                'UNRATE': 3.8,
+                'DGS10': 4.2,
+                'DGS2': 4.8,
+                'VIXCLS': 18,
+                'sofr': 5.3,
+                'effr': 5.25,
+                'X:BTCUSD': 42000,
+                'X:ETHUSD': 2500,
+                'I:SPX': 4800,
+                'I:DXY': 104.5
+            };
+            
+            return symbolValues[symbol] || 100;
+        }
+        
+        function getVolatilityForSymbol(symbol) {
+            // Return realistic volatility for different symbols
+            if (symbol.startsWith('X:')) return 3; // Crypto - high volatility
+            if (symbol.includes('RATE') || symbol.includes('FUNDS') || symbol.includes('DGS')) return 0.1; // Rates - low volatility
+            if (symbol === 'VIXCLS') return 2; // VIX - high volatility
+            if (symbol.length <= 5 && !symbol.includes('.')) return 1; // Stocks - medium volatility
+            return 0.5; // Default - moderate volatility
         }
         
         function processSymbolData(symbol, provider, rawData) {
@@ -2277,6 +2341,11 @@
                             if (processed !== obs) {
                                 processedData.special_processing = processed[processed.length - 1];
                             }
+                        }
+                        
+                        // Add demo data indicator if this is mock data
+                        if (rawData.mock_data) {
+                            processedData.is_demo_data = true;
                         }
                     }
                 } else if (rawData.current_value !== undefined) {
@@ -2659,6 +2728,7 @@
                             <div class="symbol-info">
                                 <div class="symbol-name">
                                     ${symbol}
+                                    ${data.is_demo_data ? '<span style="font-size:10px;color:#888;margin-left:5px;">(DEMO)</span>' : ''}
                                     <span class="edit-icon">✏️</span>
                                 </div>
                                 <div class="symbol-fullname">${getSymbolDisplayName(symbol)}</div>
