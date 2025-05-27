@@ -1,894 +1,4 @@
-// Enhanced chart data loading with extended timeframes and fixed MACD
-        async function loadChartData(chartId, symbol, provider) {
-            const chart = charts[chartId];
-            if (!chart) return;
-           
-            const canvasDiv = document.getElementById(`${chartId}_canvas`);
-            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
-           
-            try {
-                let url;
-               
-                if (provider === 'liquidity_intelligence') {
-                    // Handle liquidity intelligence endpoints for charts
-                    if (symbol === 'OFR_FSI') {
-                        url = `${API_BASE}/api/v1/ofr/fsi`;
-                    } else if (symbol === 'NYFED_FAILS') {
-                        url = `${API_BASE}/api/v1/nyfed/fails`;
-                    } else {
-                        throw new Error('Chart not available for this liquidity intelligence indicator');
-                    }
-                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
-                    // Handle Treasury auction metrics with historical data
-                    url = `${API_BASE}/api/v1/treasury/auction_history?symbol=${symbol}&limit=500`;
-                } else if (provider === 'polygon_direct') {
-                    // Extended date range for Polygon data
-                    const endDate = new Date().toISOString().split('T')[0];
-                    const startDate = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 10 years
-                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
-                } else if (provider === 'fred_direct') {
-                    // Extended FRED data - get more historical data
-                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=5000&sort_order=desc&include_pandas=false`;
-                } else {
-                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
-                }
-               
-                const response = await fetch(url);
-               
-                if (!response.ok) {
-                    throw new Error(`Failed to load data: ${response.status}`);
-                }
-               
-                const result = await response.json();
-                console.log(`Chart data received for ${symbol}:`, result);
-               
-                let processedData = [];
-               
-                if (result.data && Array.isArray(result.data)) {
-                    processedData = result.data
-                        .map(item => {
-                            let value = item.value || item.close || item.price || item.rate || null;
-                            if (typeof value === 'string') {
-                                value = parseFloat(value);
-                            }
-                           
-                            return {
-                                date: item.date || item.time || item.period,
-                                value: value
-                            };
-                        })
-                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
-                        .sort((a, b) => new Date(a.date) - new Date(b.date));
-                } else if (result.observations && Array.isArray(result.observations)) {
-                    processedData = result.observations
-                        .map(obs => ({
-                            date: obs.date,
-                            value: obs.value !== '.' ? parseFloat(obs.value) : null
-                        }))
-                        .filter(item => item.value !== null && !isNaN(item.value))
-                        .sort((a, b) => new Date(a.date) - new Date(b.date));
-                } else if (result.auction_data && Array.isArray(result.auction_data)) {
-                    // Handle Treasury auction historical data
-                    processedData = result.auction_data
-                        .map(auction => ({
-                            date: auction.auction_date,
-                            value: symbol.includes('TAIL') ? auction.tail_spread : auction.bid_to_cover_ratio
-                        }))
-                        .filter(item => item.value !== null && !isNaN(item.value))
-                        .sort((a, b) => new Date(a.date) - new Date(b.date));
-                }
-               
-                if (processedData.length === 0) {
-                    throw new Error('No valid data points found');
-                }
-               
-                // Calculate percentage changes and unit changes for each data point
-                processedData = calculateChartChanges(processedData);
-                
-                // Calculate technical analysis indicators with fixed MACD
-                processedData = calculateTechnicalIndicators(processedData);
-               
-                console.log(`Processed ${processedData.length} data points for ${symbol}`);
-               
-                chart.data[symbol] = processedData;
-                updateChartRender(chartId);
-                updateChartSymbols(chartId);
-               
-            } catch (error) {
-                console.error(`Error loading chart data for ${symbol}:`, error);
-                if (canvasDiv) {
-                    canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
-                }
-                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
-                updateChartSymbols(chartId);
-            }
-        }
-        
-        // Calculate percentage and unit changes for chart data + Technical Analysis
-        function calculateChartChanges(data) {
-            if (!data || data.length < 2) return data;
-            
-            return data.map((item, index) => {
-                const itemDate = new Date(item.date);
-                
-                // Calculate daily change (1 day ago)
-                let dailyPctChange = null;
-                let dailyUnitChange = null;
-                if (index > 0) {
-                    const prevValue = data[index - 1].value;
-                    if (prevValue && prevValue !== 0) {
-                        dailyPctChange = ((item.value - prevValue) / prevValue) * 100;
-                        dailyUnitChange = item.value - prevValue;
-                    }
-                }
-                
-                // Calculate weekly change (7 days ago)
-                let weeklyPctChange = null;
-                let weeklyUnitChange = null;
-                const weekAgo = new Date(itemDate);
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                
-                for (let i = index - 1; i >= 0; i--) {
-                    const checkDate = new Date(data[i].date);
-                    if (checkDate <= weekAgo) {
-                        const weekValue = data[i].value;
-                        if (weekValue && weekValue !== 0) {
-                            weeklyPctChange = ((item.value - weekValue) / weekValue) * 100;
-                            weeklyUnitChange = item.value - weekValue;
-                        }
-                        break;
-                    }
-                }
-                
-                // Calculate yearly change (365 days ago)
-                let yearlyPctChange = null;
-                let yearlyUnitChange = null;
-                const yearAgo = new Date(itemDate);
-                yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-                
-                for (let i = index - 1; i >= 0; i--) {
-                    const checkDate = new Date(data[i].date);
-                    if (checkDate <= yearAgo) {
-                        const yearValue = data[i].value;
-                        if (yearValue && yearValue !== 0) {
-                            yearlyPctChange = ((item.value - yearValue) / yearValue) * 100;
-                            yearlyUnitChange = item.value - yearValue;
-                        }
-                        break;
-                    }
-                }
-                
-                return {
-                    ...item,
-                    daily_pct_change: dailyPctChange,
-                    daily_change_units: dailyUnitChange,
-                    weekly_pct_change: weeklyPctChange,
-                    weekly_change_units: weeklyUnitChange,
-                    yearly_pct_change: yearlyPctChange,
-                    yearly_change_units: yearlyUnitChange
-                };
-            });
-        }
-        
-        // Fixed Technical Analysis Indicators - MACD calculation corrected
-        function calculateTechnicalIndicators(data) {
-            if (!data || data.length < 50) return data; // Need more data for proper EMA calculation
-            
-            const values = data.map(d => d.value);
-            
-            // Pre-calculate EMAs for MACD
-            const ema12Values = [];
-            const ema26Values = [];
-            const macdLine = [];
-            const signalLine = [];
-            
-            // EMA12 calculation
-            let ema12 = values.slice(0, 12).reduce((a, b) => a + b, 0) / 12;
-            ema12Values.push(ema12);
-            const multiplier12 = 2 / (12 + 1);
-            
-            for (let i = 13; i < values.length; i++) {
-                ema12 = (values[i] - ema12) * multiplier12 + ema12;
-                ema12Values.push(ema12);
-            }
-            
-            // EMA26 calculation
-            let ema26 = values.slice(0, 26).reduce((a, b) => a + b, 0) / 26;
-            ema26Values.push(ema26);
-            const multiplier26 = 2 / (26 + 1);
-            
-            for (let i = 27; i < values.length; i++) {
-                ema26 = (values[i] - ema26) * multiplier26 + ema26;
-                ema26Values.push(ema26);
-            }
-            
-            // MACD Line calculation (EMA12 - EMA26)
-            const startIndex = Math.max(ema12Values.length, ema26Values.length);
-            for (let i = 0; i < Math.min(ema12Values.length, ema26Values.length); i++) {
-                macdLine.push(ema12Values[i + (ema12Values.length - Math.min(ema12Values.length, ema26Values.length))] - 
-                            ema26Values[i + (ema26Values.length - Math.min(ema12Values.length, ema26Values.length))]);
-            }
-            
-            // Signal Line (9-period EMA of MACD)
-            if (macdLine.length >= 9) {
-                let signalEma = macdLine.slice(0, 9).reduce((a, b) => a + b, 0) / 9;
-                signalLine.push(signalEma);
-                const multiplierSignal = 2 / (9 + 1);
-                
-                for (let i = 9; i < macdLine.length; i++) {
-                    signalEma = (macdLine[i] - signalEma) * multiplierSignal + signalEma;
-                    signalLine.push(signalEma);
-                }
-            }
-            
-            return data.map((item, index) => {
-                let slope30 = null;
-                let ema12 = null;
-                let ema26 = null;
-                let macd = null;
-                let macdSignal = null;
-                let zscore30 = null;
-                let signal = null;
-                
-                // Calculate 30-period Rolling Linear Regression Slope
-                if (index >= 29) {
-                    const window = values.slice(index - 29, index + 1);
-                    const n = window.length;
-                    const x = Array.from({length: n}, (_, i) => i);
-                    const sumX = x.reduce((a, b) => a + b, 0);
-                    const sumY = window.reduce((a, b) => a + b, 0);
-                    const sumXY = x.reduce((sum, xi, i) => sum + xi * window[i], 0);
-                    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-                    
-                    slope30 = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                }
-                
-                // Assign pre-calculated EMA and MACD values
-                if (index >= 11 && ema12Values[index - 11]) {
-                    ema12 = ema12Values[index - 11];
-                }
-                
-                if (index >= 25 && ema26Values[index - 25]) {
-                    ema26 = ema26Values[index - 25];
-                }
-                
-                const macdIndex = index - 25; // MACD starts after EMA26 is established
-                if (macdIndex >= 0 && macdIndex < macdLine.length) {
-                    macd = macdLine[macdIndex];
-                }
-                
-                const signalIndex = macdIndex - 8; // Signal line starts 9 periods after MACD
-                if (signalIndex >= 0 && signalIndex < signalLine.length) {
-                    macdSignal = signalLine[signalIndex];
-                }
-                
-                // Calculate 30-period Z-Score
-                if (index >= 29) {
-                    const window = values.slice(index - 29, index + 1);
-                    const mean = window.reduce((a, b) => a + b, 0) / window.length;
-                    const variance = window.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / window.length;
-                    const stdDev = Math.sqrt(variance);
-                    
-                    if (stdDev > 0) {
-                        zscore30 = (item.value - mean) / stdDev;
-                    }
-                }
-                
-                // Calculate Signal (Buy/Sell indicator)
-                if (macd !== null && macdSignal !== null && slope30 !== null && zscore30 !== null) {
-                    // Signal: 1 = Strong Buy, 0 = Neutral, -1 = Strong Sell
-                    if (macd > macdSignal && slope30 > 0 && zscore30 < -1) {
-                        signal = 1; // Strong Buy (MACD above signal, positive trend, oversold)
-                    } else if (macd < macdSignal && slope30 < 0 && zscore30 > 1) {
-                        signal = -1; // Strong Sell (MACD below signal, negative trend, overbought)
-                    } else {
-                        signal = 0; // Neutral
-                    }
-                }
-                
-                return {
-                    ...item,
-                    slope_30: slope30,
-                    ema12: ema12,
-                    ema26: ema26,
-                    macd: macd,
-                    macd_signal: macdSignal,
-                    zscore_30: zscore30,
-                    signal: signal
-                };
-            });
-        }
-       
-        function updateChartSymbols(chartId) {
-            const chart = charts[chartId];
-            if (!chart) return;
-            const symbolsDiv = document.getElementById(`${chartId}_symbols`);
-            if (!symbolsDiv) return;
-           
-            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
-                <div class="chart-symbol-tag">
-                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
-                    ${s.symbol}
-                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}')">×</span>
-                </div>`).join('');
-        }
-       
-        function removeSymbolFromChart(event, chartId, symbolToRemove) {
-            event.stopPropagation();
-            const chart = charts[chartId];
-            if (!chart) return;
-
-            chart.symbols = chart.symbols.filter(s => s.symbol !== symbolToRemove);
-            delete chart.data[symbolToRemove];
-           
-            updateChartRender(chartId);
-            updateChartSymbols(chartId);
-           
-            if (chart.symbols.length === 0) {
-                document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
-            }
-        }
-       
-        function changeTimeframe(event, chartId, timeframe) {
-            event.stopPropagation();
-            const chart = charts[chartId];
-            if (!chart) return;
-            chart.timeframe = timeframe;
-           
-            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
-            if (buttonContainer) {
-                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
-                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
-            }
-            updateChartRender(chartId);
-        }
-       
-        function filterDataByTimeframe(data, timeframe) {
-            if (!data || data.length === 0) return data;
-           
-            const now = new Date();
-            let cutoffDate = new Date();
-           
-            switch(timeframe) {
-                case '1D':
-                    cutoffDate.setDate(now.getDate() - 1);
-                    break;
-                case '1W':
-                    cutoffDate.setDate(now.getDate() - 7);
-                    break;
-                case '1M':
-                    cutoffDate.setMonth(now.getMonth() - 1);
-                    break;
-                case '3M':
-                    cutoffDate.setMonth(now.getMonth() - 3);
-                    break;
-                case '6M':
-                    cutoffDate.setMonth(now.getMonth() - 6);
-                    break;
-                case '1Y':
-                    cutoffDate.setFullYear(now.getFullYear() - 1);
-                    break;
-                case '2Y':
-                    cutoffDate.setFullYear(now.getFullYear() - 2);
-                    break;
-                case '5Y':
-                    cutoffDate.setFullYear(now.getFullYear() - 5);
-                    break;
-                case '10Y':
-                    cutoffDate.setFullYear(now.getFullYear() - 10);
-                    break;
-                case 'MAX':
-                    return data;
-            }
-           
-            return data.filter(item => new Date(item.date) >= cutoffDate);
-        }
-       
-        // Enhanced chart rendering with new display modes and fixed MACD
-        function updateChartRender(chartId) {
-            const chart = charts[chartId];
-            const canvasElement = document.getElementById(`${chartId}_canvas`);
-            if (!canvasElement || !chart) return;
-           
-            if (chart.symbols.length === 0) {
-                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
-                if (chart.chartInstance) Plotly.purge(canvasElement);
-                return;
-            }
-           
-            const traces = [];
-            const displayMode = chart.displayMode || 'raw';
-            
-            // Initialize yLabel with default value outside the loop
-            let yLabel = 'Value';
-           
-            chart.symbols.forEach((s, index) => {
-                const symbolData = chart.data[s.symbol];
-                if (!symbolData || symbolData.length === 0) return;
-               
-                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
-                if (filteredData.length === 0) return;
-               
-                const lineColor = colorPalette[index % colorPalette.length];
-               
-                // Declare variables for this symbol
-                let yData;
-                let hoverTemplate;
-               
-                // Determine what data to display based on mode
-                switch (displayMode) {
-                    case 'pct_change':
-                        yData = filteredData.map(d => d.daily_pct_change || 0);
-                        yLabel = '% Change';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>% Change: %{y:.2f}%<extra></extra>`;
-                        break;
-                    case 'unit_change':
-                        yData = filteredData.map(d => d.daily_change_units || 0);
-                        yLabel = 'Unit Change';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Unit Change: %{y:.4f}<extra></extra>`;
-                        break;
-                    case 'year_pct':
-                        yData = filteredData.map(d => d.yearly_pct_change || 0);
-                        yLabel = 'Yearly % Change';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly % Change: %{y:.2f}%<extra></extra>`;
-                        break;
-                    case 'year_units':
-                        yData = filteredData.map(d => d.yearly_change_units || 0);
-                        yLabel = 'Yearly Unit Change';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly Unit Change: %{y:.4f}<extra></extra>`;
-                        break;
-                    case 'slope':
-                        yData = filteredData.map(d => d.slope_30 || 0);
-                        yLabel = 'Slope (30-period)';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Slope: %{y:.6f}<extra></extra>`;
-                        break;
-                    case 'macd':
-                        yData = filteredData.map(d => d.macd || 0);
-                        yLabel = 'MACD';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>MACD: %{y:.4f}<extra></extra>`;
-                        break;
-                    case 'zscore':
-                        yData = filteredData.map(d => d.zscore_30 || 0);
-                        yLabel = 'Z-Score (30-period)';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Z-Score: %{y:.2f}<extra></extra>`;
-                        break;
-                    case 'signals':
-                        yData = filteredData.map(d => d.signal || 0);
-                        yLabel = 'Buy/Sell Signals';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Signal: %{y}<extra></extra>`;
-                        break;
-                    default: // 'raw'
-                        yData = filteredData.map(d => d.value);
-                        yLabel = 'Value';
-                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`;
-                        break;
-                }
-               
-                const trace = {
-                    x: filteredData.map(d => d.date),
-                    y: yData,
-                    type: 'scatter',
-                    mode: displayMode === 'signals' ? 'markers' : 'lines',
-                    name: s.symbol,
-                    hovertemplate: hoverTemplate
-                };
-                
-                if (displayMode === 'signals') {
-                    trace.marker = {
-                        color: yData.map(val => val === 1 ? '#00ff88' : val === -1 ? '#ff4444' : '#888888'),
-                        size: yData.map(val => val !== 0 ? 12 : 6),
-                        symbol: yData.map(val => val === 1 ? 'triangle-up' : val === -1 ? 'triangle-down' : 'circle')
-                    };
-                } else {
-                    trace.line = { color: lineColor, width: 2 };
-                }
-                
-                traces.push(trace);
-                
-                // Add MACD Signal line for MACD display mode
-                if (displayMode === 'macd') {
-                    const signalData = filteredData.map(d => d.macd_signal || 0);
-                    const signalTrace = {
-                        x: filteredData.map(d => d.date),
-                        y: signalData,
-                        type: 'scatter',
-                        mode: 'lines',
-                        name: `${s.symbol} Signal`,
-                        line: { color: lineColor, width: 1, dash: 'dash' },
-                        hovertemplate: `<b>${s.symbol} Signal</b><br>Date: %{x}<br>Signal: %{y:.4f}<extra></extra>`
-                    };
-                    traces.push(signalTrace);
-                }
-            });
-           
-            if (traces.length === 0) {
-                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
-                return;
-            }
-           
-            const layout = {
-                title: {
-                    text: `${displayMode.replace('_', ' ').toUpperCase()} VIEW`,
-                    font: { color: '#fff', size: 14 },
-                    x: 0.5
-                },
-                paper_bgcolor: '#0a0a0a',
-                plot_bgcolor: '#0a0a0a',
-                font: { color: '#aaa', size: 12 },
-                margin: { t: 60, r: 80, b: 60, l: 80 },
-                xaxis: {
-                    type: 'date',
-                    gridcolor: '#22222250',
-                    tickfont: { color: '#888' },
-                    rangeslider: { visible: false }
-                },
-                yaxis: {
-                    title: { text: yLabel, font: { color: '#aaa' } },
-                    gridcolor: '#22222250',
-                    tickfont: { color: '#888' },
-                    zeroline: true,
-                    zerolinecolor: '#444',
-                    zerolinewidth: 1
-                },
-                hovermode: 'x unified',
-                showlegend: true,
-                legend: {
-                    orientation: 'h',
-                    yanchor: 'bottom',
-                    y: 1.02,
-                    xanchor: 'right',
-                    x: 1,
-                    bgcolor: 'rgba(10,10,10,0.8)',
-                    bordercolor: '#333',
-                    borderwidth: 1,
-                    font: { size: 11 }
-                },
-                height: 500,
-                autosize: true
-            };
-           
-            const config = {
-                responsive: true,
-                displaylogo: false,
-                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
-                displayModeBar: true
-            };
-           
-            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
-           
-            Plotly.react(canvasElement, traces, layout, config)
-                .then(gd => {
-                    charts[chartId].chartInstance = gd;
-                })
-                .catch(err => {
-                    console.error("Plotly error:", err);
-                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
-                });
-        }
-       
-        function showChartView() {
-            const chartsArea = document.getElementById('chartsArea');
-            const watchlistSection = document.querySelector('.watchlist-section');
-           
-            if (chartsArea.style.display === 'none') {
-                chartsArea.style.display = 'block';
-                watchlistSection.style.flex = '0 0 300px';
-            } else {
-                chartsArea.style.display = 'none';
-                watchlistSection.style.flex = '1';
-            }
-        }
-       
-        // Initialize Risk Dashboard
-        function initializeRiskDashboard() {
-            setupRiskConfiguration();
-            loadRiskDashboardData();
-            setInterval(loadRiskDashboardData, 120000); // Update every 2 minutes
-        }
-        
-        // Setup Risk Configuration UI
-        function setupRiskConfiguration() {
-            const categories = ['risk', 'liquidity', 'economic', 'global'];
-            const containers = ['riskSymbols', 'liquiditySymbols', 'economicSymbols', 'globalSymbols'];
-            
-            categories.forEach((category, index) => {
-                const container = document.getElementById(containers[index]);
-                const config = riskCategories[category];
-                
-                config.symbols.forEach(symbol => {
-                    const checkbox = document.createElement('div');
-                    checkbox.className = 'symbol-checkbox';
-                    checkbox.innerHTML = `
-                        <input type="checkbox" id="${category}_${symbol}" checked onchange="updateCategoryConfig('${category}', '${symbol}', this.checked)">
-                        <label for="${category}_${symbol}">${getSymbolDescription(symbol, getProviderForSymbol(symbol))}</label>
-                    `;
-                    container.appendChild(checkbox);
-                });
-            });
-        }
-        
-        // Get provider for symbol (helper function)
-        function getProviderForSymbol(symbol) {
-            if (symbol.includes('CISS') || symbol.includes('EXR')) return 'ecb';
-            if (['sofr', 'effr', 'obfr', 'tgcr', 'bgcr'].includes(symbol.toLowerCase())) return 'ny_fed';
-            return 'fred';
-        }
-        
-        // Update category configuration
-        function updateCategoryConfig(category, symbol, enabled) {
-            if (!enabled) {
-                riskCategories[category].symbols = riskCategories[category].symbols.filter(s => s !== symbol);
-            } else if (!riskCategories[category].symbols.includes(symbol)) {
-                riskCategories[category].symbols.push(symbol);
-            }
-        }
-        
-        // Toggle Risk Dashboard
-        function toggleRiskDashboard() {
-            const dashboard = document.getElementById('riskDashboard');
-            const chartsArea = document.getElementById('chartsArea');
-            const watchlistSection = document.querySelector('.watchlist-section');
-            
-            if (dashboard.classList.contains('active')) {
-                dashboard.classList.remove('active');
-                watchlistSection.style.flex = '1';
-            } else {
-                dashboard.classList.add('active');
-                chartsArea.style.display = 'none';
-                watchlistSection.style.flex = '0 0 300px';
-                loadRiskDashboardData();
-            }
-        }
-        
-        // Toggle Configuration Panel
-        function toggleConfig() {
-            const config = document.getElementById('watchlistConfig');
-            config.style.display = config.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        // Load Risk Dashboard Data
-        async function loadRiskDashboardData() {
-            const allSymbols = new Set();
-            Object.values(riskCategories).forEach(category => {
-                category.symbols.forEach(symbol => allSymbols.add(symbol));
-            });
-            
-            // Load data for all symbols
-            for (const symbol of allSymbols) {
-                const provider = getProviderForSymbol(symbol) + '_direct';
-                try {
-                    await loadRiskSymbolData(symbol, provider);
-                } catch (error) {
-                    console.warn(`Failed to load risk data for ${symbol}:`, error);
-                }
-            }
-            
-            // Calculate risk scores and update dashboard
-            calculateRiskScores();
-            updateRiskGauges();
-            updateAlertIndicators();
-        }
-        
-        // Load individual symbol data for risk analysis
-        async function loadRiskSymbolData(symbol, provider, retryCount = 0) {
-            try {
-                let url;
-                
-                if (provider === 'fred_direct') {
-                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
-                } else if (provider === 'ny_fed_direct') {
-                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
-                } else if (provider === 'ecb_direct') {
-                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
-                }
-                
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`API returned ${response.status}`);
-                
-                const data = await response.json();
-                
-                if (data.metrics && data.metrics.latest_value !== undefined) {
-                    riskDashboardData[symbol] = {
-                        value: data.metrics.latest_value,
-                        daily_change: data.metrics.daily_change || 0,
-                        weekly_change: data.metrics.weekly_change || 0,
-                        monthly_change: data.metrics.monthly_change || 0,
-                        yearly_change: data.metrics.yearly_change || 0,
-                        provider: provider,
-                        timestamp: Date.now()
-                    };
-                }
-            } catch (error) {
-                if (retryCount < 2) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                    return loadRiskSymbolData(symbol, provider, retryCount + 1);
-                }
-                console.error(`Failed to load ${symbol}:`, error);
-            }
-        }
-        
-        // Calculate Risk Scores using Z-Score normalization
-        function calculateRiskScores() {
-            Object.keys(riskCategories).forEach(categoryKey => {
-                const category = riskCategories[categoryKey];
-                const scores = [];
-                
-                category.symbols.forEach(symbol => {
-                    if (riskDashboardData[symbol]) {
-                        // Calculate Z-Score based on recent changes
-                        const data = riskDashboardData[symbol];
-                        const changes = [data.daily_change, data.weekly_change, data.monthly_change].filter(x => x !== null && !isNaN(x));
-                        
-                        if (changes.length > 0) {
-                            const mean = changes.reduce((a, b) => a + b, 0) / changes.length;
-                            const variance = changes.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / changes.length;
-                            const stdDev = Math.sqrt(variance);
-                            
-                            let zScore = 0;
-                            if (stdDev > 0) {
-                                zScore = Math.abs(data.daily_change || 0) / (stdDev + 0.001); // Avoid division by zero
-                            }
-                            
-                            // Convert Z-Score to percentile (0-100)
-                            const percentile = Math.min(100, Math.max(0, (zScore / 3) * 100));
-                            scores.push(percentile);
-                        }
-                    }
-                });
-                
-                // Calculate category average score
-                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-                category.currentScore = Math.round(avgScore);
-                
-                // Determine alert level
-                if (avgScore >= category.thresholds.extreme) {
-                    category.alertLevel = 'extreme';
-                } else if (avgScore >= category.thresholds.critical) {
-                    category.alertLevel = 'high';
-                } else if (avgScore >= category.thresholds.warning) {
-                    category.alertLevel = 'moderate';
-                } else {
-                    category.alertLevel = 'low';
-                }
-            });
-        }
-        
-        // Update Risk Gauges
-        function updateRiskGauges() {
-            const gaugeGrid = document.getElementById('gaugeGrid');
-            gaugeGrid.innerHTML = '';
-            
-            Object.keys(riskCategories).forEach(categoryKey => {
-                const category = riskCategories[categoryKey];
-                const gaugeContainer = document.createElement('div');
-                gaugeContainer.className = 'gauge-container';
-                
-                const gaugeId = `gauge_${categoryKey}`;
-                gaugeContainer.innerHTML = `
-                    <div class="gauge-title">${category.name}</div>
-                    <div class="gauge-chart" id="${gaugeId}"></div>
-                `;
-                
-                gaugeGrid.appendChild(gaugeContainer);
-                
-                // Create Plotly gauge
-                const data = [{
-                    type: "indicator",
-                    mode: "gauge+number+delta",
-                    value: category.currentScore,
-                    domain: { x: [0, 1], y: [0, 1] },
-                    title: { text: "Risk Score" },
-                    delta: { reference: 50 },
-                    gauge: {
-                        axis: { range: [null, 100] },
-                        bar: { color: category.color },
-                        steps: [
-                            { range: [0, category.thresholds.warning], color: "#00dd7750" },
-                            { range: [category.thresholds.warning, category.thresholds.critical], color: "#ffaa0050" },
-                            { range: [category.thresholds.critical, category.thresholds.extreme], color: "#ff444450" },
-                            { range: [category.thresholds.extreme, 100], color: "#8b000050" }
-                        ],
-                        threshold: {
-                            line: { color: "white", width: 4 },
-                            thickness: 0.75,
-                            value: category.currentScore
-                        }
-                    }
-                }];
-                
-                const layout = {
-                    width: 350,
-                    height: 250,
-                    margin: { t: 0, r: 25, l: 25, b: 0 },
-                    paper_bgcolor: "#0a0a0a",
-                    plot_bgcolor: "#0a0a0a",
-                    font: { color: "#fff" }
-                };
-                
-                Plotly.newPlot(gaugeId, data, layout, { displayModeBar: false });
-            });
-        }
-        
-        // Update Alert Indicators
-        function updateAlertIndicators() {
-            const alertContainer = document.getElementById('alertIndicators');
-            alertContainer.innerHTML = '';
-            
-            Object.keys(riskCategories).forEach(categoryKey => {
-                const category = riskCategories[categoryKey];
-                const badge = document.createElement('div');
-                badge.className = `alert-badge ${category.alertLevel}`;
-                
-                let alertText = '';
-                switch (category.alertLevel) {
-                    case 'extreme':
-                        alertText = `🚨 EXTREME: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
-                        break;
-                    case 'high':
-                        alertText = `⚠️ HIGH: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
-                        break;
-                    case 'moderate':
-                        alertText = `🟡 WARNING: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
-                        break;
-                    default:
-                        alertText = `✅ ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
-                }
-                
-                badge.textContent = alertText;
-                alertContainer.appendChild(badge);
-            });
-        }
-        
-        // Update Risk Dashboard (called when config changes)
-        function updateRiskDashboard() {
-            // Update thresholds from inputs
-            const warning = parseInt(document.getElementById('warningThreshold').value);
-            const critical = parseInt(document.getElementById('criticalThreshold').value);
-            const extreme = parseInt(document.getElementById('extremeThreshold').value);
-            
-            Object.keys(riskCategories).forEach(categoryKey => {
-                riskCategories[categoryKey].thresholds = { warning, critical, extreme };
-            });
-            
-            // Recalculate and update
-            calculateRiskScores();
-            updateRiskGauges();
-            updateAlertIndicators();
-            
-            showTemporaryMessage('Risk Dashboard Updated!', 'info');
-        }
-       
-        // Edit symbol function (placeholder)
-        function editSymbol(event, symbol) {
-            event.stopPropagation();
-            showTemporaryMessage(`Edit functionality for ${symbol} - implement as needed`, 'info');
-        }
-       
-        // Utility functions
-        function showTemporaryMessage(text, type = 'info') {
-            const popup = document.createElement('div');
-            popup.className = `message-popup ${type}`;
-            popup.textContent = text;
-            document.body.appendChild(popup);
-           
-            setTimeout(() => popup.remove(), 3000);
-        }
-       
-        // Hide search results when clicking outside
-        document.addEventListener('click', function(event) {
-            const searchBox = document.getElementById('searchBox');
-            const searchResults = document.getElementById('searchResults');
-           
-            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
-                searchResults.style.display = 'none';
-            }
-        });
-       
-        // Initialize on page load
-        window.onload = init;
-    </script>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2327,287 +1437,24 @@
             loadPolygonTickers();
         }
         
-        // Load Polygon tickers for enhanced search
-        async function loadPolygonTickers() {
-            if (polygonTickersLoaded) return;
-            
-            try {
-                console.log('Loading Polygon tickers...');
-                const response = await fetch(`${API_BASE}/api/v1/polygon/tickers?limit=5000&active=true`);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.results) {
-                        polygonTickers = data.results.map(ticker => ({
-                            ticker: ticker.ticker,
-                            name: ticker.name,
-                            type: ticker.type || 'CS',
-                            market: ticker.market || 'stocks',
-                            active: ticker.active
-                        }));
-                        polygonTickersLoaded = true;
-                        console.log(`Loaded ${polygonTickers.length} Polygon tickers`);
-                    }
-                } else {
-                    console.warn('Failed to load Polygon tickers:', response.status);
-                    // Fallback to basic tickers if API fails
-                    polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
-                        ticker: symbol,
-                        name: symbol,
-                        type: 'CS',
-                        market: 'stocks',
-                        active: true
-                    }));
-                }
-            } catch (error) {
-                console.warn('Error loading Polygon tickers:', error);
-                // Fallback to basic tickers
-                polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
-                    ticker: symbol,
-                    name: symbol,
-                    type: 'CS',
-                    market: 'stocks',
-                    active: true
-                }));
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            const dateString = now.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const clockElement = document.getElementById('clock');
+            if (clockElement) {
+                clockElement.textContent = `${dateString} ${timeString}`;
             }
-        }
-        
-        // Toggle ticker type
-        function toggleTickerType(type) {
-            const button = document.querySelector(`[data-type="${type}"]`);
-            const isActive = button.classList.contains('active');
-            
-            if (isActive) {
-                button.classList.remove('active');
-                activeTickerTypes = activeTickerTypes.filter(t => t !== type);
-            } else {
-                button.classList.add('active');
-                activeTickerTypes.push(type);
-            }
-        }
-       
-        // Enhanced API connection check for all providers
-        async function checkAPIConnections() {
-            let connectedCount = 0;
-            const totalSources = Object.keys(DATA_SOURCES).length;
-           
-            // Test health endpoint first
-            try {
-                const healthResponse = await fetch(`${API_BASE}/api/v1/health`);
-                if (healthResponse.ok) {
-                    const healthData = await healthResponse.json();
-                    console.log('Health check:', healthData);
-                }
-            } catch (error) {
-                console.warn('Health check failed:', error);
-            }
-           
-            // Test each provider with comprehensive checks
-            for (const [source, config] of Object.entries(DATA_SOURCES)) {
-                try {
-                    let testUrl;
-                   
-                    if (source === 'liquidity') {
-                        testUrl = `${API_BASE}/api/v1/liquidity/dashboard`;
-                    } else if (source === 'polygon') {
-                        // Test with polygon reference endpoint
-                        testUrl = `${API_BASE}/api/v1/polygon/reference/tickers?limit=1`;
-                    } else {
-                        const testSymbol = config.searchSymbols[0];
-                       
-                        if (source === 'fred') {
-                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=fred_direct&include_changes=false`;
-                        } else if (source === 'ny_fed') {
-                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=ny_fed_direct&include_changes=false`;
-                        } else if (source === 'ecb') {
-                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
-                        } else if (source === 'ofr') {
-                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
-                        } else if (source === 'treasury') {
-                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
-                        }
-                    }
-                   
-                    const response = await fetch(testUrl);
-                   
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && (data.metrics || data.data || data.symbol || data.overall_stress_score !== undefined || data.results)) {
-                            document.getElementById(`${source}-indicator`).classList.add('connected');
-                            connectedCount++;
-                            console.log(`${source} connected successfully`);
-                        }
-                    } else if (response.status === 404) {
-                        document.getElementById(`${source}-indicator`).classList.add('connected');
-                        connectedCount++;
-                        console.log(`${source} connected (404 but API responsive)`);
-                    }
-                } catch (error) {
-                    console.warn(`${source} API connection failed:`, error);
-                    document.getElementById(`${source}-indicator`).classList.remove('connected');
-                }
-            }
-           
-            const statusText = `${connectedCount}/${totalSources} APIs Connected`;
-            document.getElementById('apiStatusText').textContent = statusText;
-           
-            if (connectedCount > 0) {
-                document.getElementById('apiStatus').classList.add('connected');
-                showTemporaryMessage(`Connected to ${connectedCount} data sources`, 'info');
-            } else {
-                showTemporaryMessage('No API connections available', 'error');
-            }
-        }
-       
-        // Load liquidity dashboard
-        async function loadLiquidityDashboard() {
-            try {
-                const response = await fetch(`${API_BASE}/api/v1/liquidity/dashboard`);
-                if (response.ok) {
-                    const data = await response.json();
-                    updateLiquidityAlert(data);
-                    document.getElementById('liquidity-indicator').classList.add('connected');
-                }
-            } catch (error) {
-                console.warn('Liquidity dashboard failed:', error);
-                document.getElementById('liquidity-indicator').classList.remove('connected');
-            }
-        }
-       
-        // Update liquidity alert
-        function updateLiquidityAlert(data) {
-            const alertElement = document.getElementById('liquidityAlert');
-            const alertText = document.getElementById('liquidityAlertText');
-           
-            if (!data || data.overall_stress_score === undefined) {
-                alertElement.style.display = 'none';
-                return;
-            }
-           
-            const stressScore = data.overall_stress_score;
-            const stressLevel = data.stress_level;
-           
-            alertElement.style.display = 'block';
-            alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
-           
-            alertElement.className = 'liquidity-alert';
-            if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') {
-                alertElement.classList.add('high');
-            } else if (stressLevel === 'MODERATE') {
-                alertElement.classList.add('moderate');
-            } else {
-                alertElement.classList.add('low');
-            }
-        }
-       
-        // Show liquidity dashboard
-        function showLiquidityDashboard() {
-            showTemporaryMessage('Loading comprehensive liquidity dashboard...', 'info');
-        }
-       
-        // Toggle data source
-        function toggleDataSource(source) {
-            const button = document.querySelector(`[data-source="${source}"]`);
-            const isActive = button.classList.contains('active');
-           
-            if (isActive) {
-                button.classList.remove('active');
-                activeSources = activeSources.filter(s => s !== source);
-            } else {
-                button.classList.add('active');
-                activeSources.push(source);
-            }
-        }
-       
-        // Enhanced search across all providers and Polygon ticker types
-        async function performSearch(query) {
-            const resultsDiv = document.getElementById('searchResults');
-           
-            if (!query || query.trim().length < 1) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
-           
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(async () => {
-                resultsDiv.innerHTML = '<div class="search-loading">Searching across all data sources and ticker types...</div>';
-                resultsDiv.style.display = 'block';
-               
-                try {
-                    const allResults = [];
-                   
-                    // Enhanced Polygon search with all ticker types
-                    if (activeSources.includes('polygon') && polygonTickersLoaded) {
-                        const filteredTickers = polygonTickers.filter(ticker => {
-                            // Filter by active ticker types
-                            if (!activeTickerTypes.includes(ticker.type)) return false;
-                            
-                            // Search in ticker symbol and name
-                            const queryLower = query.toLowerCase();
-                            return ticker.ticker.toLowerCase().includes(queryLower) ||
-                                   (ticker.name && ticker.name.toLowerCase().includes(queryLower));
-                        });
-                        
-                        // Sort by relevance and take top 50
-                        filteredTickers
-                            .sort((a, b) => {
-                                const aSymbol = a.ticker.toLowerCase();
-                                const bSymbol = b.ticker.toLowerCase();
-                                const queryLower = query.toLowerCase();
-                                
-                                if (aSymbol === queryLower) return -1;
-                                if (bSymbol === queryLower) return 1;
-                                if (aSymbol.startsWith(queryLower)) return -1;
-                                if (bSymbol.startsWith(queryLower)) return 1;
-                                return 0;
-                            })
-                            .slice(0, 50)
-                            .forEach(ticker => {
-                                allResults.push({
-                                    symbol: ticker.ticker,
-                                    name: ticker.name || ticker.ticker,
-                                    provider: 'polygon_direct',
-                                    source: 'polygon',
-                                    type: ticker.type,
-                                    description: getTickerTypeDescription(ticker.type)
-                                });
-                            });
-                    }
-                   
-                    // Search through other data sources
-                    for (const source of activeSources) {
-                        if (source === 'polygon') continue; // Already handled above
-                        
-                        const config = DATA_SOURCES[source];
-                        if (!config) continue;
-                       
-                        const matchingSymbols = config.searchSymbols.filter(symbol =>
-                            symbol.toLowerCase().includes(query.toLowerCase()) ||
-                            getSymbolDescription(symbol, source).toLowerCase().includes(query.toLowerCase())
-                        );
-                       
-                        matchingSymbols.forEach(symbol => {
-                            allResults.push({
-                                symbol: symbol,
-                                name: getSymbolDescription(symbol, source),
-                                provider: config.provider,
-                                source: source,
-                                description: getDetailedDescription(symbol, source)
-                            });
-                        });
-                    }
-                   
-                    displaySearchResults(allResults, query);
-                   
-                } catch (error) {
-                    console.error('Search error:', error);
-                    resultsDiv.innerHTML = `
-                        <div class="search-item" style="text-align:center; color:#888;">
-                            Error searching. Please try again.
-                        </div>
-                    `;
-                }
-            }, 300);
         }
         
         // Get ticker type description
@@ -2682,7 +1529,12 @@
                     'CC4WSA': 'Credit Card Charge-Off Rate',
                     'VIXCLS': 'CBOE Volatility Index: VIX',
                     'ISRATIO': 'Total Business Inventories to Sales Ratio',
-                    'MNFCTRIRSA': 'Manufacturers: Inventories to Sales Ratio'
+                    'MNFCTRIRSA': 'Manufacturers: Inventories to Sales Ratio',
+                    'DGS10': '10-Year Treasury Constant Maturity Rate',
+                    'DGS2': '2-Year Treasury Constant Maturity Rate',
+                    'DGS30': '30-Year Treasury Constant Maturity Rate',
+                    'DGS5': '5-Year Treasury Constant Maturity Rate',
+                    'DGS1': '1-Year Treasury Constant Maturity Rate'
                 },
                 ny_fed: {
                     'sofr': 'Secured Overnight Financing Rate',
@@ -2860,7 +1712,7 @@
             document.getElementById('searchResults').style.display = 'none';
             document.getElementById('searchBox').value = '';
         }
-       
+
         // Enhanced data loading for all providers including Treasury auction metrics
         async function loadSingleWatchlistItem(symbol, provider, retryCount = 0) {
             const maxRetries = 2;
@@ -3636,4 +2488,1179 @@
                 loadChartData(chartId, symbol, provider);
             }
             setActiveChart(chartId);
+        }
+
+        // Enhanced chart data loading with extended timeframes and fixed MACD
+        async function loadChartData(chartId, symbol, provider) {
+            const chart = charts[chartId];
+            if (!chart) return;
+           
+            const canvasDiv = document.getElementById(`${chartId}_canvas`);
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
+           
+            try {
+                let url;
+               
+                if (provider === 'liquidity_intelligence') {
+                    // Handle liquidity intelligence endpoints for charts
+                    if (symbol === 'OFR_FSI') {
+                        url = `${API_BASE}/api/v1/ofr/fsi`;
+                    } else if (symbol === 'NYFED_FAILS') {
+                        url = `${API_BASE}/api/v1/nyfed/fails`;
+                    } else {
+                        throw new Error('Chart not available for this liquidity intelligence indicator');
+                    }
+                } else if (provider === 'treasury_direct' && symbol.startsWith('AUCTION_')) {
+                    // Handle Treasury auction metrics with historical data
+                    url = `${API_BASE}/api/v1/treasury/auction_history?symbol=${symbol}&limit=500`;
+                } else if (provider === 'polygon_direct') {
+                    // Extended date range for Polygon data
+                    const endDate = new Date().toISOString().split('T')[0];
+                    const startDate = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 10 years
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDate}&end_date=${endDate}`;
+                } else if (provider === 'fred_direct') {
+                    // Extended FRED data - get more historical data
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=5000&sort_order=desc&include_pandas=false`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                }
+               
+                const response = await fetch(url);
+               
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+               
+                const result = await response.json();
+                console.log(`Chart data received for ${symbol}:`, result);
+               
+                let processedData = [];
+               
+                if (result.data && Array.isArray(result.data)) {
+                    processedData = result.data
+                        .map(item => {
+                            let value = item.value || item.close || item.price || item.rate || null;
+                            if (typeof value === 'string') {
+                                value = parseFloat(value);
+                            }
+                           
+                            return {
+                                date: item.date || item.time || item.period,
+                                value: value
+                            };
+                        })
+                        .filter(item => item.value !== null && !isNaN(item.value) && item.date)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.observations && Array.isArray(result.observations)) {
+                    processedData = result.observations
+                        .map(obs => ({
+                            date: obs.date,
+                            value: obs.value !== '.' ? parseFloat(obs.value) : null
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.auction_data && Array.isArray(result.auction_data)) {
+                    // Handle Treasury auction historical data
+                    processedData = result.auction_data
+                        .map(auction => ({
+                            date: auction.auction_date,
+                            value: symbol.includes('TAIL') ? auction.tail_spread : auction.bid_to_cover_ratio
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
+               
+                if (processedData.length === 0) {
+                    throw new Error('No valid data points found');
+                }
+               
+                // Calculate percentage changes and unit changes for each data point
+                processedData = calculateChartChanges(processedData);
+                
+                // Calculate technical analysis indicators with fixed MACD
+                processedData = calculateTechnicalIndicators(processedData);
+               
+                console.log(`Processed ${processedData.length} data points for ${symbol}`);
+               
+                chart.data[symbol] = processedData;
+                updateChartRender(chartId);
+                updateChartSymbols(chartId);
+               
+            } catch (error) {
+                console.error(`Error loading chart data for ${symbol}:`, error);
+                if (canvasDiv) {
+                    canvasDiv.innerHTML = `<div class="chart-message" style="color: #ff4444;">Error loading ${symbol}<br><small>${error.message}</small></div>`;
+                }
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+                updateChartSymbols(chartId);
+            }
+        }
+        
+        // Calculate percentage and unit changes for chart data + Technical Analysis
+        function calculateChartChanges(data) {
+            if (!data || data.length < 2) return data;
+            
+            return data.map((item, index) => {
+                const itemDate = new Date(item.date);
+                
+                // Calculate daily change (1 day ago)
+                let dailyPctChange = null;
+                let dailyUnitChange = null;
+                if (index > 0) {
+                    const prevValue = data[index - 1].value;
+                    if (prevValue && prevValue !== 0) {
+                        dailyPctChange = ((item.value - prevValue) / prevValue) * 100;
+                        dailyUnitChange = item.value - prevValue;
+                    }
+                }
+                
+                // Calculate weekly change (7 days ago)
+                let weeklyPctChange = null;
+                let weeklyUnitChange = null;
+                const weekAgo = new Date(itemDate);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                
+                for (let i = index - 1; i >= 0; i--) {
+                    const checkDate = new Date(data[i].date);
+                    if (checkDate <= weekAgo) {
+                        const weekValue = data[i].value;
+                        if (weekValue && weekValue !== 0) {
+                            weeklyPctChange = ((item.value - weekValue) / weekValue) * 100;
+                            weeklyUnitChange = item.value - weekValue;
+                        }
+                        break;
+                    }
+                }
+                
+                // Calculate yearly change (365 days ago)
+                let yearlyPctChange = null;
+                let yearlyUnitChange = null;
+                const yearAgo = new Date(itemDate);
+                yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                
+                for (let i = index - 1; i >= 0; i--) {
+                    const checkDate = new Date(data[i].date);
+                    if (checkDate <= yearAgo) {
+                        const yearValue = data[i].value;
+                        if (yearValue && yearValue !== 0) {
+                            yearlyPctChange = ((item.value - yearValue) / yearValue) * 100;
+                            yearlyUnitChange = item.value - yearValue;
+                        }
+                        break;
+                    }
+                }
+                
+                return {
+                    ...item,
+                    daily_pct_change: dailyPctChange,
+                    daily_change_units: dailyUnitChange,
+                    weekly_pct_change: weeklyPctChange,
+                    weekly_change_units: weeklyUnitChange,
+                    yearly_pct_change: yearlyPctChange,
+                    yearly_change_units: yearlyUnitChange
+                };
+            });
+        }
+        
+        // Fixed Technical Analysis Indicators - MACD calculation corrected
+        function calculateTechnicalIndicators(data) {
+            if (!data || data.length < 50) return data; // Need more data for proper EMA calculation
+            
+            const values = data.map(d => d.value);
+            
+            // Pre-calculate EMAs for MACD
+            const ema12Values = [];
+            const ema26Values = [];
+            const macdLine = [];
+            const signalLine = [];
+            
+            // EMA12 calculation
+            let ema12 = values.slice(0, 12).reduce((a, b) => a + b, 0) / 12;
+            ema12Values.push(ema12);
+            const multiplier12 = 2 / (12 + 1);
+            
+            for (let i = 13; i < values.length; i++) {
+                ema12 = (values[i] - ema12) * multiplier12 + ema12;
+                ema12Values.push(ema12);
+            }
+            
+            // EMA26 calculation
+            let ema26 = values.slice(0, 26).reduce((a, b) => a + b, 0) / 26;
+            ema26Values.push(ema26);
+            const multiplier26 = 2 / (26 + 1);
+            
+            for (let i = 27; i < values.length; i++) {
+                ema26 = (values[i] - ema26) * multiplier26 + ema26;
+                ema26Values.push(ema26);
+            }
+            
+            // MACD Line calculation (EMA12 - EMA26)
+            const startIndex = Math.max(ema12Values.length, ema26Values.length);
+            for (let i = 0; i < Math.min(ema12Values.length, ema26Values.length); i++) {
+                macdLine.push(ema12Values[i + (ema12Values.length - Math.min(ema12Values.length, ema26Values.length))] - 
+                            ema26Values[i + (ema26Values.length - Math.min(ema12Values.length, ema26Values.length))]);
+            }
+            
+            // Signal Line (9-period EMA of MACD)
+            if (macdLine.length >= 9) {
+                let signalEma = macdLine.slice(0, 9).reduce((a, b) => a + b, 0) / 9;
+                signalLine.push(signalEma);
+                const multiplierSignal = 2 / (9 + 1);
+                
+                for (let i = 9; i < macdLine.length; i++) {
+                    signalEma = (macdLine[i] - signalEma) * multiplierSignal + signalEma;
+                    signalLine.push(signalEma);
+                }
+            }
+            
+            return data.map((item, index) => {
+                let slope30 = null;
+                let ema12 = null;
+                let ema26 = null;
+                let macd = null;
+                let macdSignal = null;
+                let zscore30 = null;
+                let signal = null;
+                
+                // Calculate 30-period Rolling Linear Regression Slope
+                if (index >= 29) {
+                    const window = values.slice(index - 29, index + 1);
+                    const n = window.length;
+                    const x = Array.from({length: n}, (_, i) => i);
+                    const sumX = x.reduce((a, b) => a + b, 0);
+                    const sumY = window.reduce((a, b) => a + b, 0);
+                    const sumXY = x.reduce((sum, xi, i) => sum + xi * window[i], 0);
+                    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+                    
+                    slope30 = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                }
+                
+                // Assign pre-calculated EMA and MACD values
+                if (index >= 11 && ema12Values[index - 11]) {
+                    ema12 = ema12Values[index - 11];
+                }
+                
+                if (index >= 25 && ema26Values[index - 25]) {
+                    ema26 = ema26Values[index - 25];
+                }
+                
+                const macdIndex = index - 25; // MACD starts after EMA26 is established
+                if (macdIndex >= 0 && macdIndex < macdLine.length) {
+                    macd = macdLine[macdIndex];
+                }
+                
+                const signalIndex = macdIndex - 8; // Signal line starts 9 periods after MACD
+                if (signalIndex >= 0 && signalIndex < signalLine.length) {
+                    macdSignal = signalLine[signalIndex];
+                }
+                
+                // Calculate 30-period Z-Score
+                if (index >= 29) {
+                    const window = values.slice(index - 29, index + 1);
+                    const mean = window.reduce((a, b) => a + b, 0) / window.length;
+                    const variance = window.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / window.length;
+                    const stdDev = Math.sqrt(variance);
+                    
+                    if (stdDev > 0) {
+                        zscore30 = (item.value - mean) / stdDev;
+                    }
+                }
+                
+                // Calculate Signal (Buy/Sell indicator)
+                if (macd !== null && macdSignal !== null && slope30 !== null && zscore30 !== null) {
+                    // Signal: 1 = Strong Buy, 0 = Neutral, -1 = Strong Sell
+                    if (macd > macdSignal && slope30 > 0 && zscore30 < -1) {
+                        signal = 1; // Strong Buy (MACD above signal, positive trend, oversold)
+                    } else if (macd < macdSignal && slope30 < 0 && zscore30 > 1) {
+                        signal = -1; // Strong Sell (MACD below signal, negative trend, overbought)
+                    } else {
+                        signal = 0; // Neutral
+                    }
+                }
+                
+                return {
+                    ...item,
+                    slope_30: slope30,
+                    ema12: ema12,
+                    ema26: ema26,
+                    macd: macd,
+                    macd_signal: macdSignal,
+                    zscore_30: zscore30,
+                    signal: signal
+                };
+            });
+        }
+       
+        function updateChartSymbols(chartId) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            const symbolsDiv = document.getElementById(`${chartId}_symbols`);
+            if (!symbolsDiv) return;
+           
+            symbolsDiv.innerHTML = chart.symbols.map((s, i) => `
+                <div class="chart-symbol-tag">
+                    <span class="symbol-color-dot" style="background-color: ${colorPalette[i % colorPalette.length]};"></span>
+                    ${s.symbol}
+                    <span class="remove-symbol" onclick="removeSymbolFromChart(event, '${chartId}', '${s.symbol}')">×</span>
+                </div>`).join('');
+        }
+       
+        function removeSymbolFromChart(event, chartId, symbolToRemove) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+
+            chart.symbols = chart.symbols.filter(s => s.symbol !== symbolToRemove);
+            delete chart.data[symbolToRemove];
+           
+            updateChartRender(chartId);
+            updateChartSymbols(chartId);
+           
+            if (chart.symbols.length === 0) {
+                document.getElementById(`${chartId}_canvas`).innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+            }
+        }
+       
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            chart.timeframe = timeframe;
+           
+            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (buttonContainer) {
+                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
+            updateChartRender(chartId);
+        }
+       
+        function filterDataByTimeframe(data, timeframe) {
+            if (!data || data.length === 0) return data;
+           
+            const now = new Date();
+            let cutoffDate = new Date();
+           
+            switch(timeframe) {
+                case '1D':
+                    cutoffDate.setDate(now.getDate() - 1);
+                    break;
+                case '1W':
+                    cutoffDate.setDate(now.getDate() - 7);
+                    break;
+                case '1M':
+                    cutoffDate.setMonth(now.getMonth() - 1);
+                    break;
+                case '3M':
+                    cutoffDate.setMonth(now.getMonth() - 3);
+                    break;
+                case '6M':
+                    cutoffDate.setMonth(now.getMonth() - 6);
+                    break;
+                case '1Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 1);
+                    break;
+                case '2Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 2);
+                    break;
+                case '5Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 5);
+                    break;
+                case '10Y':
+                    cutoffDate.setFullYear(now.getFullYear() - 10);
+                    break;
+                case 'MAX':
+                    return data;
+            }
+           
+            return data.filter(item => new Date(item.date) >= cutoffDate);
+        }
+       
+        // Enhanced chart rendering with new display modes and fixed MACD
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            if (!canvasElement || !chart) return;
+           
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
+                return;
+            }
+           
+            const traces = [];
+            const displayMode = chart.displayMode || 'raw';
+            
+            // Initialize yLabel with default value outside the loop
+            let yLabel = 'Value';
+           
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.symbol];
+                if (!symbolData || symbolData.length === 0) return;
+               
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+               
+                const lineColor = colorPalette[index % colorPalette.length];
+               
+                // Declare variables for this symbol
+                let yData;
+                let hoverTemplate;
+               
+                // Determine what data to display based on mode
+                switch (displayMode) {
+                    case 'pct_change':
+                        yData = filteredData.map(d => d.daily_pct_change || 0);
+                        yLabel = '% Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>% Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'unit_change':
+                        yData = filteredData.map(d => d.daily_change_units || 0);
+                        yLabel = 'Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'year_pct':
+                        yData = filteredData.map(d => d.yearly_pct_change || 0);
+                        yLabel = 'Yearly % Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly % Change: %{y:.2f}%<extra></extra>`;
+                        break;
+                    case 'year_units':
+                        yData = filteredData.map(d => d.yearly_change_units || 0);
+                        yLabel = 'Yearly Unit Change';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Yearly Unit Change: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'slope':
+                        yData = filteredData.map(d => d.slope_30 || 0);
+                        yLabel = 'Slope (30-period)';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Slope: %{y:.6f}<extra></extra>`;
+                        break;
+                    case 'macd':
+                        yData = filteredData.map(d => d.macd || 0);
+                        yLabel = 'MACD';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>MACD: %{y:.4f}<extra></extra>`;
+                        break;
+                    case 'zscore':
+                        yData = filteredData.map(d => d.zscore_30 || 0);
+                        yLabel = 'Z-Score (30-period)';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Z-Score: %{y:.2f}<extra></extra>`;
+                        break;
+                    case 'signals':
+                        yData = filteredData.map(d => d.signal || 0);
+                        yLabel = 'Buy/Sell Signals';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Signal: %{y}<extra></extra>`;
+                        break;
+                    default: // 'raw'
+                        yData = filteredData.map(d => d.value);
+                        yLabel = 'Value';
+                        hoverTemplate = `<b>${s.symbol}</b><br>Date: %{x}<br>Value: %{y:.4f}<extra></extra>`;
+                        break;
+                }
+               
+                const trace = {
+                    x: filteredData.map(d => d.date),
+                    y: yData,
+                    type: 'scatter',
+                    mode: displayMode === 'signals' ? 'markers' : 'lines',
+                    name: s.symbol,
+                    hovertemplate: hoverTemplate
+                };
+                
+                if (displayMode === 'signals') {
+                    trace.marker = {
+                        color: yData.map(val => val === 1 ? '#00ff88' : val === -1 ? '#ff4444' : '#888888'),
+                        size: yData.map(val => val !== 0 ? 12 : 6),
+                        symbol: yData.map(val => val === 1 ? 'triangle-up' : val === -1 ? 'triangle-down' : 'circle')
+                    };
+                } else {
+                    trace.line = { color: lineColor, width: 2 };
+                }
+                
+                traces.push(trace);
+                
+                // Add MACD Signal line for MACD display mode
+                if (displayMode === 'macd') {
+                    const signalData = filteredData.map(d => d.macd_signal || 0);
+                    const signalTrace = {
+                        x: filteredData.map(d => d.date),
+                        y: signalData,
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: `${s.symbol} Signal`,
+                        line: { color: lineColor, width: 1, dash: 'dash' },
+                        hovertemplate: `<b>${s.symbol} Signal</b><br>Date: %{x}<br>Signal: %{y:.4f}<extra></extra>`
+                    };
+                    traces.push(signalTrace);
+                }
+            });
+           
+            if (traces.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
+                return;
+            }
+           
+            const layout = {
+                title: {
+                    text: `${displayMode.replace('_', ' ').toUpperCase()} VIEW`,
+                    font: { color: '#fff', size: 14 },
+                    x: 0.5
+                },
+                paper_bgcolor: '#0a0a0a',
+                plot_bgcolor: '#0a0a0a',
+                font: { color: '#aaa', size: 12 },
+                margin: { t: 60, r: 80, b: 60, l: 80 },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    title: { text: yLabel, font: { color: '#aaa' } },
+                    gridcolor: '#22222250',
+                    tickfont: { color: '#888' },
+                    zeroline: true,
+                    zerolinecolor: '#444',
+                    zerolinewidth: 1
+                },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    yanchor: 'bottom',
+                    y: 1.02,
+                    xanchor: 'right',
+                    x: 1,
+                    bgcolor: 'rgba(10,10,10,0.8)',
+                    bordercolor: '#333',
+                    borderwidth: 1,
+                    font: { size: 11 }
+                },
+                height: 500,
+                autosize: true
+            };
+           
+            const config = {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+                displayModeBar: true
+            };
+           
+            if(canvasElement.querySelector('.chart-message')) canvasElement.innerHTML = '';
+           
+            Plotly.react(canvasElement, traces, layout, config)
+                .then(gd => {
+                    charts[chartId].chartInstance = gd;
+                })
+                .catch(err => {
+                    console.error("Plotly error:", err);
+                    canvasElement.innerHTML = `<div class="chart-message" style="color: #ff4444;">Chart error: ${err.message}</div>`;
+                });
+        }
+       
+        function showChartView() {
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+           
+            if (chartsArea.style.display === 'none') {
+                chartsArea.style.display = 'block';
+                watchlistSection.style.flex = '0 0 300px';
+            } else {
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '1';
+            }
+        }
+       
+        // Initialize Risk Dashboard
+        function initializeRiskDashboard() {
+            setupRiskConfiguration();
+            loadRiskDashboardData();
+            setInterval(loadRiskDashboardData, 120000); // Update every 2 minutes
+        }
+        
+        // Setup Risk Configuration UI
+        function setupRiskConfiguration() {
+            const categories = ['risk', 'liquidity', 'economic', 'global'];
+            const containers = ['riskSymbols', 'liquiditySymbols', 'economicSymbols', 'globalSymbols'];
+            
+            categories.forEach((category, index) => {
+                const container = document.getElementById(containers[index]);
+                const config = riskCategories[category];
+                
+                config.symbols.forEach(symbol => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'symbol-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="${category}_${symbol}" checked onchange="updateCategoryConfig('${category}', '${symbol}', this.checked)">
+                        <label for="${category}_${symbol}">${getSymbolDescription(symbol, getProviderForSymbol(symbol))}</label>
+                    `;
+                    container.appendChild(checkbox);
+                });
+            });
+        }
+        
+        // Get provider for symbol (helper function)
+        function getProviderForSymbol(symbol) {
+            if (symbol.includes('CISS') || symbol.includes('EXR')) return 'ecb';
+            if (['sofr', 'effr', 'obfr', 'tgcr', 'bgcr'].includes(symbol.toLowerCase())) return 'ny_fed';
+            return 'fred';
+        }
+        
+        // Update category configuration
+        function updateCategoryConfig(category, symbol, enabled) {
+            if (!enabled) {
+                riskCategories[category].symbols = riskCategories[category].symbols.filter(s => s !== symbol);
+            } else if (!riskCategories[category].symbols.includes(symbol)) {
+                riskCategories[category].symbols.push(symbol);
+            }
+        }
+        
+        // Toggle Risk Dashboard
+        function toggleRiskDashboard() {
+            const dashboard = document.getElementById('riskDashboard');
+            const chartsArea = document.getElementById('chartsArea');
+            const watchlistSection = document.querySelector('.watchlist-section');
+            
+            if (dashboard.classList.contains('active')) {
+                dashboard.classList.remove('active');
+                watchlistSection.style.flex = '1';
+            } else {
+                dashboard.classList.add('active');
+                chartsArea.style.display = 'none';
+                watchlistSection.style.flex = '0 0 300px';
+                loadRiskDashboardData();
+            }
+        }
+        
+        // Toggle Configuration Panel
+        function toggleConfig() {
+            const config = document.getElementById('watchlistConfig');
+            config.style.display = config.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Load Risk Dashboard Data
+        async function loadRiskDashboardData() {
+            const allSymbols = new Set();
+            Object.values(riskCategories).forEach(category => {
+                category.symbols.forEach(symbol => allSymbols.add(symbol));
+            });
+            
+            // Load data for all symbols
+            for (const symbol of allSymbols) {
+                const provider = getProviderForSymbol(symbol) + '_direct';
+                try {
+                    await loadRiskSymbolData(symbol, provider);
+                } catch (error) {
+                    console.warn(`Failed to load risk data for ${symbol}:`, error);
+                }
+            }
+            
+            // Calculate risk scores and update dashboard
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+        }
+        
+        // Load individual symbol data for risk analysis
+        async function loadRiskSymbolData(symbol, provider, retryCount = 0) {
+            try {
+                let url;
+                
+                if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ny_fed_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                } else if (provider === 'ecb_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.metrics && data.metrics.latest_value !== undefined) {
+                    riskDashboardData[symbol] = {
+                        value: data.metrics.latest_value,
+                        daily_change: data.metrics.daily_change || 0,
+                        weekly_change: data.metrics.weekly_change || 0,
+                        monthly_change: data.metrics.monthly_change || 0,
+                        yearly_change: data.metrics.yearly_change || 0,
+                        provider: provider,
+                        timestamp: Date.now()
+                    };
+                }
+            } catch (error) {
+                if (retryCount < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                    return loadRiskSymbolData(symbol, provider, retryCount + 1);
+                }
+                console.error(`Failed to load ${symbol}:`, error);
+            }
+        }
+        
+        // Calculate Risk Scores using Z-Score normalization
+        function calculateRiskScores() {
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const scores = [];
+                
+                category.symbols.forEach(symbol => {
+                    if (riskDashboardData[symbol]) {
+                        // Calculate Z-Score based on recent changes
+                        const data = riskDashboardData[symbol];
+                        const changes = [data.daily_change, data.weekly_change, data.monthly_change].filter(x => x !== null && !isNaN(x));
+                        
+                        if (changes.length > 0) {
+                            const mean = changes.reduce((a, b) => a + b, 0) / changes.length;
+                            const variance = changes.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / changes.length;
+                            const stdDev = Math.sqrt(variance);
+                            
+                            let zScore = 0;
+                            if (stdDev > 0) {
+                                zScore = Math.abs(data.daily_change || 0) / (stdDev + 0.001); // Avoid division by zero
+                            }
+                            
+                            // Convert Z-Score to percentile (0-100)
+                            const percentile = Math.min(100, Math.max(0, (zScore / 3) * 100));
+                            scores.push(percentile);
+                        }
+                    }
+                });
+                
+                // Calculate category average score
+                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                category.currentScore = Math.round(avgScore);
+                
+                // Determine alert level
+                if (avgScore >= category.thresholds.extreme) {
+                    category.alertLevel = 'extreme';
+                } else if (avgScore >= category.thresholds.critical) {
+                    category.alertLevel = 'high';
+                } else if (avgScore >= category.thresholds.warning) {
+                    category.alertLevel = 'moderate';
+                } else {
+                    category.alertLevel = 'low';
+                }
+            });
+        }
+        
+        // Update Risk Gauges
+        function updateRiskGauges() {
+            const gaugeGrid = document.getElementById('gaugeGrid');
+            gaugeGrid.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const gaugeContainer = document.createElement('div');
+                gaugeContainer.className = 'gauge-container';
+                
+                const gaugeId = `gauge_${categoryKey}`;
+                gaugeContainer.innerHTML = `
+                    <div class="gauge-title">${category.name}</div>
+                    <div class="gauge-chart" id="${gaugeId}"></div>
+                `;
+                
+                gaugeGrid.appendChild(gaugeContainer);
+                
+                // Create Plotly gauge
+                const data = [{
+                    type: "indicator",
+                    mode: "gauge+number+delta",
+                    value: category.currentScore,
+                    domain: { x: [0, 1], y: [0, 1] },
+                    title: { text: "Risk Score" },
+                    delta: { reference: 50 },
+                    gauge: {
+                        axis: { range: [null, 100] },
+                        bar: { color: category.color },
+                        steps: [
+                            { range: [0, category.thresholds.warning], color: "#00dd7750" },
+                            { range: [category.thresholds.warning, category.thresholds.critical], color: "#ffaa0050" },
+                            { range: [category.thresholds.critical, category.thresholds.extreme], color: "#ff444450" },
+                            { range: [category.thresholds.extreme, 100], color: "#8b000050" }
+                        ],
+                        threshold: {
+                            line: { color: "white", width: 4 },
+                            thickness: 0.75,
+                            value: category.currentScore
+                        }
+                    }
+                }];
+                
+                const layout = {
+                    width: 350,
+                    height: 250,
+                    margin: { t: 0, r: 25, l: 25, b: 0 },
+                    paper_bgcolor: "#0a0a0a",
+                    plot_bgcolor: "#0a0a0a",
+                    font: { color: "#fff" }
+                };
+                
+                Plotly.newPlot(gaugeId, data, layout, { displayModeBar: false });
+            });
+        }
+        
+        // Update Alert Indicators
+        function updateAlertIndicators() {
+            const alertContainer = document.getElementById('alertIndicators');
+            alertContainer.innerHTML = '';
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                const category = riskCategories[categoryKey];
+                const badge = document.createElement('div');
+                badge.className = `alert-badge ${category.alertLevel}`;
+                
+                let alertText = '';
+                switch (category.alertLevel) {
+                    case 'extreme':
+                        alertText = `🚨 EXTREME: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    case 'high':
+                        alertText = `⚠️ HIGH: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    case 'moderate':
+                        alertText = `🟡 WARNING: ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                        break;
+                    default:
+                        alertText = `✅ ${category.name.replace(/[🔴💧📈🌍]/g, '')} ${category.currentScore}%`;
+                }
+                
+                badge.textContent = alertText;
+                alertContainer.appendChild(badge);
+            });
+        }
+        
+        // Update Risk Dashboard (called when config changes)
+        function updateRiskDashboard() {
+            // Update thresholds from inputs
+            const warning = parseInt(document.getElementById('warningThreshold').value);
+            const critical = parseInt(document.getElementById('criticalThreshold').value);
+            const extreme = parseInt(document.getElementById('extremeThreshold').value);
+            
+            Object.keys(riskCategories).forEach(categoryKey => {
+                riskCategories[categoryKey].thresholds = { warning, critical, extreme };
+            });
+            
+            // Recalculate and update
+            calculateRiskScores();
+            updateRiskGauges();
+            updateAlertIndicators();
+            
+            showTemporaryMessage('Risk Dashboard Updated!', 'info');
+        }
+       
+        // Edit symbol function (placeholder)
+        function editSymbol(event, symbol) {
+            event.stopPropagation();
+            showTemporaryMessage(`Edit functionality for ${symbol} - implement as needed`, 'info');
+        }
+       
+        // Utility functions
+        function showTemporaryMessage(text, type = 'info') {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = text;
+            document.body.appendChild(popup);
+           
+            setTimeout(() => popup.remove(), 3000);
+        }
+       
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(event) {
+            const searchBox = document.getElementById('searchBox');
+            const searchResults = document.getElementById('searchResults');
+           
+            if (!searchBox.contains(event.target) && !searchResults.contains(event.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+       
+        // Initialize on page load
+        window.onload = init;
+    </script>
+</body>
+</html>
+        
+        // Load Polygon tickers for enhanced search
+        async function loadPolygonTickers() {
+            if (polygonTickersLoaded) return;
+            
+            try {
+                console.log('Loading Polygon tickers...');
+                const response = await fetch(`${API_BASE}/api/v1/polygon/tickers?limit=5000&active=true`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.results) {
+                        polygonTickers = data.results.map(ticker => ({
+                            ticker: ticker.ticker,
+                            name: ticker.name,
+                            type: ticker.type || 'CS',
+                            market: ticker.market || 'stocks',
+                            active: ticker.active
+                        }));
+                        polygonTickersLoaded = true;
+                        console.log(`Loaded ${polygonTickers.length} Polygon tickers`);
+                    }
+                } else {
+                    console.warn('Failed to load Polygon tickers:', response.status);
+                    // Fallback to basic tickers if API fails
+                    polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
+                        ticker: symbol,
+                        name: symbol,
+                        type: 'CS',
+                        market: 'stocks',
+                        active: true
+                    }));
+                }
+            } catch (error) {
+                console.warn('Error loading Polygon tickers:', error);
+                // Fallback to basic tickers
+                polygonTickers = DATA_SOURCES.polygon.searchSymbols.map(symbol => ({
+                    ticker: symbol,
+                    name: symbol,
+                    type: 'CS',
+                    market: 'stocks',
+                    active: true
+                }));
+            }
+        }
+        
+        // Toggle ticker type
+        function toggleTickerType(type) {
+            const button = document.querySelector(`[data-type="${type}"]`);
+            const isActive = button.classList.contains('active');
+            
+            if (isActive) {
+                button.classList.remove('active');
+                activeTickerTypes = activeTickerTypes.filter(t => t !== type);
+            } else {
+                button.classList.add('active');
+                activeTickerTypes.push(type);
+            }
+        }
+       
+        // Enhanced API connection check for all providers
+        async function checkAPIConnections() {
+            let connectedCount = 0;
+            const totalSources = Object.keys(DATA_SOURCES).length;
+           
+            // Test health endpoint first
+            try {
+                const healthResponse = await fetch(`${API_BASE}/api/v1/health`);
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.json();
+                    console.log('Health check:', healthData);
+                }
+            } catch (error) {
+                console.warn('Health check failed:', error);
+            }
+           
+            // Test each provider with comprehensive checks
+            for (const [source, config] of Object.entries(DATA_SOURCES)) {
+                try {
+                    let testUrl;
+                   
+                    if (source === 'liquidity') {
+                        testUrl = `${API_BASE}/api/v1/liquidity/dashboard`;
+                    } else if (source === 'polygon') {
+                        // Test with polygon reference endpoint
+                        testUrl = `${API_BASE}/api/v1/polygon/reference/tickers?limit=1`;
+                    } else {
+                        const testSymbol = config.searchSymbols[0];
+                       
+                        if (source === 'fred') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=fred_direct&include_changes=false`;
+                        } else if (source === 'ny_fed') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=ny_fed_direct&include_changes=false`;
+                        } else if (source === 'ecb') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        } else if (source === 'ofr') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        } else if (source === 'treasury') {
+                            testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}&include_changes=false`;
+                        }
+                    }
+                   
+                    const response = await fetch(testUrl);
+                   
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && (data.metrics || data.data || data.symbol || data.overall_stress_score !== undefined || data.results)) {
+                            document.getElementById(`${source}-indicator`).classList.add('connected');
+                            connectedCount++;
+                            console.log(`${source} connected successfully`);
+                        }
+                    } else if (response.status === 404) {
+                        document.getElementById(`${source}-indicator`).classList.add('connected');
+                        connectedCount++;
+                        console.log(`${source} connected (404 but API responsive)`);
+                    }
+                } catch (error) {
+                    console.warn(`${source} API connection failed:`, error);
+                    document.getElementById(`${source}-indicator`).classList.remove('connected');
+                }
+            }
+           
+            const statusText = `${connectedCount}/${totalSources} APIs Connected`;
+            document.getElementById('apiStatusText').textContent = statusText;
+           
+            if (connectedCount > 0) {
+                document.getElementById('apiStatus').classList.add('connected');
+                showTemporaryMessage(`Connected to ${connectedCount} data sources`, 'info');
+            } else {
+                showTemporaryMessage('No API connections available', 'error');
+            }
+        }
+       
+        // Load liquidity dashboard
+        async function loadLiquidityDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/liquidity/dashboard`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLiquidityAlert(data);
+                    document.getElementById('liquidity-indicator').classList.add('connected');
+                }
+            } catch (error) {
+                console.warn('Liquidity dashboard failed:', error);
+                document.getElementById('liquidity-indicator').classList.remove('connected');
+            }
+        }
+       
+        // Update liquidity alert
+        function updateLiquidityAlert(data) {
+            const alertElement = document.getElementById('liquidityAlert');
+            const alertText = document.getElementById('liquidityAlertText');
+           
+            if (!data || data.overall_stress_score === undefined) {
+                alertElement.style.display = 'none';
+                return;
+            }
+           
+            const stressScore = data.overall_stress_score;
+            const stressLevel = data.stress_level;
+           
+            alertElement.style.display = 'block';
+            alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
+           
+            alertElement.className = 'liquidity-alert';
+            if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') {
+                alertElement.classList.add('high');
+            } else if (stressLevel === 'MODERATE') {
+                alertElement.classList.add('moderate');
+            } else {
+                alertElement.classList.add('low');
+            }
+        }
+       
+        // Show liquidity dashboard
+        function showLiquidityDashboard() {
+            showTemporaryMessage('Loading comprehensive liquidity dashboard...', 'info');
+        }
+       
+        // Toggle data source
+        function toggleDataSource(source) {
+            const button = document.querySelector(`[data-source="${source}"]`);
+            const isActive = button.classList.contains('active');
+           
+            if (isActive) {
+                button.classList.remove('active');
+                activeSources = activeSources.filter(s => s !== source);
+            } else {
+                button.classList.add('active');
+                activeSources.push(source);
+            }
+        }
+       
+        // Enhanced search across all providers and Polygon ticker types
+        async function performSearch(query) {
+            const resultsDiv = document.getElementById('searchResults');
+           
+            if (!query || query.trim().length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+           
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                resultsDiv.innerHTML = '<div class="search-loading">Searching across all data sources and ticker types...</div>';
+                resultsDiv.style.display = 'block';
+               
+                try {
+                    const allResults = [];
+                   
+                    // Enhanced Polygon search with all ticker types
+                    if (activeSources.includes('polygon') && polygonTickersLoaded) {
+                        const filteredTickers = polygonTickers.filter(ticker => {
+                            // Filter by active ticker types
+                            if (!activeTickerTypes.includes(ticker.type)) return false;
+                            
+                            // Search in ticker symbol and name
+                            const queryLower = query.toLowerCase();
+                            return ticker.ticker.toLowerCase().includes(queryLower) ||
+                                   (ticker.name && ticker.name.toLowerCase().includes(queryLower));
+                        });
+                        
+                        // Sort by relevance and take top 50
+                        filteredTickers
+                            .sort((a, b) => {
+                                const aSymbol = a.ticker.toLowerCase();
+                                const bSymbol = b.ticker.toLowerCase();
+                                const queryLower = query.toLowerCase();
+                                
+                                if (aSymbol === queryLower) return -1;
+                                if (bSymbol === queryLower) return 1;
+                                if (aSymbol.startsWith(queryLower)) return -1;
+                                if (bSymbol.startsWith(queryLower)) return 1;
+                                return 0;
+                            })
+                            .slice(0, 50)
+                            .forEach(ticker => {
+                                allResults.push({
+                                    symbol: ticker.ticker,
+                                    name: ticker.name || ticker.ticker,
+                                    provider: 'polygon_direct',
+                                    source: 'polygon',
+                                    type: ticker.type,
+                                    description: getTickerTypeDescription(ticker.type)
+                                });
+                            });
+                    }
+                   
+                    // Search through other data sources
+                    for (const source of activeSources) {
+                        if (source === 'polygon') continue; // Already handled above
+                        
+                        const config = DATA_SOURCES[source];
+                        if (!config) continue;
+                       
+                        const matchingSymbols = config.searchSymbols.filter(symbol =>
+                            symbol.toLowerCase().includes(query.toLowerCase()) ||
+                            getSymbolDescription(symbol, source).toLowerCase().includes(query.toLowerCase())
+                        );
+                       
+                        matchingSymbols.forEach(symbol => {
+                            allResults.push({
+                                symbol: symbol,
+                                name: getSymbolDescription(symbol, source),
+                                provider: config.provider,
+                                source: source,
+                                description: getDetailedDescription(symbol, source)
+                            });
+                        });
+                    }
+                   
+                    displaySearchResults(allResults, query);
+                   
+                } catch (error) {
+                    console.error('Search error:', error);
+                    resultsDiv.innerHTML = `
+                        <div class="search-item" style="text-align:center; color:#888;">
+                            Error searching. Please try again.
+                        </div>
+                    `;
+                }
+            }, 300);
         }
