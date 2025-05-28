@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macro Data Scraper Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.0/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-links a:hover {
+            color: #667eea;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-title {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-change {
+            font-size: 0.9rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .positive { background: #d4edda; color: #155724; }
+        .negative { background: #f8d7da; color: #721c24; }
+        .neutral { background: #e2e3e5; color: #383d41; }
+        
+        .search-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-input:focus {
+            border-color: #667eea;
+        }
+        
+        .search-btn, .add-watchlist-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.3s ease;
+        }
+        
+        .search-btn:hover, .add-watchlist-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .watchlist-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .watchlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .watchlist-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+        }
+        
+        .watchlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .watchlist-symbol {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 0.3rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.3rem;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .chart-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-container {
+            height: 500px;
+            width: 100%;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">🧹 Macro Data Scraper</div>
+            <div class="nav-links">
+                <a href="/">Dashboard</a>
+                <a href="ai_predictions.html">AI Predictions</a>
+                <a href="#" onclick="refreshData()">Refresh Data</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>📊 Economic Data Dashboard</h1>
+            <p>Real-time macroeconomic indicators and trends</p>
+        </div>
+
+        <!-- Key Statistics -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-title">Federal Funds Rate</div>
+                <div class="stat-value" id="fedFundsRate">5.25%</div>
+                <div class="stat-change positive" id="fedFundsChange">+0.25% (1M)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">M2 Money Supply</div>
+                <div class="stat-value" id="m2Supply">$20.8T</div>
+                <div class="stat-change negative" id="m2Change">-2.1% (YoY)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Unemployment Rate</div>
+                <div class="stat-value" id="unemploymentRate">3.7%</div>
+                <div class="stat-change positive" id="unemploymentChange">-0.1% (1M)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">CPI Inflation</div>
+                <div class="stat-value" id="cpiRate">3.2%</div>
+                <div class="stat-change negative" id="cpiChange">-0.3% (1M)</div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <h2>🔍 Search Economic Data</h2>
+            <div class="search-container">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search for economic indicators, rates, or data series...">
+                <button class="search-btn" onclick="searchData()">Search</button>
+                <button class="add-watchlist-btn" onclick="addToWatchlist()">Add to Watchlist</button>
+            </div>
+            <div id="searchResults"></div>
+        </div>
+
+        <!-- Watchlist Section -->
+        <div class="watchlist-section">
+            <h2>👁️ My Watchlist</h2>
+            <div class="watchlist-grid" id="watchlistGrid">
+                <!-- Watchlist items will be added here -->
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <h2>📈 Interactive Charts</h2>
+            <div class="chart-container" id="mainChart"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage (in-memory only - no localStorage)
+        let watchlistData = [];
+        let chartData = [];
+        let currentSearchResults = [];
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            loadSampleData();
+            renderChart();
+        });
+
+        function initializeDashboard() {
+            console.log('📊 Initializing Scraper Dashboard');
+            
+            // Add sample watchlist items
+            watchlistData = [
+                {
+                    symbol: 'FEDFUNDS',
+                    name: 'Federal Funds Rate',
+                    value: 5.25,
+                    changes: {
+                        '1d': 0.00,
+                        '1w': 0.00,
+                        '1m': 0.25,
+                        '1q': 0.75,
+                        '1y': 2.50
+                    },
+                    zScore: 1.2,
+                    macd: 0.05
+                },
+                {
+                    symbol: 'M2SL',
+                    name: 'M2 Money Supply',
+                    value: 20800,
+                    changes: {
+                        '1d': 0.01,
+                        '1w': -0.05,
+                        '1m': -0.15,
+                        '1q': -1.20,
+                        '1y': -2.10
+                    },
+                    zScore: -0.8,
+                    macd: -0.12
+                }
+            ];
+            
+            renderWatchlist();
+        }
+
+        function loadSampleData() {
+            // Simulate economic data
+            const dates = [];
+            const fedFundsData = [];
+            const m2Data = [];
+            const unemploymentData = [];
+            
+            for (let i = 365; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+                
+                // Simulate realistic economic data trends
+                fedFundsData.push(2.0 + Math.sin(i / 30) * 1.5 + Math.random() * 0.5);
+                m2Data.push(18000 + i * 5 + Math.random() * 100);
+                unemploymentData.push(4.0 + Math.sin(i / 60) * 1.0 + Math.random() * 0.3);
+            }
+            
+            chartData = {
+                dates: dates,
+                series: {
+                    'Federal Funds Rate': fedFundsData,
+                    'M2 Money Supply': m2Data.map(v => v / 1000), // Convert to thousands
+                    'Unemployment Rate': unemploymentData
+                }
+            };
+        }
+
+        function renderChart() {
+            const traces = [];
+            
+            Object.keys(chartData.series).forEach((seriesName, index) => {
+                const colors = ['#667eea', '#764ba2', '#f093fb'];
+                
+                traces.push({
+                    x: chartData.dates,
+                    y: chartData.series[seriesName],
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: seriesName,
+                    line: {
+                        color: colors[index % colors.length],
+                        width: 3
+                    }
+                });
+            });
+
+            const layout = {
+                title: {
+                    text: 'Economic Indicators Over Time',
+                    font: { size: 20, color: '#333' }
+                },
+                xaxis: {
+                    title: 'Date',
+                    gridcolor: '#e1e5e9'
+                },
+                yaxis: {
+                    title: 'Value',
+                    gridcolor: '#e1e5e9'
+                },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#333' },
+                margin: { t: 80, r: 40, b: 60, l: 80 }
+            };
+
+            Plotly.newPlot('mainChart', traces, layout, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d']
+            });
+        }
+
+        function searchData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!query) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            // Simulate search results
+            const mockResults = [
+                { symbol: 'FEDFUNDS', name: 'Federal Funds Rate', category: 'Interest Rates' },
+                { symbol: 'M2SL', name: 'M2 Money Supply', category: 'Monetary Policy' },
+                { symbol: 'UNRATE', name: 'Unemployment Rate', category: 'Labor Market' },
+                { symbol: 'CPIAUCSL', name: 'Consumer Price Index', category: 'Inflation' },
+                { symbol: 'GDP', name: 'Gross Domestic Product', category: 'Economic Output' },
+                { symbol: 'DEXUSEU', name: 'USD/EUR Exchange Rate', category: 'Foreign Exchange' },
+                { symbol: 'DGS10', name: '10-Year Treasury Rate', category: 'Interest Rates' }
+            ];
+
+            currentSearchResults = mockResults.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.symbol.toLowerCase().includes(query) ||
+                item.category.toLowerCase().includes(query)
+            );
+
+            displaySearchResults();
+        }
+
+        function displaySearchResults() {
+            const container = document.getElementById('searchResults');
+            
+            if (currentSearchResults.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No results found</p>';
+                return;
+            }
+
+            const resultsHTML = currentSearchResults.map(result => `
+                <div style="border: 1px solid #e1e5e9; border-radius: 8px; padding: 1rem; margin: 0.5rem 0; background: #f8f9fa;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${result.symbol}</strong> - ${result.name}
+                            <br><small style="color: #666;">${result.category}</small>
+                        </div>
+                        <button onclick="addSearchResultToWatchlist('${result.symbol}', '${result.name}')" 
+                                style="background: #667eea; color: white; border: none; border-radius: 5px; padding: 0.5rem 1rem; cursor: pointer;">
+                            Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = resultsHTML;
+        }
+
+        function addToWatchlist() {
+            const symbol = document.getElementById('searchInput').value.trim().toUpperCase();
+            
+            if (!symbol) {
+                alert('Please enter a symbol or search for data first');
+                return;
+            }
+
+            addSearchResultToWatchlist(symbol, symbol);
+        }
+
+        function addSearchResultToWatchlist(symbol, name) {
+            // Check if already in watchlist
+            if (watchlistData.some(item => item.symbol === symbol)) {
+                alert('This item is already in your watchlist');
+                return;
+            }
+
+            // Generate mock data for the new watchlist item
+            const newItem = {
+                symbol: symbol,
+                name: name,
+                value: Math.random() * 100 + 10,
+                changes: {
+                    '1d': (Math.random() - 0.5) * 2,
+                    '1w': (Math.random() - 0.5) * 5,
+                    '1m': (Math.random() - 0.5) * 10,
+                    '1q': (Math.random() - 0.5) * 20,
+                    '1y': (Math.random() - 0.5) * 50
+                },
+                zScore: (Math.random() - 0.5) * 4,
+                macd: (Math.random() - 0.5) * 0.5
+            };
+
+            watchlistData.push(newItem);
+            renderWatchlist();
+        }
+
+        function renderWatchlist() {
+            const container = document.getElementById('watchlistGrid');
+            
+            if (watchlistData.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666; padding: 2rem;">No items in watchlist</p>';
+                return;
+            }
+
+            const watchlistHTML = watchlistData.map((item, index) => `
+                <div class="watchlist-item">
+                    <div class="watchlist-header">
+                        <div>
+                            <div class="watchlist-symbol">${item.symbol}</div>
+                            <div style="color: #666; font-size: 0.9rem;">${item.name}</div>
+                        </div>
+                        <button class="remove-btn" onclick="removeFromWatchlist(${index})">Remove</button>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">Current</div>
+                            <div class="metric-value">${item.value.toFixed(2)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">1D</div>
+                            <div class="metric-value ${item.changes['1d'] >= 0 ? 'positive' : 'negative'}">
+                                ${item.changes['1d'] >= 0 ? '+' : ''}${item.changes['1d'].toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">1W</div>
+                            <div class="metric-value ${item.changes['1w'] >= 0 ? 'positive' : 'negative'}">
+                                ${item.changes['1w'] >= 0 ? '+' : ''}${item.changes['1w'].toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">1M</div>
+                            <div class="metric-value ${item.changes['1m'] >= 0 ? 'positive' : 'negative'}">
+                                ${item.changes['1m'] >= 0 ? '+' : ''}${item.changes['1m'].toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">1Q</div>
+                            <div class="metric-value ${item.changes['1q'] >= 0 ? 'positive' : 'negative'}">
+                                ${item.changes['1q'] >= 0 ? '+' : ''}${item.changes['1q'].toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">1Y</div>
+                            <div class="metric-value ${item.changes['1y'] >= 0 ? 'positive' : 'negative'}">
+                                ${item.changes['1y'] >= 0 ? '+' : ''}${item.changes['1y'].toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Z-Score</div>
+                            <div class="metric-value">${item.zScore.toFixed(2)}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">MACD</div>
+                            <div class="metric-value ${item.macd >= 0 ? 'positive' : 'negative'}">
+                                ${item.macd.toFixed(3)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = watchlistHTML;
+        }
+
+        function removeFromWatchlist(index) {
+            watchlistData.splice(index, 1);
+            renderWatchlist();
+        }
+
+        function refreshData() {
+            console.log('🔄 Refreshing data...');
+            
+            // Simulate data refresh
+            loadSampleData();
+            renderChart();
+            
+            // Update watchlist with new random values
+            watchlistData.forEach(item => {
+                item.value += (Math.random() - 0.5) * 2;
+                Object.keys(item.changes).forEach(period => {
+                    item.changes[period] += (Math.random() - 0.5) * 0.5;
+                });
+                item.zScore += (Math.random() - 0.5) * 0.2;
+                item.macd += (Math.random() - 0.5) * 0.05;
+            });
+            
+            renderWatchlist();
+            
+            // Show refresh notification
+            const notification = document.createElement('div');
+            notification.innerHTML = '✅ Data refreshed successfully';
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 1000;
+                transition: all 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 2000);
+        }
+
+        // Handle Enter key in search input
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchData();
+            }
+        });
+    </script>
+</body>
+</html>
