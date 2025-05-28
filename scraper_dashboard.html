@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Macro Data Scraper Dashboard</title>
+    <title>Macro Data Scraper Dashboard - S3 Connected</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -78,158 +79,185 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
         
-        .stats-grid {
+        .status-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            margin-bottom: 3rem;
         }
         
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-title {
-            font-size: 1.1rem;
-            color: #666;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-change {
-            font-size: 0.9rem;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-weight: 500;
-        }
-        
-        .positive { background: #d4edda; color: #155724; }
-        .negative { background: #f8d7da; color: #721c24; }
-        .neutral { background: #e2e3e5; color: #383d41; }
-        
-        .search-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .search-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .search-input {
-            flex: 1;
-            padding: 1rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-        
-        .search-input:focus {
-            border-color: #667eea;
-        }
-        
-        .search-btn, .add-watchlist-btn {
-            padding: 1rem 2rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: transform 0.3s ease;
-        }
-        
-        .search-btn:hover, .add-watchlist-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .watchlist-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .watchlist-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .watchlist-item {
+        .status-card {
             background: #f8f9fa;
             border-radius: 10px;
             padding: 1.5rem;
             border-left: 4px solid #667eea;
         }
         
-        .watchlist-header {
+        .status-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .status-value {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .file-browser {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .file-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .control-group select:focus,
+        .control-group input:focus {
+            border-color: #667eea;
+        }
+        
+        .load-btn {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .load-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .load-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .file-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .watchlist-symbol {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        
-        .remove-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 0.3rem 0.8rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: white;
+            border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .file-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .file-item.selected {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .file-name {
+            font-weight: 500;
+        }
+        
+        .file-size {
             font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .file-item.selected .file-size {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .data-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
         
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
+            margin-bottom: 2rem;
         }
         
-        .metric {
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
             text-align: center;
         }
         
         .metric-label {
             font-size: 0.8rem;
             color: #666;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.5rem;
         }
         
         .metric-value {
+            font-size: 1.2rem;
             font-weight: bold;
-            font-size: 0.9rem;
+            color: #333;
         }
+        
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .neutral { color: #6c757d; }
         
         .chart-section {
             background: rgba(255, 255, 255, 0.95);
@@ -241,7 +269,7 @@
         }
         
         .chart-container {
-            height: 500px;
+            height: 600px;
             width: 100%;
         }
         
@@ -253,177 +281,458 @@
             font-size: 1.2rem;
             color: #666;
         }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
     </style>
 </head>
 <body>
     <header class="header">
         <nav class="nav">
-            <div class="logo">🧹 Macro Data Scraper</div>
+            <div class="logo">🧹 Macro Data Scraper - S3 Connected</div>
             <div class="nav-links">
-                <a href="/">Dashboard</a>
-                <a href="ai_predictions.html">AI Predictions</a>
-                <a href="#" onclick="refreshData()">Refresh Data</a>
+                <a href="https://elmooro.github.io/clone/">Dashboard</a>
+                <a href="#" onclick="refreshFileList()">Refresh Data</a>
+                <a href="https://console.aws.amazon.com/s3/buckets/macro-data-lake" target="_blank">View S3</a>
             </div>
         </nav>
     </header>
 
     <div class="container">
         <div class="dashboard-header">
-            <h1>📊 Economic Data Dashboard</h1>
-            <p>Real-time macroeconomic indicators and trends</p>
+            <h1>📊 AWS Lambda Macro Data Dashboard</h1>
+            <p>Real-time data from S3 bucket: macro-data-lake</p>
         </div>
 
-        <!-- Key Statistics -->
-        <div class="stats-grid" id="statsGrid">
-            <div class="stat-card">
-                <div class="stat-title">Federal Funds Rate</div>
-                <div class="stat-value" id="fedFundsRate">5.25%</div>
-                <div class="stat-change positive" id="fedFundsChange">+0.25% (1M)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">M2 Money Supply</div>
-                <div class="stat-value" id="m2Supply">$20.8T</div>
-                <div class="stat-change negative" id="m2Change">-2.1% (YoY)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Unemployment Rate</div>
-                <div class="stat-value" id="unemploymentRate">3.7%</div>
-                <div class="stat-change positive" id="unemploymentChange">-0.1% (1M)</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">CPI Inflation</div>
-                <div class="stat-value" id="cpiRate">3.2%</div>
-                <div class="stat-change negative" id="cpiChange">-0.3% (1M)</div>
+        <!-- Status Section -->
+        <div class="status-section">
+            <h2>🔄 Connection Status</h2>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-card">
+                    <div class="status-title">S3 Bucket Status</div>
+                    <div class="status-value" id="s3Status">Checking...</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">Last Update</div>
+                    <div class="status-value" id="lastUpdate">Loading...</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">Available Files</div>
+                    <div class="status-value" id="fileCount">0</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">Data Sources</div>
+                    <div class="status-value" id="dataSources">Treasury, FRED, ECB</div>
+                </div>
             </div>
         </div>
 
-        <!-- Search Section -->
-        <div class="search-section">
-            <h2>🔍 Search Economic Data</h2>
-            <div class="search-container">
-                <input type="text" class="search-input" id="searchInput" placeholder="Search for economic indicators, rates, or data series...">
-                <button class="search-btn" onclick="searchData()">Search</button>
-                <button class="add-watchlist-btn" onclick="addToWatchlist()">Add to Watchlist</button>
+        <!-- File Browser Section -->
+        <div class="file-browser">
+            <h2>📁 S3 Data Browser</h2>
+            
+            <div class="file-controls">
+                <div class="control-group">
+                    <label for="sourceFilter">Data Source:</label>
+                    <select id="sourceFilter" onchange="filterFiles()">
+                        <option value="">All Sources</option>
+                        <option value="treasury">Treasury</option>
+                        <option value="fred">FRED</option>
+                        <option value="ecb">ECB</option>
+                        <option value="sofr_repo">SOFR/Repo</option>
+                        <option value="ofr_fsi">OFR FSI</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="dateFilter">Date Filter:</label>
+                    <input type="date" id="dateFilter" onchange="filterFiles()">
+                </div>
+                
+                <div class="control-group">
+                    <label>&nbsp;</label>
+                    <button class="load-btn" onclick="loadSelectedFile()" id="loadBtn" disabled>
+                        Load Selected File
+                    </button>
+                </div>
             </div>
-            <div id="searchResults"></div>
+
+            <div class="file-list" id="fileList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading files from S3...
+                </div>
+            </div>
         </div>
 
-        <!-- Watchlist Section -->
-        <div class="watchlist-section">
-            <h2>👁️ My Watchlist</h2>
-            <div class="watchlist-grid" id="watchlistGrid">
-                <!-- Watchlist items will be added here -->
+        <!-- Data Metrics Section -->
+        <div class="data-section" id="dataSection" style="display: none;">
+            <h2>📊 Data Metrics</h2>
+            <div class="metrics-grid" id="metricsGrid">
+                <!-- Metrics will be populated here -->
             </div>
         </div>
 
         <!-- Chart Section -->
-        <div class="chart-section">
-            <h2>📈 Interactive Charts</h2>
+        <div class="chart-section" id="chartSection" style="display: none;">
+            <h2>📈 Interactive Chart</h2>
             <div class="chart-container" id="mainChart"></div>
         </div>
     </div>
 
     <script>
-        // Data storage (in-memory only - no localStorage)
-        let watchlistData = [];
-        let chartData = [];
-        let currentSearchResults = [];
+        // S3 Configuration
+        const S3_BASE_URL = 'https://macro-data-lake.s3.amazonaws.com';
+        const S3_DATA_PATH = 'scraped_data';
+        
+        // Global variables
+        let availableFiles = [];
+        let filteredFiles = [];
+        let selectedFile = null;
+        let currentData = null;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            initializeDashboard();
-            loadSampleData();
-            renderChart();
+            console.log('🚀 Initializing S3-Connected Dashboard');
+            loadFileList();
         });
 
-        function initializeDashboard() {
-            console.log('📊 Initializing Scraper Dashboard');
-            
-            // Add sample watchlist items
-            watchlistData = [
-                {
-                    symbol: 'FEDFUNDS',
-                    name: 'Federal Funds Rate',
-                    value: 5.25,
-                    changes: {
-                        '1d': 0.00,
-                        '1w': 0.00,
-                        '1m': 0.25,
-                        '1q': 0.75,
-                        '1y': 2.50
-                    },
-                    zScore: 1.2,
-                    macd: 0.05
-                },
-                {
-                    symbol: 'M2SL',
-                    name: 'M2 Money Supply',
-                    value: 20800,
-                    changes: {
-                        '1d': 0.01,
-                        '1w': -0.05,
-                        '1m': -0.15,
-                        '1q': -1.20,
-                        '1y': -2.10
-                    },
-                    zScore: -0.8,
-                    macd: -0.12
+        async function loadFileList() {
+            try {
+                updateStatus('s3Status', 'Connecting...');
+                
+                // Since S3 doesn't allow direct listing without API, we'll try common file patterns
+                const sources = ['treasury', 'fred', 'ecb', 'sofr_repo', 'ofr_fsi'];
+                const today = new Date();
+                const files = [];
+                
+                // Generate potential file URLs for the last 30 days
+                for (let i = 0; i < 30; i++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+                    
+                    for (const source of sources) {
+                        // Try different time patterns (common scraping times)
+                        const times = ['120000', '130000', '140000', '150000'];
+                        for (const time of times) {
+                            const filename = `${source}_${dateStr}T${time}.json`;
+                            const url = `${S3_BASE_URL}/${S3_DATA_PATH}/${source}/${filename}`;
+                            
+                            files.push({
+                                name: filename,
+                                source: source,
+                                date: date.toISOString().split('T')[0],
+                                url: url,
+                                size: 'Unknown'
+                            });
+                        }
+                    }
                 }
-            ];
-            
-            renderWatchlist();
+                
+                // Test which files actually exist
+                await testFileExistence(files.slice(0, 50)); // Test first 50 to avoid overwhelming
+                
+            } catch (error) {
+                console.error('Error loading file list:', error);
+                updateStatus('s3Status', 'Connection Error');
+                showError('Failed to connect to S3 bucket. Please check bucket permissions.');
+            }
         }
 
-        function loadSampleData() {
-            // Simulate economic data
-            const dates = [];
-            const fedFundsData = [];
-            const m2Data = [];
-            const unemploymentData = [];
+        async function testFileExistence(files) {
+            const existingFiles = [];
+            let testCount = 0;
             
-            for (let i = 365; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                dates.push(date.toISOString().split('T')[0]);
+            for (const file of files) {
+                if (testCount >= 20) break; // Limit concurrent requests
                 
-                // Simulate realistic economic data trends
-                fedFundsData.push(2.0 + Math.sin(i / 30) * 1.5 + Math.random() * 0.5);
-                m2Data.push(18000 + i * 5 + Math.random() * 100);
-                unemploymentData.push(4.0 + Math.sin(i / 60) * 1.0 + Math.random() * 0.3);
+                try {
+                    const response = await fetch(file.url, { method: 'HEAD' });
+                    if (response.ok) {
+                        file.size = response.headers.get('content-length') || 'Unknown';
+                        existingFiles.push(file);
+                    }
+                } catch (error) {
+                    // File doesn't exist or is not accessible
+                }
+                testCount++;
             }
             
-            chartData = {
-                dates: dates,
-                series: {
-                    'Federal Funds Rate': fedFundsData,
-                    'M2 Money Supply': m2Data.map(v => v / 1000), // Convert to thousands
-                    'Unemployment Rate': unemploymentData
-                }
-            };
+            availableFiles = existingFiles;
+            filteredFiles = [...availableFiles];
+            
+            updateStatus('s3Status', existingFiles.length > 0 ? 'Connected ✅' : 'No files found');
+            updateStatus('fileCount', existingFiles.length.toString());
+            
+            if (existingFiles.length > 0) {
+                updateStatus('lastUpdate', new Date(existingFiles[0].date).toLocaleDateString());
+                renderFileList();
+            } else {
+                // If no files found, show manual input option
+                showManualFileInput();
+            }
         }
 
-        function renderChart() {
-            const traces = [];
+        function showManualFileInput() {
+            document.getElementById('fileList').innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <p style="margin-bottom: 1rem;">No files found automatically. Enter a direct S3 URL:</p>
+                    <input type="text" id="manualUrl" placeholder="https://macro-data-lake.s3.amazonaws.com/scraped_data/treasury/treasury_20250528T120000.json" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 2px solid #e1e5e9; border-radius: 8px;">
+                    <button onclick="loadManualUrl()" class="load-btn">Load URL</button>
+                </div>
+            `;
+        }
+
+        function renderFileList() {
+            const fileListEl = document.getElementById('fileList');
             
-            Object.keys(chartData.series).forEach((seriesName, index) => {
-                const colors = ['#667eea', '#764ba2', '#f093fb'];
+            if (filteredFiles.length === 0) {
+                fileListEl.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No files match the current filters.</div>';
+                return;
+            }
+            
+            const filesHTML = filteredFiles.map((file, index) => `
+                <div class="file-item" onclick="selectFile(${index})" data-index="${index}">
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">Source: ${file.source.toUpperCase()} | Date: ${file.date}</div>
+                    </div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                </div>
+            `).join('');
+            
+            fileListEl.innerHTML = filesHTML;
+        }
+
+        function selectFile(index) {
+            // Remove previous selection
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Select current file
+            const fileItem = document.querySelector(`[data-index="${index}"]`);
+            fileItem.classList.add('selected');
+            
+            selectedFile = filteredFiles[index];
+            document.getElementById('loadBtn').disabled = false;
+        }
+
+        async function loadSelectedFile() {
+            if (!selectedFile) return;
+            
+            try {
+                showLoading('Loading data...');
                 
+                const response = await axios.get(selectedFile.url);
+                const data = response.data;
+                
+                // Parse the data structure
+                if (data.data && Array.isArray(data.data)) {
+                    currentData = data.data;
+                    renderDataMetrics(data);
+                    renderChart(data);
+                    
+                    document.getElementById('dataSection').style.display = 'block';
+                    document.getElementById('chartSection').style.display = 'block';
+                    
+                    showSuccess(`Successfully loaded ${currentData.length} records from ${selectedFile.name}`);
+                } else {
+                    throw new Error('Invalid data format');
+                }
+                
+            } catch (error) {
+                console.error('Error loading file:', error);
+                showError(`Failed to load file: ${error.message}`);
+            }
+        }
+
+        async function loadManualUrl() {
+            const url = document.getElementById('manualUrl').value.trim();
+            if (!url) return;
+            
+            try {
+                showLoading('Loading data from URL...');
+                
+                const response = await axios.get(url);
+                const data = response.data;
+                
+                if (data.data && Array.isArray(data.data)) {
+                    currentData = data.data;
+                    renderDataMetrics(data);
+                    renderChart(data);
+                    
+                    document.getElementById('dataSection').style.display = 'block';
+                    document.getElementById('chartSection').style.display = 'block';
+                    
+                    showSuccess(`Successfully loaded ${currentData.length} records from manual URL`);
+                } else {
+                    throw new Error('Invalid data format');
+                }
+                
+            } catch (error) {
+                console.error('Error loading manual URL:', error);
+                showError(`Failed to load URL: ${error.message}`);
+            }
+        }
+
+        function renderDataMetrics(data) {
+            const metricsGrid = document.getElementById('metricsGrid');
+            
+            if (!currentData || currentData.length === 0) return;
+            
+            // Calculate metrics from the data
+            const latest = currentData[currentData.length - 1];
+            const previous = currentData.length > 1 ? currentData[currentData.length - 2] : null;
+            
+            const metrics = [];
+            
+            // Add basic metrics
+            metrics.push({
+                label: 'Total Records',
+                value: currentData.length,
+                class: 'neutral'
+            });
+            
+            metrics.push({
+                label: 'Data Source',
+                value: data.metadata?.source || 'Unknown',
+                class: 'neutral'
+            });
+            
+            metrics.push({
+                label: 'Latest Date',
+                value: latest.date || latest.record_date || 'Unknown',
+                class: 'neutral'
+            });
+            
+            // Add value-specific metrics if available
+            if (latest.value !== undefined) {
+                metrics.push({
+                    label: 'Latest Value',
+                    value: parseFloat(latest.value).toFixed(4),
+                    class: 'neutral'
+                });
+                
+                if (previous && previous.value !== undefined) {
+                    const change = ((latest.value - previous.value) / previous.value * 100);
+                    metrics.push({
+                        label: 'Change',
+                        value: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`,
+                        class: change >= 0 ? 'positive' : 'negative'
+                    });
+                }
+            }
+            
+            // Add calculated metrics if available
+            if (latest['1d_pct_change'] !== undefined) {
+                metrics.push({
+                    label: '1D Change',
+                    value: `${latest['1d_pct_change'] >= 0 ? '+' : ''}${parseFloat(latest['1d_pct_change']).toFixed(2)}%`,
+                    class: latest['1d_pct_change'] >= 0 ? 'positive' : 'negative'
+                });
+            }
+            
+            if (latest.z_score !== undefined) {
+                metrics.push({
+                    label: 'Z-Score',
+                    value: parseFloat(latest.z_score).toFixed(2),
+                    class: Math.abs(latest.z_score) > 2 ? 'negative' : 'neutral'
+                });
+            }
+            
+            if (latest.macd !== undefined) {
+                metrics.push({
+                    label: 'MACD',
+                    value: parseFloat(latest.macd).toFixed(4),
+                    class: latest.macd >= 0 ? 'positive' : 'negative'
+                });
+            }
+            
+            // Render metrics
+            const metricsHTML = metrics.map(metric => `
+                <div class="metric-card">
+                    <div class="metric-label">${metric.label}</div>
+                    <div class="metric-value ${metric.class}">${metric.value}</div>
+                </div>
+            `).join('');
+            
+            metricsGrid.innerHTML = metricsHTML;
+        }
+
+        function renderChart(data) {
+            if (!currentData || currentData.length === 0) return;
+            
+            // Prepare data for chart
+            const dates = currentData.map(d => d.date || d.record_date);
+            const values = currentData.map(d => parseFloat(d.value || d.avg_interest_rate_amt || 0));
+            
+            // Create main trace
+            const traces = [{
+                x: dates,
+                y: values,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: data.metadata?.source || 'Data Series',
+                line: {
+                    color: '#667eea',
+                    width: 3
+                },
+                marker: {
+                    size: 6,
+                    color: '#667eea'
+                }
+            }];
+            
+            // Add MACD if available
+            if (currentData[0].macd !== undefined) {
+                const macdValues = currentData.map(d => parseFloat(d.macd || 0));
                 traces.push({
-                    x: chartData.dates,
-                    y: chartData.series[seriesName],
+                    x: dates,
+                    y: macdValues,
                     type: 'scatter',
                     mode: 'lines',
-                    name: seriesName,
+                    name: 'MACD',
+                    yaxis: 'y2',
                     line: {
-                        color: colors[index % colors.length],
-                        width: 3
+                        color: '#ff6b6b',
+                        width: 2
                     }
                 });
-            });
-
+            }
+            
             const layout = {
                 title: {
-                    text: 'Economic Indicators Over Time',
+                    text: `${data.metadata?.source || 'Economic Data'} - Time Series`,
                     font: { size: 20, color: '#333' }
                 },
                 xaxis: {
@@ -434,235 +743,90 @@
                     title: 'Value',
                     gridcolor: '#e1e5e9'
                 },
+                yaxis2: {
+                    title: 'MACD',
+                    overlaying: 'y',
+                    side: 'right',
+                    gridcolor: '#f1f1f1'
+                },
                 plot_bgcolor: 'rgba(0,0,0,0)',
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 font: { color: '#333' },
-                margin: { t: 80, r: 40, b: 60, l: 80 }
+                margin: { t: 80, r: 60, b: 60, l: 80 },
+                hovermode: 'x unified'
             };
-
-            Plotly.newPlot('mainChart', traces, layout, {
+            
+            const config = {
                 responsive: true,
                 displayModeBar: true,
                 modeBarButtonsToRemove: ['pan2d', 'lasso2d']
-            });
-        }
-
-        function searchData() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            
-            if (!query) {
-                alert('Please enter a search term');
-                return;
-            }
-
-            // Simulate search results
-            const mockResults = [
-                { symbol: 'FEDFUNDS', name: 'Federal Funds Rate', category: 'Interest Rates' },
-                { symbol: 'M2SL', name: 'M2 Money Supply', category: 'Monetary Policy' },
-                { symbol: 'UNRATE', name: 'Unemployment Rate', category: 'Labor Market' },
-                { symbol: 'CPIAUCSL', name: 'Consumer Price Index', category: 'Inflation' },
-                { symbol: 'GDP', name: 'Gross Domestic Product', category: 'Economic Output' },
-                { symbol: 'DEXUSEU', name: 'USD/EUR Exchange Rate', category: 'Foreign Exchange' },
-                { symbol: 'DGS10', name: '10-Year Treasury Rate', category: 'Interest Rates' }
-            ];
-
-            currentSearchResults = mockResults.filter(item => 
-                item.name.toLowerCase().includes(query) || 
-                item.symbol.toLowerCase().includes(query) ||
-                item.category.toLowerCase().includes(query)
-            );
-
-            displaySearchResults();
-        }
-
-        function displaySearchResults() {
-            const container = document.getElementById('searchResults');
-            
-            if (currentSearchResults.length === 0) {
-                container.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No results found</p>';
-                return;
-            }
-
-            const resultsHTML = currentSearchResults.map(result => `
-                <div style="border: 1px solid #e1e5e9; border-radius: 8px; padding: 1rem; margin: 0.5rem 0; background: #f8f9fa;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${result.symbol}</strong> - ${result.name}
-                            <br><small style="color: #666;">${result.category}</small>
-                        </div>
-                        <button onclick="addSearchResultToWatchlist('${result.symbol}', '${result.name}')" 
-                                style="background: #667eea; color: white; border: none; border-radius: 5px; padding: 0.5rem 1rem; cursor: pointer;">
-                            Add to Watchlist
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = resultsHTML;
-        }
-
-        function addToWatchlist() {
-            const symbol = document.getElementById('searchInput').value.trim().toUpperCase();
-            
-            if (!symbol) {
-                alert('Please enter a symbol or search for data first');
-                return;
-            }
-
-            addSearchResultToWatchlist(symbol, symbol);
-        }
-
-        function addSearchResultToWatchlist(symbol, name) {
-            // Check if already in watchlist
-            if (watchlistData.some(item => item.symbol === symbol)) {
-                alert('This item is already in your watchlist');
-                return;
-            }
-
-            // Generate mock data for the new watchlist item
-            const newItem = {
-                symbol: symbol,
-                name: name,
-                value: Math.random() * 100 + 10,
-                changes: {
-                    '1d': (Math.random() - 0.5) * 2,
-                    '1w': (Math.random() - 0.5) * 5,
-                    '1m': (Math.random() - 0.5) * 10,
-                    '1q': (Math.random() - 0.5) * 20,
-                    '1y': (Math.random() - 0.5) * 50
-                },
-                zScore: (Math.random() - 0.5) * 4,
-                macd: (Math.random() - 0.5) * 0.5
             };
-
-            watchlistData.push(newItem);
-            renderWatchlist();
+            
+            Plotly.newPlot('mainChart', traces, layout, config);
         }
 
-        function renderWatchlist() {
-            const container = document.getElementById('watchlistGrid');
+        function filterFiles() {
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
             
-            if (watchlistData.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666; padding: 2rem;">No items in watchlist</p>';
-                return;
-            }
-
-            const watchlistHTML = watchlistData.map((item, index) => `
-                <div class="watchlist-item">
-                    <div class="watchlist-header">
-                        <div>
-                            <div class="watchlist-symbol">${item.symbol}</div>
-                            <div style="color: #666; font-size: 0.9rem;">${item.name}</div>
-                        </div>
-                        <button class="remove-btn" onclick="removeFromWatchlist(${index})">Remove</button>
-                    </div>
-                    
-                    <div class="metrics-grid">
-                        <div class="metric">
-                            <div class="metric-label">Current</div>
-                            <div class="metric-value">${item.value.toFixed(2)}</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">1D</div>
-                            <div class="metric-value ${item.changes['1d'] >= 0 ? 'positive' : 'negative'}">
-                                ${item.changes['1d'] >= 0 ? '+' : ''}${item.changes['1d'].toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">1W</div>
-                            <div class="metric-value ${item.changes['1w'] >= 0 ? 'positive' : 'negative'}">
-                                ${item.changes['1w'] >= 0 ? '+' : ''}${item.changes['1w'].toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">1M</div>
-                            <div class="metric-value ${item.changes['1m'] >= 0 ? 'positive' : 'negative'}">
-                                ${item.changes['1m'] >= 0 ? '+' : ''}${item.changes['1m'].toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">1Q</div>
-                            <div class="metric-value ${item.changes['1q'] >= 0 ? 'positive' : 'negative'}">
-                                ${item.changes['1q'] >= 0 ? '+' : ''}${item.changes['1q'].toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">1Y</div>
-                            <div class="metric-value ${item.changes['1y'] >= 0 ? 'positive' : 'negative'}">
-                                ${item.changes['1y'] >= 0 ? '+' : ''}${item.changes['1y'].toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">Z-Score</div>
-                            <div class="metric-value">${item.zScore.toFixed(2)}</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-label">MACD</div>
-                            <div class="metric-value ${item.macd >= 0 ? 'positive' : 'negative'}">
-                                ${item.macd.toFixed(3)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = watchlistHTML;
-        }
-
-        function removeFromWatchlist(index) {
-            watchlistData.splice(index, 1);
-            renderWatchlist();
-        }
-
-        function refreshData() {
-            console.log('🔄 Refreshing data...');
-            
-            // Simulate data refresh
-            loadSampleData();
-            renderChart();
-            
-            // Update watchlist with new random values
-            watchlistData.forEach(item => {
-                item.value += (Math.random() - 0.5) * 2;
-                Object.keys(item.changes).forEach(period => {
-                    item.changes[period] += (Math.random() - 0.5) * 0.5;
-                });
-                item.zScore += (Math.random() - 0.5) * 0.2;
-                item.macd += (Math.random() - 0.5) * 0.05;
+            filteredFiles = availableFiles.filter(file => {
+                const matchesSource = !sourceFilter || file.source === sourceFilter;
+                const matchesDate = !dateFilter || file.date === dateFilter;
+                return matchesSource && matchesDate;
             });
             
-            renderWatchlist();
+            renderFileList();
+        }
+
+        function refreshFileList() {
+            showLoading('Refreshing file list...');
+            loadFileList();
+        }
+
+        // Utility functions
+        function updateStatus(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) element.textContent = value;
+        }
+
+        function formatFileSize(size) {
+            if (size === 'Unknown') return size;
+            const bytes = parseInt(size);
+            if (bytes === 0) return '0 Bytes';
             
-            // Show refresh notification
-            const notification = document.createElement('div');
-            notification.innerHTML = '✅ Data refreshed successfully';
-            notification.style.cssText = `
-                position: fixed;
-                top: 100px;
-                right: 20px;
-                background: #28a745;
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 10px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                z-index: 1000;
-                transition: all 0.3s ease;
-            `;
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
             
-            document.body.appendChild(notification);
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showLoading(message) {
+            // Show loading state
+            console.log('Loading:', message);
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `❌ ${message}`;
+            document.body.appendChild(errorDiv);
             
             setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 2000);
+                document.body.removeChild(errorDiv);
+            }, 5000);
         }
 
-        // Handle Enter key in search input
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchData();
-            }
-        });
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.innerHTML = `✅ ${message}`;
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(successDiv);
+            }, 3000);
+        }
     </script>
 </body>
 </html>
