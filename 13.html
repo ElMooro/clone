@@ -3107,7 +3107,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="price-cell">${formatPrice(data.price)}</td>
+                        <td class="price-cell">${formatPrice(data.price, data.isScraped)}</td>
                         <td class="change-cell ${getChangeClass(data.changeUnits?.daily)}">${formatUnits(data.changeUnits?.daily)}</td>
                         <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
                         <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
