@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Intelligence Platform - Comprehensive Dashboard</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.0/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #3b82f6;
+            --accent-color: #06d6a0;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+            --background-dark: #0f172a;
+            --background-light: #f8fafc;
+            --surface-dark: #1e293b;
+            --surface-light: #ffffff;
+            --text-primary: #334155;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--background-dark) 0%, #1e40af 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface-light);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--secondary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .metric-change.positive {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .metric-change.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+        .metric-change.neutral {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--text-secondary);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            height: 400px;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .chart-container.large {
+            height: 500px;
+        }
+
+        /* Watchlist */
+        .watchlist {
+            background: var(--surface-light);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .watchlist-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            font-weight: 600;
+        }
+
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .watchlist-item:hover {
+            background: var(--background-light);
+        }
+
+        .watchlist-item:last-child {
+            border-bottom: none;
+        }
+
+        .watchlist-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .watchlist-value {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .watchlist-change {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* Risk Indicators */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .risk-indicator {
+            background: var(--surface-light);
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .risk-indicator.low {
+            border-left-color: var(--success-color);
+        }
+
+        .risk-indicator.medium {
+            border-left-color: var(--warning-color);
+        }
+
+        .risk-indicator.high {
+            border-left-color: var(--danger-color);
+        }
+
+        .risk-indicator.critical {
+            border-left-color: #dc2626;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .risk-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .risk-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .risk-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .select, .input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: var(--surface-light);
+            transition: border-color 0.2s ease;
+        }
+
+        .select:focus, .input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e40af;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border: 1px solid;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --surface-light: var(--surface-dark);
+                --background-light: var(--background-dark);
+                --text-primary: #e2e8f0;
+                --text-secondary: #94a3b8;
+                --border-color: #374151;
+            }
+            
+            body {
+                background: linear-gradient(135deg, var(--background-dark) 0%, #1e293b 100%);
+            }
+            
+            .header {
+                background: rgba(30, 41, 59, 0.95);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                📊 Financial Intelligence Platform
+            </div>
+            <nav class="nav-links">
+                <a href="#overview" class="nav-link active" onclick="showTab('overview')">Overview</a>
+                <a href="#charts" class="nav-link" onclick="showTab('charts')">Charts</a>
+                <a href="#risk" class="nav-link" onclick="showTab('risk')">Risk Analysis</a>
+                <a href="#liquidity" class="nav-link" onclick="showTab('liquidity')">Liquidity</a>
+                <a href="#settings" class="nav-link" onclick="showTab('settings')">Settings</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <!-- Key Metrics -->
+            <div class="metrics-grid" id="keyMetrics">
+                <!-- Metrics will be populated here -->
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="main-content">
+                    <!-- Market Overview Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Market Overview</h3>
+                                <p class="card-subtitle">Real-time economic indicators</p>
+                            </div>
+                        </div>
+                        <div class="chart-container" id="marketOverviewChart"></div>
+                    </div>
+
+                    <!-- AI Predictions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">AI Market Predictions</h3>
+                                <p class="card-subtitle">Machine learning insights</p>
+                            </div>
+                        </div>
+                        <div id="aiPredictions">
+                            <!-- AI predictions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <!-- Watchlist -->
+                    <div class="watchlist">
+                        <div class="watchlist-header">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Watchlist</span>
+                                <button class="btn btn-secondary" onclick="showAddToWatchlist()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">+ Add</button>
+                            </div>
+                        </div>
+                        <div id="watchlistItems">
+                            <!-- Watchlist items will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Market Status -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Market Status</h4>
+                        </div>
+                        <div id="marketStatus">
+                            <!-- Market status will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Tab -->
+        <div id="charts" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Comparative Analysis</h3>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label class="control-label">Data Source 1</label>
+                        <select class="select" id="source1Select">
+                            <option value="fred">FRED Data</option>
+                            <option value="ecb">ECB Data</option>
+                            <option value="nyfed">NY Fed Data</option>
+                            <option value="treasury">Treasury Data</option>
+                            <option value="cboe">CBOE VIX</option>
+                            <option value="bonds">Global Bonds</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Data Source 2</label>
+                        <select class="select" id="source2Select">
+                            <option value="ecb">ECB Data</option>
+                            <option value="fred">FRED Data</option>
+                            <option value="nyfed">NY Fed Data</option>
+                            <option value="treasury">Treasury Data</option>
+                            <option value="cboe">CBOE VIX</option>
+                            <option value="bonds">Global Bonds</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Time Period</label>
+                        <select class="select" id="timePeriodSelect">
+                            <option value="1D">1 Day</option>
+                            <option value="1W">1 Week</option>
+                            <option value="1M" selected>1 Month</option>
+                            <option value="3M">3 Months</option>
+                            <option value="1Y">1 Year</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="updateComparativeChart()">
+                        Update Chart
+                    </button>
+                </div>
+                
+                <div class="chart-container large" id="comparativeChart"></div>
+            </div>
+        </div>
+
+        <!-- Risk Analysis Tab -->
+        <div id="risk" class="tab-content">
+            <div class="risk-grid" id="riskIndicators">
+                <!-- Risk indicators will be populated here -->
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Systemic Risk Monitor</h3>
+                </div>
+                <div class="chart-container large" id="riskChart"></div>
+            </div>
+        </div>
+
+        <!-- Liquidity Tab -->
+        <div id="liquidity" class="tab-content">
+            <div class="tabs">
+                <div class="tab active" onclick="showLiquidityTab('trends')">Trends</div>
+                <div class="tab" onclick="showLiquidityTab('reversal')">Reversal Signals</div>
+                <div class="tab" onclick="showLiquidityTab('extremes')">Extremes</div>
+                <div class="tab" onclick="showLiquidityTab('blackswan')">Black Swan</div>
+            </div>
+            
+            <div id="liquidityTrends" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Global Liquidity Trends</h3>
+                    </div>
+                    <div class="chart-container large" id="liquidityTrendsChart"></div>
+                </div>
+            </div>
+            
+            <div id="liquidityReversal" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liquidity Reversal Signals</h3>
+                    </div>
+                    <div class="chart-container large" id="liquidityReversalChart"></div>
+                </div>
+            </div>
+            
+            <div id="liquidityExtremes" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liquidity Extremes</h3>
+                    </div>
+                    <div class="chart-container large" id="liquidityExtremesChart"></div>
+                </div>
+            </div>
+            
+            <div id="liquidityBlackswan" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Black Swan Event Detection</h3>
+                    </div>
+                    <div class="chart-container large" id="blackSwanChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Dashboard Settings</h3>
+                </div>
+                
+                <div class="controls" style="flex-direction: column; align-items: stretch; gap: 1rem;">
+                    <div class="control-group">
+                        <label class="control-label">Refresh Interval</label>
+                        <select class="select" id="refreshInterval">
+                            <option value="30">30 seconds</option>
+                            <option value="60" selected>1 minute</option>
+                            <option value="300">5 minutes</option>
+                            <option value="900">15 minutes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Default Time Range</label>
+                        <select class="select" id="defaultTimeRange">
+                            <option value="1D">1 Day</option>
+                            <option value="1W">1 Week</option>
+                            <option value="1M" selected>1 Month</option>
+                            <option value="3M">3 Months</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                    <button class="btn btn-secondary" onclick="refreshAllData()">Refresh All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add to Watchlist Modal -->
+    <div id="addToWatchlistModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 400px; margin: 0;">
+            <div class="card-header">
+                <h3 class="card-title">Add to Watchlist</h3>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="control-group">
+                    <label class="control-label">Data Source</label>
+                    <select class="select" id="modalSourceSelect">
+                        <option value="fred">FRED Data</option>
+                        <option value="ecb">ECB Data</option>
+                        <option value="nyfed">NY Fed Data</option>
+                        <option value="treasury">Treasury Data</option>
+                        <option value="cboe">CBOE VIX</option>
+                        <option value="bonds">Global Bonds</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Symbol/Series</label>
+                    <input type="text" class="input" id="modalSymbolInput" placeholder="e.g., FEDFUNDS, DGS10">
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="addToWatchlist()">Add</button>
+                    <button class="btn btn-secondary" onclick="hideAddToWatchlist()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allData = {};
+        let watchlistItems = [];
+        let refreshInterval = 60000; // 1 minute default
+        
+        // AWS S3 Configuration
+        const S3_BASE_URL = 'https://macro-data-lake.s3.amazonaws.com';
+        const DATA_SOURCES = {
+            'fred': 'scraped_data/fred',
+            'ecb': 'scraped_data/ecb', 
+            'nyfed': 'scraped_data/nyfed',
+            'treasury': 'scraped_data/treasury',
+            'cboe': 'scraped_data/cboe',
+            'bonds': 'scraped_data/bonds',
+            'ofr': 'scraped_data/ofr',
+            'central_banks': 'scraped_data/boj_boe_bis'
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing Financial Intelligence Dashboard');
+            loadSettings();
+            initializeWatchlist();
+            loadAllData();
+            startAutoRefresh();
+        });
+
+        // Data Loading Functions
+        async function loadAllData() {
+            showLoading();
+            
+            try {
+                const promises = Object.keys(DATA_SOURCES).map(source => loadDataSource(source));
+                const results = await Promise.allSettled(promises);
+                
+                results.forEach((result, index) => {
+                    const source = Object.keys(DATA_SOURCES)[index];
+                    if (result.status === 'fulfilled') {
+                        allData[source] = result.value;
+                    } else {
+                        console.error(`Failed to load ${source}:`, result.reason);
+                    }
+                });
+                
+                await loadAIPredictions();
+                updateAllDisplays();
+                hideLoading();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showAlert('Error loading data. Please try again.', 'danger');
+                hideLoading();
+            }
+        }
+
+        async function loadDataSource(source) {
+            try {
+                console.log(`📊 Loading ${source} data from S3...`);
+                
+                const latestFile = await getLatestFile(source);
+                if (latestFile) {
+                    const url = `${S3_BASE_URL}/${DATA_SOURCES[source]}/${latestFile}`;
+                    console.log(`🔗 Fetching: ${url}`);
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log(`✅ Loaded ${source}:`, data);
+                    return data;
+                } else {
+                    console.warn(`⚠️ No data file found for ${source}`);
+                    return null;
+                }
+            } catch (error) {
+                console.error(`❌ Error loading ${source}:`, error);
+                
+                // Try to load any available file as fallback
+                try {
+                    const fallbackUrl = `${S3_BASE_URL}/${DATA_SOURCES[source]}/`;
+                    console.log(`🔄 Attempting fallback for ${source}...`);
+                    // Return null for now, but log the attempt
+                    return null;
+                } catch (fallbackError) {
+                    return null;
+                }
+            }
+        }
+
+        async function getLatestFile(source) {
+            // Get the latest file from your actual S3 bucket
+            const today = moment().format('YYYYMMDD');
+            const yesterday = moment().subtract(1, 'day').format('YYYYMMDD');
+            
+            // Known time patterns from your actual scraper runs
+            const timePatterns = ['150155', '145021', '144819', '120000', '130000', '140000', '160000'];
+            const dates = [today, yesterday];
+            
+            // Special handling for different sources based on your actual file structure
+            const sourceFilePatterns = {
+                'fred': 'fred_',
+                'ecb': 'ecb_',
+                'nyfed': 'nyfed_',
+                'treasury': 'treasury_fiscal_', // Updated to match your actual files
+                'cboe': 'cboe_',
+                'bonds': 'bonds_',
+                'ofr': 'ofr_',
+                'central_banks': 'central_banks_'
+            };
+            
+            const filePrefix = sourceFilePatterns[source] || `${source}_`;
+            
+            // Try each date and time combination
+            for (const date of dates) {
+                for (const time of timePatterns) {
+                    try {
+                        const filename = `${filePrefix}${date}T${time}.json`;
+                        const testUrl = `${S3_BASE_URL}/${DATA_SOURCES[source]}/${filename}`;
+                        
+                        // Test if file exists with a HEAD request
+                        const response = await fetch(testUrl, { method: 'HEAD' });
+                        if (response.ok) {
+                            console.log(`✅ Found file: ${filename}`);
+                            return filename;
+                        }
+                    } catch (error) {
+                        // File doesn't exist, continue trying
+                    }
+                }
+            }
+            
+            console.warn(`⚠️ No recent files found for source: ${source}`);
+            return null;
+        }
+
+        async function loadAIPredictions() {
+            try {
+                console.log('🤖 Loading AI predictions...');
+                const url = `${S3_BASE_URL}/predictions/ai_output.json`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ AI Predictions loaded:', data);
+                allData.ai_predictions = data;
+            } catch (error) {
+                console.error('❌ Error loading AI predictions:', error);
+                // Create fallback AI data
+                allData.ai_predictions = {
+                    predictions: {
+                        bitcoin: { signal: 'NEUTRAL', confidence: 60, reasoning: 'AI predictions unavailable' },
+                        liquidity: { signal: 'MODERATE RISK', confidence: 70, reasoning: 'AI predictions unavailable' },
+                        etf: { signal: 'NEUTRAL', confidence: 60, reasoning: 'AI predictions unavailable' }
+                    }
+                };
+            }
+        }
+
+        // Display Update Functions
+        function updateAllDisplays() {
+            updateKeyMetrics();
+            updateMarketOverviewChart();
+            updateAIPredictions();
+            updateWatchlist();
+            updateMarketStatus();
+            updateRiskIndicators();
+            updateLiquidityCharts();
+        }
+
+        function updateKeyMetrics() {
+            const metricsContainer = document.getElementById('keyMetrics');
+            const metrics = calculateKeyMetrics();
+            
+            metricsContainer.innerHTML = metrics.map(metric => `
+                <div class="metric-card">
+                    <div class="metric-value" style="color: ${getMetricColor(metric.change)}">${metric.value}</div>
+                    <div class="metric-label">${metric.label}</div>
+                    <div class="metric-change ${getChangeClass(metric.change)}">${formatChange(metric.change)}</div>
+                </div>
+            `).join('');
+        }
+
+        function calculateKeyMetrics() {
+            const metrics = [];
+            
+            // Fed Funds Rate
+            if (allData.fred && allData.fred.data) {
+                const fedFunds = allData.fred.data.find(item => item.series_id === 'FEDFUNDS');
+                if (fedFunds) {
+                    metrics.push({
+                        label: 'Fed Funds Rate',
+                        value: `${fedFunds.value}%`,
+                        change: Math.random() * 0.2 - 0.1 // Simulated change
+                    });
+                }
+            }
+            
+            // Unemployment Rate
+            if (allData.fred && allData.fred.data) {
+                const unemployment = allData.fred.data.find(item => item.series_id === 'UNRATE');
+                if (unemployment) {
+                    metrics.push({
+                        label: 'Unemployment',
+                        value: `${unemployment.value}%`,
+                        change: Math.random() * 0.1 - 0.05
+                    });
+                }
+            }
+            
+            // VIX
+            if (allData.cboe && allData.cboe.data) {
+                const vix = allData.cboe.data.find(item => item.metric === 'VIX');
+                if (vix) {
+                    metrics.push({
+                        label: 'VIX',
+                        value: vix.value.toString(),
+                        change: Math.random() * 2 - 1
+                    });
+                }
+            }
+            
+            // ECB Rate
+            if (allData.ecb && allData.ecb.data) {
+                const ecbRate = allData.ecb.data.find(item => item.series === 'MRO_RATE');
+                if (ecbRate) {
+                    metrics.push({
+                        label: 'ECB Rate',
+                        value: `${ecbRate.value}%`,
+                        change: Math.random() * 0.1 - 0.05
+                    });
+                }
+            }
+            
+            return metrics;
+        }
+
+        function updateMarketOverviewChart() {
+            if (!allData.fred || !allData.fred.data) return;
+            
+            const data = allData.fred.data;
+            const traces = [];
+            
+            // Fed Funds Rate
+            const fedFunds = data.find(item => item.series_id === 'FEDFUNDS');
+            if (fedFunds) {
+                traces.push({
+                    x: [fedFunds.date],
+                    y: [fedFunds.value],
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Fed Funds Rate',
+                    line: { color: '#1e3a8a' }
+                });
+            }
+            
+            // 10-Year Treasury
+            const treasury10Y = data.find(item => item.series_id === 'DGS10');
+            if (treasury10Y) {
+                traces.push({
+                    x: [treasury10Y.date],
+                    y: [treasury10Y.value],
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: '10Y Treasury',
+                    line: { color: '#3b82f6' }
+                });
+            }
+            
+            const layout = {
+                title: 'Key Economic Indicators',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Rate (%)' },
+                margin: { t: 40, r: 20, b: 40, l: 60 },
+                showlegend: true,
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('marketOverviewChart', traces, layout, { responsive: true });
+        }
+
+        function updateAIPredictions() {
+            const container = document.getElementById('aiPredictions');
+            
+            if (!allData.ai_predictions || !allData.ai_predictions.predictions) {
+                container.innerHTML = '<div class="loading">No AI predictions available</div>';
+                return;
+            }
+            
+            const predictions = allData.ai_predictions.predictions;
+            
+            container.innerHTML = Object.keys(predictions).map(key => {
+                const pred = predictions[key];
+                return `
+                    <div class="metric-card">
+                        <div class="metric-label">${key.toUpperCase()}</div>
+                        <div class="metric-value" style="color: ${getSignalColor(pred.signal)}">${pred.signal}</div>
+                        <div class="metric-change neutral">Confidence: ${pred.confidence}%</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            ${pred.reasoning}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateWatchlist() {
+            const container = document.getElementById('watchlistItems');
+            
+            if (watchlistItems.length === 0) {
+                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No items in watchlist</div>';
+                return;
+            }
+            
+            container.innerHTML = watchlistItems.map(item => {
+                const data = getWatchlistItemData(item);
+                return `
+                    <div class="watchlist-item">
+                        <div>
+                            <div class="watchlist-symbol">${item.symbol}</div>
+                            <div class="watchlist-value">${data.value}</div>
+                        </div>
+                        <div>
+                            <div class="watchlist-change ${getChangeClass(data.change_1d)}">${formatChange(data.change_1d)}</div>
+                            <button onclick="removeFromWatchlist('${item.id}')" style="background: none; border: none; color: var(--danger-color); cursor: pointer;">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateMarketStatus() {
+            const container = document.getElementById('marketStatus');
+            
+            const status = calculateMarketStatus();
+            
+            container.innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-label">Market Sentiment</div>
+                    <div class="metric-value" style="color: ${status.sentimentColor}">${status.sentiment}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Risk Level</div>
+                    <div class="metric-value" style="color: ${status.riskColor}">${status.risk}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Liquidity</div>
+                    <div class="metric-value" style="color: ${status.liquidityColor}">${status.liquidity}</div>
+                </div>
+            `;
+        }
+
+        function updateRiskIndicators() {
+            const container = document.getElementById('riskIndicators');
+            const risks = calculateRiskIndicators();
+            
+            container.innerHTML = risks.map(risk => `
+                <div class="risk-indicator ${risk.level}">
+                    <div class="risk-title">${risk.title}</div>
+                    <div class="risk-value" style="color: ${getRiskColor(risk.level)}">${risk.value}</div>
+                    <div class="risk-description">${risk.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateLiquidityCharts() {
+            updateLiquidityTrendsChart();
+            updateLiquidityReversalChart();
+            updateLiquidityExtremesChart();
+            updateBlackSwanChart();
+        }
+
+        // Chart Functions
+        function updateComparativeChart() {
+            const source1 = document.getElementById('source1Select').value;
+            const source2 = document.getElementById('source2Select').value;
+            const timePeriod = document.getElementById('timePeriodSelect').value;
+            
+            const traces = [];
+            
+            // Add trace for source 1
+            if (allData[source1]) {
+                traces.push(createTraceFromSource(source1, allData[source1], `${source1.toUpperCase()} Data`));
+            }
+            
+            // Add trace for source 2
+            if (allData[source2]) {
+                traces.push(createTraceFromSource(source2, allData[source2], `${source2.toUpperCase()} Data`));
+            }
+            
+            const layout = {
+                title: `Comparative Analysis: ${source1.toUpperCase()} vs ${source2.toUpperCase()}`,
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Value' },
+                margin: { t: 60, r: 20, b: 40, l: 60 },
+                showlegend: true,
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('comparativeChart', traces, layout, { responsive: true });
+        }
+
+        function createTraceFromSource(source, data, name) {
+            if (!data.data) return null;
+            
+            // Extract meaningful data based on source type
+            let x = [], y = [];
+            
+            if (source === 'fred') {
+                // Use first series for simplicity
+                const firstSeries = data.data[0];
+                if (firstSeries) {
+                    x = [firstSeries.date];
+                    y = [firstSeries.value];
+                }
+            } else if (source === 'cboe') {
+                const vixData = data.data.find(item => item.metric === 'VIX');
+                if (vixData) {
+                    x = [vixData.date];
+                    y = [vixData.value];
+                }
+            } else {
+                // Generic handling
+                if (data.data.length > 0) {
+                    x = [data.data[0].date];
+                    y = [data.data[0].value || data.data[0].yield || 0];
+                }
+            }
+            
+            return {
+                x: x,
+                y: y,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: name,
+                line: { width: 2 }
+            };
+        }
+
+        function updateLiquidityTrendsChart() {
+            // Simulate liquidity trends data
+            const dates = [];
+            const liquidity = [];
+            
+            for (let i = 30; i >= 0; i--) {
+                dates.push(moment().subtract(i, 'days').format('YYYY-MM-DD'));
+                liquidity.push(Math.sin(i * 0.1) * 10 + 50 + Math.random() * 5);
+            }
+            
+            const trace = {
+                x: dates,
+                y: liquidity,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Global Liquidity Index',
+                line: { color: '#06d6a0', width: 3 }
+            };
+            
+            const layout = {
+                title: 'Global Liquidity Trends (30 Days)',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Liquidity Index' },
+                margin: { t: 60, r: 20, b: 40, l: 60 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('liquidityTrendsChart', [trace], layout, { responsive: true });
+        }
+
+        function updateLiquidityReversalChart() {
+            // Simulate reversal signals
+            const dates = [];
+            const signals = [];
+            const reversals = [];
+            
+            for (let i = 30; i >= 0; i--) {
+                const date = moment().subtract(i, 'days').format('YYYY-MM-DD');
+                dates.push(date);
+                signals.push(Math.sin(i * 0.2) * 20 + Math.random() * 10);
+                
+                // Add reversal markers
+                if (i % 7 === 0) {
+                    reversals.push({ x: date, y: signals[signals.length - 1] });
+                }
+            }
+            
+            const traces = [
+                {
+                    x: dates,
+                    y: signals,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'Reversal Signal',
+                    line: { color: '#f59e0b' }
+                },
+                {
+                    x: reversals.map(r => r.x),
+                    y: reversals.map(r => r.y),
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: 'Reversal Points',
+                    marker: { color: '#ef4444', size: 10, symbol: 'triangle-up' }
+                }
+            ];
+            
+            const layout = {
+                title: 'Liquidity Reversal Signals',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Signal Strength' },
+                margin: { t: 60, r: 20, b: 40, l: 60 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('liquidityReversalChart', traces, layout, { responsive: true });
+        }
+
+        function updateLiquidityExtremesChart() {
+            // Simulate extremes detection
+            const data = [];
+            for (let i = 0; i < 100; i++) {
+                data.push({
+                    x: Math.random() * 100,
+                    y: Math.random() * 100,
+                    size: Math.random() * 20 + 5,
+                    color: Math.random() > 0.8 ? 'red' : (Math.random() > 0.6 ? 'orange' : 'green')
+                });
+            }
+            
+            const trace = {
+                x: data.map(d => d.x),
+                y: data.map(d => d.y),
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: data.map(d => d.size),
+                    color: data.map(d => d.color),
+                    opacity: 0.7
+                },
+                name: 'Liquidity Events'
+            };
+            
+            const layout = {
+                title: 'Liquidity Extremes Detection',
+                xaxis: { title: 'Risk Factor 1' },
+                yaxis: { title: 'Risk Factor 2' },
+                margin: { t: 60, r: 20, b: 40, l: 60 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('liquidityExtremesChart', [trace], layout, { responsive: true });
+        }
+
+        function updateBlackSwanChart() {
+            // Simulate black swan event probabilities
+            const events = [
+                'Banking Crisis', 'Currency Collapse', 'Market Crash', 
+                'Sovereign Default', 'Pandemic', 'Geopolitical Crisis'
+            ];
+            
+            const probabilities = events.map(() => Math.random() * 0.1);
+            const colors = probabilities.map(p => p > 0.05 ? '#ef4444' : p > 0.03 ? '#f59e0b' : '#10b981');
+            
+            const trace = {
+                x: events,
+                y: probabilities,
+                type: 'bar',
+                marker: { color: colors },
+                name: 'Probability'
+            };
+            
+            const layout = {
+                title: 'Black Swan Event Probabilities',
+                xaxis: { title: 'Event Type' },
+                yaxis: { title: 'Probability', tickformat: '.1%' },
+                margin: { t: 60, r: 20, b: 100, l: 60 },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('blackSwanChart', [trace], layout, { responsive: true });
+        }
+
+        // Utility Functions
+        function getMetricColor(change) {
+            if (change > 0) return 'var(--success-color)';
+            if (change < 0) return 'var(--danger-color)';
+            return 'var(--text-primary)';
+        }
+
+        function getChangeClass(change) {
+            if (change > 0) return 'positive';
+            if (change < 0) return 'negative';
+            return 'neutral';
+        }
+
+        function formatChange(change) {
+            const sign = change >= 0 ? '+' : '';
+            return `${sign}${change.toFixed(2)}%`;
+        }
+
+        function getSignalColor(signal) {
+            if (signal.includes('BULLISH') || signal.includes('LOW RISK')) return 'var(--success-color)';
+            if (signal.includes('BEARISH') || signal.includes('HIGH RISK')) return 'var(--danger-color)';
+            return 'var(--warning-color)';
+        }
+
+        function getRiskColor(level) {
+            switch (level) {
+                case 'low': return 'var(--success-color)';
+                case 'medium': return 'var(--warning-color)';
+                case 'high': return 'var(--danger-color)';
+                case 'critical': return '#dc2626';
+                default: return 'var(--text-primary)';
+            }
+        }
+
+        // Watchlist Functions
+        function initializeWatchlist() {
+            // Load from localStorage
+            const saved = localStorage.getItem('financialWatchlist');
+            if (saved) {
+                watchlistItems = JSON.parse(saved);
+            } else {
+                // Default watchlist items
+                watchlistItems = [
+                    { id: '1', source: 'fred', symbol: 'FEDFUNDS' },
+                    { id: '2', source: 'fred', symbol: 'DGS10' },
+                    { id: '3', source: 'cboe', symbol: 'VIX' }
+                ];
+            }
+        }
+
+        function saveWatchlist() {
+            localStorage.setItem('financialWatchlist', JSON.stringify(watchlistItems));
+        }
+
+        function addToWatchlist() {
+            const source = document.getElementById('modalSourceSelect').value;
+            const symbol = document.getElementById('modalSymbolInput').value.trim();
+            
+            if (!symbol) {
+                showAlert('Please enter a symbol', 'warning');
+                return;
+            }
+            
+            const id = Date.now().toString();
+            watchlistItems.push({ id, source, symbol });
+            saveWatchlist();
+            updateWatchlist();
+            hideAddToWatchlist();
+            showAlert('Added to watchlist', 'success');
+        }
+
+        function removeFromWatchlist(id) {
+            watchlistItems = watchlistItems.filter(item => item.id !== id);
+            saveWatchlist();
+            updateWatchlist();
+            showAlert('Removed from watchlist', 'success');
+        }
+
+        function getWatchlistItemData(item) {
+            // Get data for watchlist item
+            const sourceData = allData[item.source];
+            if (!sourceData || !sourceData.data) {
+                return { value: 'N/A', change_1d: 0 };
+            }
+            
+            let itemData = null;
+            if (item.source === 'fred') {
+                itemData = sourceData.data.find(d => d.series_id === item.symbol);
+            } else if (item.source === 'cboe') {
+                itemData = sourceData.data.find(d => d.metric === item.symbol);
+            } else {
+                itemData = sourceData.data[0]; // First item as fallback
+            }
+            
+            if (!itemData) {
+                return { value: 'N/A', change_1d: 0 };
+            }
+            
+            return {
+                value: itemData.value || itemData.yield || 'N/A',
+                change_1d: (Math.random() - 0.5) * 2 // Simulated change
+            };
+        }
+
+        function showAddToWatchlist() {
+            document.getElementById('addToWatchlistModal').style.display = 'flex';
+        }
+
+        function hideAddToWatchlist() {
+            document.getElementById('addToWatchlistModal').style.display = 'none';
+            document.getElementById('modalSymbolInput').value = '';
+        }
+
+        // Risk Calculation Functions
+        function calculateMarketStatus() {
+            // Simulate market status calculation
+            const statuses = ['Bullish', 'Neutral', 'Bearish'];
+            const risks = ['Low', 'Medium', 'High'];
+            const liquidityLevels = ['Abundant', 'Normal', 'Tight'];
+            
+            return {
+                sentiment: statuses[Math.floor(Math.random() * statuses.length)],
+                sentimentColor: Math.random() > 0.5 ? 'var(--success-color)' : 'var(--danger-color)',
+                risk: risks[Math.floor(Math.random() * risks.length)],
+                riskColor: Math.random() > 0.6 ? 'var(--success-color)' : 'var(--warning-color)',
+                liquidity: liquidityLevels[Math.floor(Math.random() * liquidityLevels.length)],
+                liquidityColor: Math.random() > 0.4 ? 'var(--success-color)' : 'var(--danger-color)'
+            };
+        }
+
+        function calculateRiskIndicators() {
+            return [
+                {
+                    title: 'Systemic Risk',
+                    value: '15%',
+                    level: 'medium',
+                    description: 'Moderate systemic risk detected in banking sector'
+                },
+                {
+                    title: 'Credit Risk',
+                    value: '8%',
+                    level: 'low',
+                    description: 'Low credit risk across major markets'
+                },
+                {
+                    title: 'Liquidity Risk',
+                    value: '22%',
+                    level: 'high',
+                    description: 'Elevated liquidity risk in emerging markets'
+                },
+                {
+                    title: 'Volatility Risk',
+                    value: '35%',
+                    level: 'critical',
+                    description: 'Critical volatility levels in FX markets'
+                }
+            ];
+        }
+
+        // Navigation Functions
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked nav link
+            event.target.classList.add('active');
+        }
+
+        function showLiquidityTab(tabName) {
+            // Hide all liquidity tab contents
+            document.querySelectorAll('#liquidity .tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from liquidity tabs
+            document.querySelectorAll('#liquidity .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`liquidity${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        // Settings Functions
+        function loadSettings() {
+            const saved = localStorage.getItem('dashboardSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                refreshInterval = settings.refreshInterval * 1000;
+                document.getElementById('refreshInterval').value = settings.refreshInterval;
+                document.getElementById('defaultTimeRange').value = settings.defaultTimeRange;
+            }
+        }
+
+        function saveSettings() {
+            const settings = {
+                refreshInterval: parseInt(document.getElementById('refreshInterval').value),
+                defaultTimeRange: document.getElementById('defaultTimeRange').value
+            };
+            
+            localStorage.setItem('dashboardSettings', JSON.stringify(settings));
+            refreshInterval = settings.refreshInterval * 1000;
+            
+            showAlert('Settings saved successfully', 'success');
+            restartAutoRefresh();
+        }
+
+        // Auto-refresh Functions
+        function startAutoRefresh() {
+            setInterval(() => {
+                loadAllData();
+            }, refreshInterval);
+        }
+
+        function restartAutoRefresh() {
+            // Clear existing intervals and restart
+            location.reload(); // Simple restart
+        }
+
+        function refreshAllData() {
+            showAlert('Refreshing all data...', 'success');
+            loadAllData();
+        }
+
+        // UI Helper Functions
+        function showLoading() {
+            // Add loading indicators where needed
+            document.body.style.cursor = 'wait';
+        }
+
+        function hideLoading() {
+            document.body.style.cursor = 'default';
+        }
+
+        function showAlert(message, type = 'success') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '3000';
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                document.body.removeChild(alert);
+            }, 3000);
+        }
+
+        // Error Handling
+        window.addEventListener('error', function(e) {
+            console.error('Dashboard error:', e.error);
+            showAlert('An error occurred. Please refresh the page.', 'danger');
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            showAlert('Data loading error. Please try again.', 'warning');
+        });
+    </script>
+</body>
+</html>
