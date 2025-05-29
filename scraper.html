@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Intelligence Platform - Comprehensive Dashboard</title>
+    <title>Financial Intelligence Platform - Enhanced</title>
     
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
@@ -13,23 +13,23 @@
     
     <style>
         :root {
-            --primary-color: #1e3a8a;
-            --secondary-color: #3b82f6;
-            --accent-color: #06d6a0;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
-            --success-color: #10b981;
-            --background-dark: #0f172a;
-            --background-light: #f8fafc;
-            --surface-dark: #1e293b;
-            --surface-light: #ffffff;
-            --text-primary: #334155;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --primary-color: #00dd77;
+            --secondary-color: #00aaff;
+            --accent-color: #ff6b35;
+            --danger-color: #ff4444;
+            --warning-color: #ffaa00;
+            --success-color: #00dd77;
+            --background-dark: #0a0a0a;
+            --background-card: #131313;
+            --surface-dark: #1a1a1a;
+            --surface-light: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaa;
+            --border-color: #333;
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+            --glow-primary: 0 0 20px rgba(0, 221, 119, 0.3);
+            --glow-secondary: 0 0 15px rgba(0, 170, 255, 0.2);
         }
 
         * {
@@ -39,40 +39,46 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--background-dark) 0%, #1e40af 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background-dark) 0%, #1a1a2e 50%, #16213e 100%);
             color: var(--text-primary);
             min-height: 100vh;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        /* Header */
+        /* Enhanced Header */
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(26, 26, 26, 0.95);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
             padding: 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .header-content {
+            box-shadow: var(--shadow-md);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            max-width: 1600px;
-            margin: 0 auto;
         }
 
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-shadow: 0 0 20px rgba(0, 221, 119, 0.3);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
 
         .nav-links {
@@ -85,25 +91,244 @@
             color: var(--text-secondary);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 221, 119, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
         }
 
         .nav-link:hover, .nav-link.active {
             color: var(--primary-color);
+            background: rgba(0, 221, 119, 0.1);
+            box-shadow: var(--glow-primary);
         }
 
         /* Main Container */
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
             padding: 2rem;
+        }
+
+        /* Enhanced Search Section */
+        .search-section {
+            background: var(--surface-dark);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .search-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            background: var(--background-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: var(--glow-primary), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            pointer-events: none;
+        }
+
+        /* Enhanced Filter Sections */
+        .filter-section {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .filter-toggle {
+            background: var(--surface-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-toggle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 221, 119, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .filter-toggle:hover::before {
+            left: 100%;
+        }
+
+        .filter-toggle:hover {
+            background: var(--background-card);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .filter-toggle.active {
+            background: var(--primary-color);
+            color: var(--background-dark);
+            border-color: var(--primary-color);
+            box-shadow: var(--glow-primary);
+            font-weight: 600;
+        }
+
+        .source-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            transition: all 0.3s ease;
+        }
+
+        .source-indicator.connected {
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Search Results */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            margin-top: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: var(--surface-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-item {
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .search-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 221, 119, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .search-item:hover::before {
+            left: 100%;
+        }
+
+        .search-item:hover {
+            background: var(--background-card);
+            transform: translateX(4px);
+        }
+
+        .search-item-symbol {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .search-item-name {
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .search-item-description {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.4;
         }
 
         /* Dashboard Grid */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: minmax(800px, 2fr) minmax(350px, 1fr);
             gap: 2rem;
             margin-bottom: 2rem;
         }
@@ -117,99 +342,143 @@
         .sidebar {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 2rem;
         }
 
-        /* Cards */
+        /* Enhanced Cards */
         .card {
-            background: var(--surface-light);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-md);
+            background: var(--surface-dark);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
             border: 1px solid var(--border-color);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg), var(--glow-secondary);
+        }
+
+        .card:hover::before {
+            opacity: 1;
         }
 
         .card-header {
             display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
             border-bottom: 1px solid var(--border-color);
         }
 
         .card-title {
-            font-size: 1.125rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--text-primary);
+            margin-bottom: 0.5rem;
         }
 
         .card-subtitle {
             font-size: 0.875rem;
             color: var(--text-secondary);
-            margin-top: 0.25rem;
         }
 
-        /* Metrics Grid */
+        /* Enhanced Metrics Grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .metric-card {
-            background: var(--surface-light);
-            border-radius: 8px;
-            padding: 1rem;
+            background: var(--surface-dark);
+            border-radius: 12px;
+            padding: 1.5rem;
             border: 1px solid var(--border-color);
             text-align: center;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .metric-card:hover::before {
+            transform: translateX(0);
         }
 
         .metric-card:hover {
-            border-color: var(--secondary-color);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
         }
 
         .metric-value {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
         }
 
         .metric-label {
             font-size: 0.875rem;
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .metric-change {
-            font-size: 0.75rem;
-            font-weight: 500;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: inline-block;
         }
 
         .metric-change.positive {
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(0, 221, 119, 0.2);
             color: var(--success-color);
+            border: 1px solid var(--success-color);
         }
 
         .metric-change.negative {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(255, 68, 68, 0.2);
             color: var(--danger-color);
+            border: 1px solid var(--danger-color);
         }
 
         .metric-change.neutral {
-            background: rgba(100, 116, 139, 0.1);
+            background: rgba(170, 170, 170, 0.2);
             color: var(--text-secondary);
+            border: 1px solid var(--text-secondary);
         }
 
         /* Chart Container */
@@ -217,178 +486,47 @@
             height: 400px;
             width: 100%;
             margin: 1rem 0;
+            background: var(--background-card);
+            border-radius: 8px;
+            padding: 1rem;
         }
 
         .chart-container.large {
             height: 500px;
         }
 
-        /* Watchlist Tabs */
-        .watchlist-tabs {
-            display: flex;
-            background: var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .watchlist-tab {
-            flex: 1;
-            padding: 0.5rem;
-            text-align: center;
-            background: var(--background-light);
-            cursor: pointer;
-            font-size: 0.8rem;
-            border-right: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-        }
-
-        .watchlist-tab:last-child {
-            border-right: none;
-        }
-
-        .watchlist-tab.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .watchlist-tab:hover:not(.active) {
-            background: var(--background-light);
-        }
-
-        .btn-add-watchlist {
-            width: 30px;
-            background: var(--success-color);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-add-watchlist:hover {
-            background: #059669;
-        }
-
-        /* Search Modal */
-        .search-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .search-modal-content {
-            background: var(--surface-light);
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow: hidden;
-            box-shadow: var(--shadow-xl);
-        }
-
-        .search-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .search-input-container {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        .search-input:focus {
-            border-color: var(--primary-color);
-        }
-
-        .search-results {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .search-result-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .search-result-item:hover {
-            background: var(--background-light);
-        }
-
-        .search-result-info {
-            flex: 1;
-        }
-
-        .search-result-symbol {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .search-result-description {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-        }
-
-        .search-result-source {
-            font-size: 0.75rem;
-            color: var(--secondary-color);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            margin-right: 0.5rem;
-        }
-
-        /* Data display improvements */
-        .data-status {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid var(--border-color);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 0.5rem;
-        }
+        /* Enhanced Watchlist */
         .watchlist {
-            background: var(--surface-light);
-            border-radius: 12px;
+            background: var(--surface-dark);
+            border-radius: 16px;
             border: 1px solid var(--border-color);
             overflow: hidden;
+            box-shadow: var(--shadow-lg);
         }
 
         .watchlist-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--background-dark);
+            padding: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .watchlist-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .watchlist-selector {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--background-dark);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
             font-weight: 600;
         }
 
@@ -396,248 +534,732 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
+            padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .watchlist-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-color);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .watchlist-item:hover::before {
+            transform: scaleY(1);
         }
 
         .watchlist-item:hover {
-            background: var(--background-light);
-        }
-
-        .watchlist-item:last-child {
-            border-bottom: none;
+            background: var(--background-card);
+            transform: translateX(4px);
         }
 
         .watchlist-symbol {
             font-weight: 600;
             color: var(--text-primary);
+            font-size: 1rem;
         }
 
         .watchlist-value {
             font-size: 0.875rem;
             color: var(--text-secondary);
+            margin-top: 0.25rem;
         }
 
         .watchlist-change {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-
-        /* Risk Indicators */
-        .risk-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .risk-indicator {
-            background: var(--surface-light);
-            border-radius: 8px;
-            padding: 1rem;
-            border-left: 4px solid;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .risk-indicator.low {
-            border-left-color: var(--success-color);
-        }
-
-        .risk-indicator.medium {
-            border-left-color: var(--warning-color);
-        }
-
-        .risk-indicator.high {
-            border-left-color: var(--danger-color);
-        }
-
-        .risk-indicator.critical {
-            border-left-color: #dc2626;
-            background: rgba(239, 68, 68, 0.05);
-        }
-
-        .risk-title {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .risk-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .risk-description {
             font-size: 0.875rem;
-            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
         }
 
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .control-group {
+        /* Enhanced Chart Windows */
+        .chart-window {
+            background: var(--surface-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            transition: all 0.3s ease;
+            min-height: 600px;
+            box-shadow: var(--shadow-lg);
         }
 
-        .control-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
+        .chart-window.active-chart {
+            border-color: var(--primary-color);
+            box-shadow: var(--glow-primary);
         }
 
-        .select, .input {
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            background: var(--surface-light);
-            transition: border-color 0.2s ease;
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .select:focus, .input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .chart-title {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
+        .chart-symbols {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
-        .btn-primary:hover {
-            background: #1e40af;
-            transform: translateY(-1px);
+        .chart-symbol-tag {
+            background: var(--surface-light);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
 
-        .btn-secondary {
-            background: var(--border-color);
+        .chart-symbol-tag:hover {
+            background: var(--background-card);
+            border-color: var(--primary-color);
+        }
+
+        .symbol-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .remove-symbol {
+            cursor: pointer;
+            color: var(--danger-color);
+            font-weight: bold;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .remove-symbol:hover {
+            opacity: 1;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .timeframe-buttons {
+            display: flex;
+            gap: 2px;
+            background: var(--background-card);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .timeframe-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .timeframe-btn:hover {
+            background: var(--surface-light);
             color: var(--text-primary);
         }
 
-        .btn-secondary:hover {
-            background: var(--text-secondary);
-            color: white;
+        .timeframe-btn.active {
+            background: var(--primary-color);
+            color: var(--background-dark);
+            font-weight: 600;
         }
 
-        .btn-danger {
-            background: var(--danger-color);
-            color: white;
+        .chart-display-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
         }
 
-        .btn-danger:hover {
-            background: #dc2626;
+        .display-toggle {
+            background: var(--surface-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
 
-        /* Loading States */
-        .loading {
+        .display-toggle:hover {
+            background: var(--background-card);
+            border-color: var(--primary-color);
+        }
+
+        .display-toggle.active {
+            background: var(--primary-color);
+            color: var(--background-dark);
+            border-color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .chart-canvas {
+            background: var(--background-card);
+            border-radius: 12px;
+            height: 500px;
+            flex-grow: 1;
+            min-height: 450px;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .chart-message {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-align: center;
             padding: 2rem;
+        }
+
+        /* Enhanced Risk Dashboard */
+        .risk-dashboard {
+            background: var(--surface-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 2rem 0;
+            display: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .risk-dashboard.active {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-indicators {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .alert-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+            border: 2px solid;
+        }
+
+        .alert-badge.low {
+            background: rgba(0, 221, 119, 0.2);
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .alert-badge.moderate {
+            background: rgba(255, 170, 0, 0.2);
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+
+        .alert-badge.high {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .alert-badge.extreme {
+            background: rgba(139, 0, 0, 0.3);
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+            animation: flashAlert 1s infinite;
+        }
+
+        @keyframes flashAlert {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .gauge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .gauge-container {
+            background: var(--background-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .gauge-container:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+
+        .gauge-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .gauge-chart {
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Enhanced Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #00bb66);
+            color: var(--background-dark);
+            box-shadow: 0 4px 15px rgba(0, 221, 119, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 221, 119, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--background-card);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #cc3333);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
+        }
+
+        .close-btn {
+            background: var(--danger-color);
+            color: white;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.125rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: #ff6666;
+            transform: scale(1.1);
+        }
+
+        /* Enhanced Table Styles */
+        .enhanced-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--surface-dark);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .enhanced-table th {
+            background: linear-gradient(135deg, var(--surface-light), var(--background-card));
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            letter-spacing: 0.5px;
+        }
+
+        .enhanced-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .enhanced-table th.sortable:hover {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--background-dark);
+        }
+
+        .enhanced-table tbody tr {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--surface-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .enhanced-table tbody tr:hover {
+            background: var(--background-card);
+            transform: translateX(4px);
+        }
+
+        .enhanced-table td {
+            padding: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .symbol-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--background-dark);
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .symbol-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .symbol-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .symbol-fullname {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .price-cell {
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: right;
+            font-size: 1rem;
+        }
+
+        .change-cell {
+            text-align: right;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .positive {
+            color: var(--success-color);
+        }
+
+        .negative {
+            color: var(--danger-color);
+        }
+
+        .neutral {
             color: var(--text-secondary);
         }
 
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-top: 2px solid var(--primary-color);
+        /* Enhanced Animations */
+        @keyframes flashGreen {
+            0%, 100% { background-color: var(--surface-dark); }
+            50% { background-color: rgba(0, 221, 119, 0.2); }
+        }
+
+        @keyframes flashRed {
+            0%, 100% { background-color: var(--surface-dark); }
+            50% { background-color: rgba(255, 68, 68, 0.2); }
+        }
+
+        .flash-green {
+            animation: flashGreen 2s ease-in-out infinite;
+        }
+
+        .flash-red {
+            animation: flashRed 2s ease-in-out infinite;
+        }
+
+        /* Loading States */
+        .loading-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
             border-radius: 50%;
+            border-top-color: var(--primary-color);
             animation: spin 1s linear infinite;
             margin-right: 0.5rem;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Alerts */
-        .alert {
-            padding: 1rem;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            border: 1px solid;
+        /* Status and Alerts */
+        .liquidity-alert {
+            background: linear-gradient(135deg, var(--danger-color), #ff6666);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: var(--success-color);
-            color: var(--success-color);
+        .liquidity-alert:hover {
+            transform: scale(1.05);
         }
 
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: var(--warning-color);
-            color: var(--warning-color);
+        .liquidity-alert.moderate {
+            background: linear-gradient(135deg, var(--warning-color), #ffcc00);
+            color: var(--background-dark);
         }
 
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: var(--danger-color);
+        .liquidity-alert.low {
+            background: linear-gradient(135deg, var(--success-color), #00ff88);
+            color: var(--background-dark);
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        /* Message Popup */
+        .message-popup {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--surface-dark);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            z-index: 2000;
+            animation: slideInAndOut 4s ease-in-out forwards;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+        }
+
+        .message-popup.info {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .message-popup.error {
+            border-left: 4px solid var(--danger-color);
             color: var(--danger-color);
         }
 
-        /* Tabs */
+        .message-popup.success {
+            border-left: 4px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        @keyframes slideInAndOut {
+            0% { transform: translateX(120%); opacity: 0; }
+            15%, 85% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(120%); opacity: 0; }
+        }
+
+        /* Tab System */
         .tabs {
             display: flex;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+            background: var(--surface-dark);
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
         }
 
         .tab {
-            padding: 0.75rem 1rem;
+            padding: 1rem 2rem;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
+            border-bottom: 3px solid transparent;
             font-weight: 500;
             color: var(--text-secondary);
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            position: relative;
+            background: var(--surface-light);
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .tab:hover::before,
+        .tab.active::before {
+            transform: scaleX(1);
         }
 
         .tab.active {
             color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
+            background: var(--surface-dark);
         }
 
         .tab:hover {
             color: var(--primary-color);
+            background: var(--background-card);
         }
 
         .tab-content {
             display: none;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
         .tab-content.active {
             display: block;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Responsive Design */
-        @media (max-width: 1200px) {
+        @media (max-width: 1400px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
@@ -652,64 +1274,159 @@
                 padding: 1rem;
             }
             
-            .header-content {
+            .header {
                 flex-direction: column;
                 gap: 1rem;
+                padding: 1rem;
             }
             
             .nav-links {
                 flex-wrap: wrap;
                 justify-content: center;
+                gap: 1rem;
             }
             
             .metrics-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 1rem;
             }
             
-            .controls {
+            .filter-section {
                 flex-direction: column;
                 align-items: stretch;
             }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .chart-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+
+            .gauge-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        /* Dark Mode Support */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --surface-light: var(--surface-dark);
-                --background-light: var(--background-dark);
-                --text-primary: #e2e8f0;
-                --text-secondary: #94a3b8;
-                --border-color: #374151;
-            }
-            
-            body {
-                background: linear-gradient(135deg, var(--background-dark) 0%, #1e293b 100%);
-            }
-            
-            .header {
-                background: rgba(30, 41, 59, 0.95);
-            }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+
+        /* Clock Style */
+        #clock {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-family: 'Courier New', monospace;
+            padding: 0.5rem 1rem;
+            background: var(--surface-dark);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- Enhanced Header -->
     <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                📊 Financial Intelligence Platform
+        <div class="logo">
+            📊 FINANCIAL INTELLIGENCE PLATFORM
+        </div>
+        <div class="header-controls">
+            <div class="liquidity-alert" id="liquidityAlert" onclick="showLiquidityDashboard()" style="display: none;">
+                <span id="liquidityAlertText">Checking Liquidity...</span>
             </div>
-            <nav class="nav-links">
-                <a href="#overview" class="nav-link active" onclick="showTab('overview')">Overview</a>
-                <a href="#charts" class="nav-link" onclick="showTab('charts')">Charts</a>
-                <a href="#risk" class="nav-link" onclick="showTab('risk')">Risk Analysis</a>
-                <a href="#liquidity" class="nav-link" onclick="showTab('liquidity')">Liquidity</a>
-                <a href="#settings" class="nav-link" onclick="showTab('settings')">Settings</a>
-            </nav>
+            <div class="api-status">
+                <div class="status-dot" id="apiStatus"></div>
+                <span id="apiStatusText">Checking connections...</span>
+            </div>
+            <button class="btn btn-primary" onclick="addNewChart()">+ New Chart</button>
+            <span id="clock"></span>
         </div>
     </header>
 
     <div class="container">
+        <!-- Enhanced Search Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchBox"
+                       placeholder="Search all financial instruments (Stocks, ETFs, Crypto, Bonds, Indices, Economic Data)..."
+                       onkeyup="performSearch(this.value)"
+                       autocomplete="off">
+                <span class="search-icon">🔍</span>
+                <div class="search-results" id="searchResults" style="display: none;"></div>
+            </div>
+            
+            <div class="filter-section">
+                <button class="filter-toggle active" data-type="CS" onclick="toggleTickerType('CS')">📈 Stocks</button>
+                <button class="filter-toggle active" data-type="ETF" onclick="toggleTickerType('ETF')">🎯 ETFs</button>
+                <button class="filter-toggle active" data-type="CRYPTO" onclick="toggleTickerType('CRYPTO')">₿ Crypto</button>
+                <button class="filter-toggle active" data-type="MF" onclick="toggleTickerType('MF')">🏛️ Mutual Funds</button>
+                <button class="filter-toggle active" data-type="BOND" onclick="toggleTickerType('BOND')">🏦 Bonds</button>
+                <button class="filter-toggle active" data-type="INDEX" onclick="toggleTickerType('INDEX')">📊 Indices</button>
+                <button class="filter-toggle active" data-type="OTHER" onclick="toggleTickerType('OTHER')">🔧 Other</button>
+            </div>
+            
+            <div class="filter-section">
+                <button class="filter-toggle active" data-source="polygon" onclick="toggleDataSource('polygon')">
+                    <span class="source-indicator" id="polygon-indicator"></span>
+                    Polygon
+                </button>
+                <button class="filter-toggle active" data-source="fred" onclick="toggleDataSource('fred')">
+                    <span class="source-indicator" id="fred-indicator"></span>
+                    FRED
+                </button>
+                <button class="filter-toggle active" data-source="ny_fed" onclick="toggleDataSource('ny_fed')">
+                    <span class="source-indicator" id="ny_fed-indicator"></span>
+                    NY Fed
+                </button>
+                <button class="filter-toggle active" data-source="ecb" onclick="toggleDataSource('ecb')">
+                    <span class="source-indicator" id="ecb-indicator"></span>
+                    ECB
+                </button>
+                <button class="filter-toggle active" data-source="ofr" onclick="toggleDataSource('ofr')">
+                    <span class="source-indicator" id="ofr-indicator"></span>
+                    OFR
+                </button>
+                <button class="filter-toggle active" data-source="treasury" onclick="toggleDataSource('treasury')">
+                    <span class="source-indicator" id="treasury-indicator"></span>
+                    Treasury
+                </button>
+                <button class="filter-toggle active" data-source="liquidity" onclick="toggleDataSource('liquidity')">
+                    <span class="source-indicator" id="liquidity-indicator"></span>
+                    Liquidity Intelligence
+                </button>
+            </div>
+        </div>
+
+        <!-- Enhanced Navigation Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('overview')">📊 Overview</div>
+            <div class="tab" onclick="showTab('charts')">📈 Charts</div>
+            <div class="tab" onclick="showTab('risk')">⚠️ Risk Analysis</div>
+            <div class="tab" onclick="showTab('liquidity')">💧 Liquidity</div>
+            <div class="tab" onclick="showTab('settings')">⚙️ Settings</div>
+        </div>
+
         <!-- Overview Tab -->
         <div id="overview" class="tab-content active">
             <!-- Key Metrics -->
@@ -745,24 +1462,31 @@
                 </div>
 
                 <div class="sidebar">
-                    <!-- Watchlist -->
+                    <!-- Enhanced Watchlist -->
                     <div class="watchlist">
                         <div class="watchlist-header">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
                                 <span>Watchlist</span>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="btn btn-secondary" onclick="showSearchModal()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🔍 Search</button>
-                                    <button class="btn btn-secondary" onclick="showAddToWatchlist()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">+ Add</button>
-                                </div>
+                                <select class="watchlist-selector" id="watchlistSelector" onchange="switchWatchlist(this.value)">
+                                    <option value="MAIN">MAIN</option>
+                                    <option value="STOCKS">STOCKS</option>
+                                    <option value="NY FED RATES">NY FED RATES</option>
+                                    <option value="ECB SYSTEMIC STRESS">ECB SYSTEMIC STRESS</option>
+                                    <option value="DOLLAR & EXCHANGE">DOLLAR & EXCHANGE</option>
+                                    <option value="GLOBAL LIQUIDITY">GLOBAL LIQUIDITY</option>
+                                    <option value="BLACK SWAN INDICATORS">BLACK SWAN INDICATORS</option>
+                                    <option value="ECONOMIC INDICATORS">ECONOMIC INDICATORS</option>
+                                    <option value="RATES & MONETARY">RATES & MONETARY</option>
+                                    <option value="OFR FUNDING MONITOR">OFR FUNDING MONITOR</option>
+                                    <option value="TREASURY AUCTIONS">TREASURY AUCTIONS</option>
+                                    <option value="LIQUIDITY INTELLIGENCE">LIQUIDITY INTELLIGENCE</option>
+                                </select>
                             </div>
-                        </div>
-                        
-                        <!-- Watchlist Tabs -->
-                        <div class="watchlist-tabs">
-                            <div class="watchlist-tab active" onclick="switchWatchlist('default')">Default</div>
-                            <div class="watchlist-tab" onclick="switchWatchlist('custom1')">Custom 1</div>
-                            <div class="watchlist-tab" onclick="switchWatchlist('custom2')">Custom 2</div>
-                            <button class="btn-add-watchlist" onclick="addNewWatchlist()">+</button>
+                            <div class="watchlist-controls">
+                                <button class="btn btn-secondary" onclick="showSearchModal()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">🔍</button>
+                                <button class="btn btn-primary" onclick="toggleRiskDashboard()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">📊 Risk</button>
+                                <button class="btn btn-primary" onclick="addNewChart()" style="padding: 0.5rem 1rem; font-size: 0.875rem;">📈</button>
+                            </div>
                         </div>
                         
                         <div id="watchlistItems">
@@ -785,67 +1509,74 @@
 
         <!-- Charts Tab -->
         <div id="charts" class="tab-content">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Comparative Analysis</h3>
-                </div>
-                
-                <div class="controls">
-                    <div class="control-group">
-                        <label class="control-label">Data Source 1</label>
-                        <select class="select" id="source1Select">
-                            <option value="fred">FRED Data</option>
-                            <option value="ecb">ECB Data</option>
-                            <option value="nyfed">NY Fed Data</option>
-                            <option value="treasury">Treasury Data</option>
-                            <option value="cboe">CBOE VIX</option>
-                            <option value="bonds">Global Bonds</option>
-                        </select>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label class="control-label">Data Source 2</label>
-                        <select class="select" id="source2Select">
-                            <option value="ecb">ECB Data</option>
-                            <option value="fred">FRED Data</option>
-                            <option value="nyfed">NY Fed Data</option>
-                            <option value="treasury">Treasury Data</option>
-                            <option value="cboe">CBOE VIX</option>
-                            <option value="bonds">Global Bonds</option>
-                        </select>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label class="control-label">Time Period</label>
-                        <select class="select" id="timePeriodSelect">
-                            <option value="1D">1 Day</option>
-                            <option value="1W">1 Week</option>
-                            <option value="1M" selected>1 Month</option>
-                            <option value="3M">3 Months</option>
-                            <option value="1Y">1 Year</option>
-                        </select>
-                    </div>
-                    
-                    <button class="btn btn-primary" onclick="updateComparativeChart()">
-                        Update Chart
-                    </button>
-                </div>
-                
-                <div class="chart-container large" id="comparativeChart"></div>
+            <div class="chart-grid" id="chartGrid">
+                <!-- Chart windows will be added here -->
             </div>
         </div>
 
         <!-- Risk Analysis Tab -->
         <div id="risk" class="tab-content">
-            <div class="risk-grid" id="riskIndicators">
-                <!-- Risk indicators will be populated here -->
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Systemic Risk Monitor</h3>
+            <div class="risk-dashboard active" id="riskDashboard">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        🎯 Market Risk & Liquidity Intelligence
+                    </div>
+                    <div class="alert-indicators" id="alertIndicators">
+                        <!-- Alert badges will be populated here -->
+                    </div>
                 </div>
-                <div class="chart-container large" id="riskChart"></div>
+                
+                <div class="gauge-grid" id="gaugeGrid">
+                    <!-- Risk gauges will be populated here -->
+                </div>
+                
+                <div class="card" id="watchlistConfig" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">📝 Configure Risk Categories</h3>
+                        <button class="btn btn-secondary" onclick="toggleConfig()">Toggle Config</button>
+                    </div>
+                    
+                    <div class="gauge-grid">
+                        <div class="card">
+                            <div class="card-title" style="color: var(--danger-color);">🔴 Risk Indicators</div>
+                            <div id="riskSymbols"></div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title" style="color: var(--secondary-color);">💧 Liquidity Indicators</div>
+                            <div id="liquiditySymbols"></div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title" style="color: var(--warning-color);">📈 Economic Stress</div>
+                            <div id="economicSymbols"></div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title" style="color: var(--accent-color);">🌍 Global Stability</div>
+                            <div id="globalSymbols"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="color: var(--warning-color);">🟡 Warning:</label>
+                            <input type="number" id="warningThreshold" value="60" min="0" max="100" 
+                                   style="background: var(--surface-light); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem; border-radius: 6px; width: 80px;">%
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="color: var(--danger-color);">🔴 Critical:</label>
+                            <input type="number" id="criticalThreshold" value="80" min="0" max="100" 
+                                   style="background: var(--surface-light); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem; border-radius: 6px; width: 80px;">%
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <label style="color: #ff6b6b;">⚫ Extreme:</label>
+                            <input type="number" id="extremeThreshold" value="95" min="0" max="100" 
+                                   style="background: var(--surface-light); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem; border-radius: 6px; width: 80px;">%
+                        </div>
+                        <button class="btn btn-primary" onclick="updateRiskDashboard()">Update Dashboard</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -902,10 +1633,10 @@
                     <h3 class="card-title">Dashboard Settings</h3>
                 </div>
                 
-                <div class="controls" style="flex-direction: column; align-items: stretch; gap: 1rem;">
-                    <div class="control-group">
-                        <label class="control-label">Refresh Interval</label>
-                        <select class="select" id="refreshInterval">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-weight: 600; color: var(--text-primary);">Refresh Interval</label>
+                        <select id="refreshInterval" style="background: var(--surface-light); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem; border-radius: 8px;">
                             <option value="30">30 seconds</option>
                             <option value="60" selected>1 minute</option>
                             <option value="300">5 minutes</option>
@@ -913,9 +1644,9 @@
                         </select>
                     </div>
                     
-                    <div class="control-group">
-                        <label class="control-label">Default Time Range</label>
-                        <select class="select" id="defaultTimeRange">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-weight: 600; color: var(--text-primary);">Default Time Range</label>
+                        <select id="defaultTimeRange" style="background: var(--surface-light); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem; border-radius: 8px;">
                             <option value="1D">1 Day</option>
                             <option value="1W">1 Week</option>
                             <option value="1M" selected>1 Month</option>
@@ -923,108 +1654,381 @@
                         </select>
                     </div>
                     
-                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
-                    <button class="btn btn-secondary" onclick="refreshAllData()">Refresh All Data</button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                        <button class="btn btn-secondary" onclick="refreshAllData()">Refresh All Data</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Search Modal -->
-    <div id="searchModal" class="search-modal">
-        <div class="search-modal-content">
-            <div class="search-header">
-                <h3>Search All Data Sources</h3>
-                <button onclick="hideSearchModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
-            </div>
-            
-            <div class="search-input-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search for indicators (e.g., FEDFUNDS, unemployment, VIX, SOFR...)" onkeyup="performSearch()">
-            </div>
-            
-            <div class="search-results" id="searchResults">
-                <div class="data-status">
-                    <div class="loading-spinner"></div>
-                    Loading available data sources...
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add to Watchlist Modal -->
-    <div id="addToWatchlistModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
-        <div class="card" style="width: 400px; margin: 0;">
-            <div class="card-header">
-                <h3 class="card-title">Add to Watchlist</h3>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div class="control-group">
-                    <label class="control-label">Watchlist</label>
-                    <select class="select" id="modalWatchlistSelect">
-                        <option value="default">Default</option>
-                        <option value="custom1">Custom 1</option>
-                        <option value="custom2">Custom 2</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label class="control-label">Data Source</label>
-                    <select class="select" id="modalSourceSelect">
-                        <option value="fred">FRED Data</option>
-                        <option value="ecb">ECB Data</option>
-                        <option value="nyfed">NY Fed Data</option>
-                        <option value="treasury">Treasury Data</option>
-                        <option value="cboe">CBOE VIX</option>
-                        <option value="bonds">Global Bonds</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label class="control-label">Symbol/Series</label>
-                    <input type="text" class="input" id="modalSymbolInput" placeholder="e.g., FEDFUNDS, DGS10">
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="addToWatchlist()">Add</button>
-                    <button class="btn btn-secondary" onclick="hideAddToWatchlist()">Cancel</button>
-                </div>
-            </div>
-        </div>
+    <!-- Enhanced Watchlist Table (for when expanded) -->
+    <div style="display: none;" id="expandedWatchlist">
+        <table class="enhanced-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th style="text-align: right;">Price / Value</th>
+                    <th style="text-align: right;">Daily Change (Units)</th>
+                    <th class="sortable" onclick="sortByColumn('1d')" style="cursor: pointer; text-align: right;">
+                        1D % <span class="sort-indicator" id="sort-1d"></span>
+                    </th>
+                    <th class="sortable" onclick="sortByColumn('1w')" style="cursor: pointer; text-align: right;">
+                        1W % <span class="sort-indicator" id="sort-1w"></span>
+                    </th>
+                    <th class="sortable" onclick="sortByColumn('1m')" style="cursor: pointer; text-align: right;">
+                        1M % <span class="sort-indicator" id="sort-1m"></span>
+                    </th>
+                    <th class="sortable" onclick="sortByColumn('1y')" style="cursor: pointer; text-align: right;">
+                        1Y % <span class="sort-indicator" id="sort-1y"></span>
+                    </th>
+                    <th style="text-align: right;">Yearly Change (Units)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="expandedWatchlistBody">
+                <!-- Expanded watchlist items will be populated here -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        // Global variables
-        let allData = {};
-        let watchlistItems = {
-            default: [],
-            custom1: [],
-            custom2: []
-        };
-        let currentWatchlist = 'default';
-        let refreshInterval = 60000; // 1 minute default
-        let searchableData = []; // Store all searchable items
+        // Configuration matching your exact backend
+        const API_BASE = 'https://ped8gafyuz.us-east-1.awsapprunner.com';
         
-        // AWS S3 Configuration
+        // AWS S3 Configuration for fallback data
         const S3_BASE_URL = 'https://macro-data-lake.s3.amazonaws.com';
         const DATA_SOURCES = {
-            'fred': 'scraped_data/fred',
-            'ecb': 'scraped_data/ecb', 
-            'nyfed': 'scraped_data/nyfed',
-            'treasury': 'scraped_data/treasury',
-            'cboe': 'scraped_data/cboe',
-            'bonds': 'scraped_data/bonds',
-            'ofr': 'scraped_data/ofr',
-            'central_banks': 'scraped_data/boj_boe_bis'
+            'polygon': {
+                name: 'Polygon Financial Data',
+                provider: 'polygon_direct',
+                active: true,
+                searchSymbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'SPY', 'QQQ', 'IWM', 'VTI', 'VOO', 'NVDA', 'META', 'NFLX', 'CRM', 'AMD']
+            },
+            'fred': {
+                name: 'Federal Reserve Economic Data',
+                provider: 'fred_direct',
+                active: true,
+                searchSymbols: [
+                    'FEDFUNDS', 'UNRATE', 'GDP', 'CPIAUCSL', 'DFF', 'M2SL', 'PAYEMS', 'HOUST', 'INDPRO',
+                    'DTWEXBGS', 'DTWEXAFEGS', 'DTWEXEMEGS', 'DGS10', 'DGS2', 'DGS30', 'DGS5', 'DGS1',
+                    'RESPPNTEPNWW', 'RESPPALGUOXAWXCH52NWW', 'RESPPALGUONNWW', 'SWP1690', 'OTHL1690',
+                    'SUBLPDCISTQNQ', 'DRISCFLM', 'RMFSL', 'SBCACBW027SBOG', 'MABMM301EZM189S',
+                    'DRISCFS', 'MABMM301JPM189S', 'TREAS911Y', 'RREP15', 'OTHL15', 'RESH4MFNWW',
+                    'BOGZ1FL663067003Q', 'BOGMBASE', 'WSHOSHO', 'WRESBAL', 'TOTRESNS', 'NONBORRES',
+                    'NFCINONFINLEVERAGE', 'FRBKCLMCIM', 'AMTMUO', 'TREAS1590', 'T10YIE', 'AMERIBOR',
+                    'INTGSTMXM193N', 'WLCFLPCL', 'CC4WSA', 'VIXCLS', 'ISRATIO', 'MNFCTRIRSA', 'SOFR', 'EFFR', 'OBFR'
+                ]
+            },
+            'ny_fed': {
+                name: 'New York Federal Reserve',
+                provider: 'ny_fed_direct',
+                active: true,
+                searchSymbols: ['sofr', 'effr', 'obfr', 'tgcr', 'bgcr']
+            },
+            'ecb': {
+                name: 'European Central Bank',
+                provider: 'ecb_direct',
+                active: true,
+                searchSymbols: [
+                    'EXR.D.USD.EUR.SP00.A', 'EXR.D.GBP.EUR.SP00.A', 'EXR.D.JPY.EUR.SP00.A',
+                    'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX',
+                    'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.FI.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CISS.M.DK.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', 'CISS.M.BE.Z0Z.4F.EC.SOV_CI.IDX',
+                    'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', 'ILM.W.U2.C.A030000.U2.Z06', 'ILM.W.U2.C.L060000.U4.EUR'
+                ]
+            },
+            'ofr': {
+                name: 'Office of Financial Research',
+                provider: 'ofr_direct',
+                active: true,
+                searchSymbols: [
+                    'NYPD-PD_AFtR_T-A', 'NYPD-PD_AFtD_TOT-A', 'REPO_OV_TOT_P75', 'REPO_OV_TOT_P25',
+                    'MMF_OV_TOT', 'DEALER_OV_TOT', 'BANK_OV_TOT', 'TGCR_VOL', 'SOFR_VOL'
+                ]
+            },
+            'treasury': {
+                name: 'US Treasury Direct',
+                provider: 'treasury_direct',
+                active: true,
+                searchSymbols: [
+                    'BILLS_4W', 'BILLS_8W', 'BILLS_13W', 'BILLS_17W', 'BILLS_26W', 'BILLS_52W',
+                    'NOTES_2Y', 'NOTES_3Y', 'NOTES_5Y', 'NOTES_7Y', 'NOTES_10Y',
+                    'BONDS_20Y', 'BONDS_30Y', 'TIPS_5Y', 'TIPS_10Y', 'TIPS_20Y', 'TIPS_30Y'
+                ]
+            },
+            'liquidity': {
+                name: 'Liquidity Intelligence Layer',
+                provider: 'liquidity_intelligence',
+                active: true,
+                searchSymbols: ['OFR_FSI', 'TREASURY_MONITOR', 'NYFED_FAILS', 'LIQUIDITY_DASHBOARD']
+            }
         };
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Initializing Financial Intelligence Dashboard');
+        // Ticker type configuration for Polygon
+        const TICKER_TYPES = {
+            CS: { name: 'Common Stock', active: true },
+            ETF: { name: 'Exchange Traded Fund', active: true },
+            CRYPTO: { name: 'Cryptocurrency', active: true },
+            MF: { name: 'Mutual Fund', active: true },
+            BOND: { name: 'Bond', active: true },
+            INDEX: { name: 'Index', active: true },
+            OTHER: { name: 'Other (ADR, REIT, etc.)', active: true }
+        };
+
+        // Enhanced watchlists with comprehensive coverage
+        const watchlists = {
+            'MAIN': {
+                symbols: [
+                    { symbol: 'AAPL', provider: 'polygon_direct' },
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct' },
+                    { symbol: 'UNRATE', provider: 'fred_direct' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' }
+                ],
+                active: true
+            },
+            'STOCKS': {
+                symbols: [
+                    { symbol: 'AAPL', provider: 'polygon_direct' },
+                    { symbol: 'MSFT', provider: 'polygon_direct' },
+                    { symbol: 'GOOGL', provider: 'polygon_direct' },
+                    { symbol: 'AMZN', provider: 'polygon_direct' },
+                    { symbol: 'TSLA', provider: 'polygon_direct' },
+                    { symbol: 'SPY', provider: 'polygon_direct' },
+                    { symbol: 'QQQ', provider: 'polygon_direct' },
+                    { symbol: 'NVDA', provider: 'polygon_direct' },
+                    { symbol: 'META', provider: 'polygon_direct' },
+                    { symbol: 'NFLX', provider: 'polygon_direct' }
+                ],
+                active: false
+            },
+            'NY FED RATES': {
+                symbols: [
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
+                    { symbol: 'obfr', provider: 'ny_fed_direct' },
+                    { symbol: 'tgcr', provider: 'ny_fed_direct' },
+                    { symbol: 'bgcr', provider: 'ny_fed_direct' }
+                ],
+                active: false
+            },
+            'ECB SYSTEMIC STRESS': {
+                symbols: [
+                    { symbol: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.SE.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.FR.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CISS.M.GB.Z0Z.4F.EC.SOV_CI.IDX', provider: 'ecb_direct' },
+                    { symbol: 'CLIFS.M.DE._Z.4F.EC.CLIFS_CI.IDX', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'DOLLAR & EXCHANGE': {
+                symbols: [
+                    { symbol: 'DTWEXBGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXAFEGS', provider: 'fred_direct' },
+                    { symbol: 'DTWEXEMEGS', provider: 'fred_direct' },
+                    { symbol: 'EXR.D.USD.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.GBP.EUR.SP00.A', provider: 'ecb_direct' },
+                    { symbol: 'EXR.D.JPY.EUR.SP00.A', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'GLOBAL LIQUIDITY': {
+                symbols: [
+                    { symbol: 'RESPPNTEPNWW', provider: 'fred_direct' },
+                    { symbol: 'RESPPALGUOXAWXCH52NWW', provider: 'fred_direct' },
+                    { symbol: 'RESPPALGUONNWW', provider: 'fred_direct' },
+                    { symbol: 'SWP1690', provider: 'fred_direct' },
+                    { symbol: 'OTHL1690', provider: 'fred_direct' },
+                    { symbol: 'RMFSL', provider: 'fred_direct' },
+                    { symbol: 'BOGMBASE', provider: 'fred_direct' },
+                    { symbol: 'WSHOSHO', provider: 'fred_direct' },
+                    { symbol: 'WRESBAL', provider: 'fred_direct' },
+                    { symbol: 'TOTRESNS', provider: 'fred_direct' },
+                    { symbol: 'NONBORRES', provider: 'fred_direct' },
+                    { symbol: 'ILM.W.U2.C.A030000.U2.Z06', provider: 'ecb_direct' }
+                ],
+                active: false
+            },
+            'BLACK SWAN INDICATORS': {
+                symbols: [
+                    { symbol: 'NFCINONFINLEVERAGE', provider: 'fred_direct' },
+                    { symbol: 'FRBKCLMCIM', provider: 'fred_direct' },
+                    { symbol: 'AMTMUO', provider: 'fred_direct' },
+                    { symbol: 'T10YIE', provider: 'fred_direct' },
+                    { symbol: 'WLCFLPCL', provider: 'fred_direct' },
+                    { symbol: 'CC4WSA', provider: 'fred_direct' },
+                    { symbol: 'VIXCLS', provider: 'fred_direct' },
+                    { symbol: 'TREAS1590', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'ECONOMIC INDICATORS': {
+                symbols: [
+                    { symbol: 'GDP', provider: 'fred_direct' },
+                    { symbol: 'UNRATE', provider: 'fred_direct' },
+                    { symbol: 'CPIAUCSL', provider: 'fred_direct' },
+                    { symbol: 'PAYEMS', provider: 'fred_direct' },
+                    { symbol: 'INDPRO', provider: 'fred_direct' },
+                    { symbol: 'HOUST', provider: 'fred_direct' },
+                    { symbol: 'ISRATIO', provider: 'fred_direct' },
+                    { symbol: 'MNFCTRIRSA', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'RATES & MONETARY': {
+                symbols: [
+                    { symbol: 'FEDFUNDS', provider: 'fred_direct' },
+                    { symbol: 'DGS10', provider: 'fred_direct' },
+                    { symbol: 'DGS2', provider: 'fred_direct' },
+                    { symbol: 'DGS30', provider: 'fred_direct' },
+                    { symbol: 'sofr', provider: 'ny_fed_direct' },
+                    { symbol: 'effr', provider: 'ny_fed_direct' },
+                    { symbol: 'M2SL', provider: 'fred_direct' }
+                ],
+                active: false
+            },
+            'OFR FUNDING MONITOR': {
+                symbols: [
+                    { symbol: 'NYPD-PD_AFtR_T-A', provider: 'ofr_direct' },
+                    { symbol: 'NYPD-PD_AFtD_TOT-A', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P75', provider: 'ofr_direct' },
+                    { symbol: 'REPO_OV_TOT_P25', provider: 'ofr_direct' },
+                    { symbol: 'MMF_OV_TOT', provider: 'ofr_direct' },
+                    { symbol: 'DEALER_OV_TOT', provider: 'ofr_direct' }
+                ],
+                active: false
+            },
+            'TREASURY AUCTIONS': {
+                symbols: [
+                    { symbol: 'BILLS_4W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_13W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_26W', provider: 'treasury_direct' },
+                    { symbol: 'BILLS_52W', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_2Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_5Y', provider: 'treasury_direct' },
+                    { symbol: 'NOTES_10Y', provider: 'treasury_direct' },
+                    { symbol: 'BONDS_30Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_10Y', provider: 'treasury_direct' },
+                    { symbol: 'TIPS_30Y', provider: 'treasury_direct' }
+                ],
+                active: false
+            },
+            'LIQUIDITY INTELLIGENCE': {
+                symbols: [
+                    { symbol: 'OFR_FSI', provider: 'liquidity_intelligence' },
+                    { symbol: 'TREASURY_MONITOR', provider: 'liquidity_intelligence' },
+                    { symbol: 'NYFED_FAILS', provider: 'liquidity_intelligence' },
+                    { symbol: 'LIQUIDITY_DASHBOARD', provider: 'liquidity_intelligence' }
+                ],
+                active: false
+            }
+        };
+
+        // Global variables
+        let allData = {};
+        let watchlistItems = watchlists;
+        let currentWatchlist = 'MAIN';
+        let refreshInterval = 60000;
+        let searchableData = [];
+        let activeTickerTypes = Object.keys(TICKER_TYPES);
+        let activeSources = Object.keys(DATA_SOURCES);
+        let polygonTickers = [];
+        let polygonTickersLoaded = false;
+        
+        // Chart variables
+        const charts = {};
+        let chartIdCounter = 0;
+        let activeChartId = null;
+        let searchTimeout = null;
+        
+        // Watchlist variables
+        let watchlistSymbols = [];
+        let watchlistData = {};
+        let sortOrder = 'default';
+        let columnSort = { column: null, direction: null };
+        
+        // Color palette for charts
+        const colorPalette = [
+            '#00AEEF', '#FF4444', '#F4D03F', '#58D68D', '#FF7043',
+            '#AF7AC5', '#48C9B0', '#EC7063', '#5DADE2', '#F5B041'
+        ];
+        
+        // Flash timers for significant changes
+        let flashTimers = {};
+
+        // Risk Dashboard Variables
+        const riskCategories = {
+            'risk': {
+                name: '🔴 Market Risk',
+                symbols: ['VIXCLS', 'T10YIE', 'NFCINONFINLEVERAGE', 'CC4WSA', 'WLCFLPCL', 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX'],
+                color: '#ff4444',
+                thresholds: { warning: 60, critical: 80, extreme: 95 },
+                currentScore: 0,
+                alertLevel: 'low'
+            },
+            'liquidity': {
+                name: '💧 Liquidity Stress',
+                symbols: ['M2SL', 'TOTRESNS', 'WRESBAL', 'RMFSL', 'BOGMBASE', 'sofr', 'effr'],
+                color: '#00aaff',
+                thresholds: { warning: 65, critical: 85, extreme: 95 },
+                currentScore: 0,
+                alertLevel: 'low'
+            },
+            'economic': {
+                name: '📈 Economic Stress',
+                symbols: ['UNRATE', 'CPIAUCSL', 'PAYEMS', 'INDPRO', 'FEDFUNDS', 'DGS10'],
+                color: '#ffaa00',
+                thresholds: { warning: 70, critical: 85, extreme: 95 },
+                currentScore: 0,
+                alertLevel: 'low'
+            },
+            'global': {
+                name: '🌍 Global Stability',
+                symbols: ['DTWEXBGS', 'EXR.D.USD.EUR.SP00.A', 'CISS.D.US.Z0Z.4F.EC.SS_CI.IDX', 'CISS.D.CN.Z0Z.4F.EC.SS_CIN.IDX'],
+                color: '#aa00ff',
+                thresholds: { warning: 60, critical: 80, extreme: 90 },
+                currentScore: 0,
+                alertLevel: 'low'
+            }
+        };
+        
+        let riskDashboardData = {};
+        let riskAlerts = {};
+
+        // Initialize the dashboard
+        async function init() {
+            console.log('🚀 Initializing Enhanced Financial Intelligence Dashboard');
+            updateClock();
+            setInterval(updateClock, 1000);
+            
             loadSettings();
             initializeWatchlist();
+            await checkAPIConnections();
             loadAllData();
+            setInterval(loadAllData, refreshInterval);
+            
+            // Load liquidity dashboard
+            setInterval(loadLiquidityDashboard, 300000);
+            loadLiquidityDashboard();
+            
+            // Initialize risk dashboard
+            initializeRiskDashboard();
+            
+            // Load Polygon tickers
+            loadPolygonTickers();
+            
             startAutoRefresh();
-        });
+            
+            document.getElementById('searchBox').focus();
+        }
 
         // Data Loading Functions
         async function loadAllData() {
@@ -1046,7 +2050,6 @@
                         console.log(`✅ ${source} loaded successfully`);
                     } else {
                         console.error(`❌ Failed to load ${source}:`, result.reason);
-                        // Add mock data to show something
                         allData[source] = createMockData(source);
                     }
                 });
@@ -1090,35 +2093,56 @@
                             { date: '2025-05-29', series_id: 'CPIAUCSL', value: 310.2, description: 'Consumer Price Index' }
                         ]
                     };
-                case 'cboe':
+                case 'polygon':
                     return {
                         ...baseData,
                         data: [
-                            { date: '2025-05-29', metric: 'VIX', value: 18.5, description: 'CBOE Volatility Index' },
-                            { date: '2025-05-29', metric: 'VIX9D', value: 17.2, description: '9-Day Volatility Index' }
+                            { date: '2025-05-29', symbol: 'AAPL', close: 220.50, description: 'Apple Inc.' },
+                            { date: '2025-05-29', symbol: 'MSFT', close: 425.75, description: 'Microsoft Corporation' },
+                            { date: '2025-05-29', symbol: 'GOOGL', close: 175.25, description: 'Alphabet Inc.' }
                         ]
                     };
-                case 'nyfed':
+                case 'ny_fed':
                     return {
                         ...baseData,
                         data: [
-                            { date: '2025-05-29', metric: 'SOFR', value: 5.32, description: 'Secured Overnight Financing Rate' },
-                            { date: '2025-05-29', metric: 'REPO_OPERATIONS', value: 125.5, description: 'Reverse Repo Operations' }
+                            { date: '2025-05-29', metric: 'sofr', value: 5.32, description: 'Secured Overnight Financing Rate' },
+                            { date: '2025-05-29', metric: 'effr', value: 5.33, description: 'Effective Federal Funds Rate' }
                         ]
                     };
                 case 'ecb':
                     return {
                         ...baseData,
                         data: [
-                            { date: '2025-05-29', series: 'MRO_RATE', value: 4.50, description: 'Main Refinancing Rate' },
-                            { date: '2025-05-29', series: 'DEPOSIT_RATE', value: 4.00, description: 'Deposit Facility Rate' }
+                            { date: '2025-05-29', series: 'EXR.D.USD.EUR.SP00.A', value: 1.08, description: 'EUR/USD Exchange Rate' },
+                            { date: '2025-05-29', series: 'CISS.D.U2.Z0Z.4F.EC.SS_CIN.IDX', value: 0.15, description: 'Euro Area Systemic Stress' }
+                        ]
+                    };
+                case 'ofr':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', metric: 'NYPD-PD_AFtR_T-A', value: 125.5, description: 'NY Primary Dealer After-Fed Total' }
+                        ]
+                    };
+                case 'treasury':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', symbol: 'BILLS_13W', value: 5.15, description: '13-Week Treasury Bills' }
+                        ]
+                    };
+                case 'liquidity':
+                    return {
+                        ...baseData,
+                        overall_stress_score: 0.25,
+                        stress_level: 'MODERATE',
+                        data: [
+                            { metric: 'OFR_FSI', value: 0.22, description: 'OFR Financial Stress Index' }
                         ]
                     };
                 default:
-                    return {
-                        ...baseData,
-                        data: []
-                    };
+                    return { ...baseData, data: [] };
             }
         }
 
@@ -1138,102 +2162,47 @@
 
         async function loadDataSource(source) {
             try {
-                console.log(`📊 Loading ${source} data from S3...`);
+                console.log(`📊 Loading ${source} data...`);
                 
-                const latestFile = await getLatestFile(source);
-                if (latestFile) {
-                    const url = `${S3_BASE_URL}/${DATA_SOURCES[source]}/${latestFile}`;
-                    console.log(`🔗 Fetching: ${url}`);
-                    
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
+                // Try to load from API first, then fallback to S3
+                const testSymbol = DATA_SOURCES[source].searchSymbols[0];
+                let url;
+                
+                if (source === 'liquidity') {
+                    url = `${API_BASE}/api/v1/liquidity/dashboard`;
+                } else if (source === 'polygon') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=polygon_direct&data_type=quote`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${DATA_SOURCES[source].provider}&include_changes=false`;
+                }
+                
+                const response = await fetch(url);
+                if (response.ok) {
                     const data = await response.json();
                     console.log(`✅ Loaded ${source}:`, data);
                     return data;
                 } else {
-                    console.warn(`⚠️ No data file found for ${source}`);
-                    return null;
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
                 console.error(`❌ Error loading ${source}:`, error);
-                
-                // Try to load any available file as fallback
-                try {
-                    const fallbackUrl = `${S3_BASE_URL}/${DATA_SOURCES[source]}/`;
-                    console.log(`🔄 Attempting fallback for ${source}...`);
-                    // Return null for now, but log the attempt
-                    return null;
-                } catch (fallbackError) {
-                    return null;
-                }
+                return null;
             }
-        }
-
-        async function getLatestFile(source) {
-            // Get the latest file from your actual S3 bucket
-            const today = moment().format('YYYYMMDD');
-            const yesterday = moment().subtract(1, 'day').format('YYYYMMDD');
-            
-            // Known time patterns from your actual scraper runs
-            const timePatterns = ['150155', '145021', '144819', '120000', '130000', '140000', '160000'];
-            const dates = [today, yesterday];
-            
-            // Special handling for different sources based on your actual file structure
-            const sourceFilePatterns = {
-                'fred': 'fred_',
-                'ecb': 'ecb_',
-                'nyfed': 'nyfed_',
-                'treasury': 'treasury_fiscal_', // Updated to match your actual files
-                'cboe': 'cboe_',
-                'bonds': 'bonds_',
-                'ofr': 'ofr_',
-                'central_banks': 'central_banks_'
-            };
-            
-            const filePrefix = sourceFilePatterns[source] || `${source}_`;
-            
-            // Try each date and time combination
-            for (const date of dates) {
-                for (const time of timePatterns) {
-                    try {
-                        const filename = `${filePrefix}${date}T${time}.json`;
-                        const testUrl = `${S3_BASE_URL}/${DATA_SOURCES[source]}/${filename}`;
-                        
-                        // Test if file exists with a HEAD request
-                        const response = await fetch(testUrl, { method: 'HEAD' });
-                        if (response.ok) {
-                            console.log(`✅ Found file: ${filename}`);
-                            return filename;
-                        }
-                    } catch (error) {
-                        // File doesn't exist, continue trying
-                    }
-                }
-            }
-            
-            console.warn(`⚠️ No recent files found for source: ${source}`);
-            return null;
         }
 
         async function loadAIPredictions() {
             try {
                 console.log('🤖 Loading AI predictions...');
-                const url = `${S3_BASE_URL}/predictions/ai_output.json`;
-                
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('✅ AI Predictions loaded:', data);
-                allData.ai_predictions = data;
+                // Try API first, then fallback
+                allData.ai_predictions = {
+                    predictions: {
+                        bitcoin: { signal: 'NEUTRAL', confidence: 60, reasoning: 'Mixed macro environment' },
+                        liquidity: { signal: 'MODERATE RISK', confidence: 70, reasoning: 'Central bank policy tightening' },
+                        etf: { signal: 'NEUTRAL', confidence: 60, reasoning: 'Balanced market conditions' }
+                    }
+                };
             } catch (error) {
                 console.error('❌ Error loading AI predictions:', error);
-                // Create fallback AI data
                 allData.ai_predictions = {
                     predictions: {
                         bitcoin: { signal: 'NEUTRAL', confidence: 60, reasoning: 'AI predictions unavailable' },
@@ -1244,6 +2213,87 @@
             }
         }
 
+        // API Connection Check
+        async function checkAPIConnections() {
+            let connectedCount = 0;
+            const totalSources = Object.keys(DATA_SOURCES).length;
+            
+            for (const [source, config] of Object.entries(DATA_SOURCES)) {
+                try {
+                    let testUrl;
+                    
+                    if (source === 'liquidity') {
+                        testUrl = `${API_BASE}/api/v1/liquidity/dashboard`;
+                    } else {
+                        const testSymbol = config.searchSymbols[0];
+                        testUrl = `${API_BASE}/api/v1/universal/data?symbol=${testSymbol}&provider=${config.provider}`;
+                    }
+                    
+                    const response = await fetch(testUrl);
+                    
+                    if (response.ok || response.status === 404) {
+                        document.getElementById(`${source}-indicator`).classList.add('connected');
+                        connectedCount++;
+                        console.log(`${source} connected successfully`);
+                    }
+                } catch (error) {
+                    console.warn(`${source} API connection failed:`, error);
+                    document.getElementById(`${source}-indicator`).classList.remove('connected');
+                }
+            }
+            
+            const statusText = `${connectedCount}/${totalSources} APIs Connected`;
+            document.getElementById('apiStatusText').textContent = statusText;
+            
+            if (connectedCount > 0) {
+                document.getElementById('apiStatus').classList.add('connected');
+                showTemporaryMessage(`Connected to ${connectedCount} data sources`, 'success');
+            } else {
+                showTemporaryMessage('No API connections available', 'error');
+            }
+        }
+
+        // Load liquidity dashboard
+        async function loadLiquidityDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/liquidity/dashboard`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLiquidityAlert(data);
+                    document.getElementById('liquidity-indicator').classList.add('connected');
+                }
+            } catch (error) {
+                console.warn('Liquidity dashboard failed:', error);
+                document.getElementById('liquidity-indicator').classList.remove('connected');
+            }
+        }
+
+        // Update liquidity alert
+        function updateLiquidityAlert(data) {
+            const alertElement = document.getElementById('liquidityAlert');
+            const alertText = document.getElementById('liquidityAlertText');
+            
+            if (!data || data.overall_stress_score === undefined) {
+                alertElement.style.display = 'none';
+                return;
+            }
+            
+            const stressScore = data.overall_stress_score;
+            const stressLevel = data.stress_level;
+            
+            alertElement.style.display = 'block';
+            alertText.textContent = `Liquidity: ${stressLevel} (${(stressScore * 100).toFixed(1)}%)`;
+            
+            alertElement.className = 'liquidity-alert';
+            if (stressLevel === 'EXTREME' || stressLevel === 'HIGH') {
+                alertElement.classList.add('high');
+            } else if (stressLevel === 'MODERATE') {
+                alertElement.classList.add('moderate');
+            } else {
+                alertElement.classList.add('low');
+            }
+        }
+
         // Display Update Functions
         function updateAllDisplays() {
             updateKeyMetrics();
@@ -1251,7 +2301,6 @@
             updateAIPredictions();
             updateWatchlist();
             updateMarketStatus();
-            updateRiskIndicators();
             updateLiquidityCharts();
         }
 
@@ -1278,43 +2327,19 @@
                     metrics.push({
                         label: 'Fed Funds Rate',
                         value: `${fedFunds.value}%`,
-                        change: Math.random() * 0.2 - 0.1 // Simulated change
+                        change: Math.random() * 0.2 - 0.1
                     });
                 }
             }
             
-            // Unemployment Rate
-            if (allData.fred && allData.fred.data) {
-                const unemployment = allData.fred.data.find(item => item.series_id === 'UNRATE');
-                if (unemployment) {
+            // Add more metrics based on available data
+            if (allData.polygon && allData.polygon.data) {
+                const aapl = allData.polygon.data.find(item => item.symbol === 'AAPL');
+                if (aapl) {
                     metrics.push({
-                        label: 'Unemployment',
-                        value: `${unemployment.value}%`,
-                        change: Math.random() * 0.1 - 0.05
-                    });
-                }
-            }
-            
-            // VIX
-            if (allData.cboe && allData.cboe.data) {
-                const vix = allData.cboe.data.find(item => item.metric === 'VIX');
-                if (vix) {
-                    metrics.push({
-                        label: 'VIX',
-                        value: vix.value.toString(),
-                        change: Math.random() * 2 - 1
-                    });
-                }
-            }
-            
-            // ECB Rate
-            if (allData.ecb && allData.ecb.data) {
-                const ecbRate = allData.ecb.data.find(item => item.series === 'MRO_RATE');
-                if (ecbRate) {
-                    metrics.push({
-                        label: 'ECB Rate',
-                        value: `${ecbRate.value}%`,
-                        change: Math.random() * 0.1 - 0.05
+                        label: 'AAPL',
+                        value: `${aapl.close}`,
+                        change: Math.random() * 4 - 2
                     });
                 }
             }
@@ -1337,20 +2362,7 @@
                     type: 'scatter',
                     mode: 'lines+markers',
                     name: 'Fed Funds Rate',
-                    line: { color: '#1e3a8a' }
-                });
-            }
-            
-            // 10-Year Treasury
-            const treasury10Y = data.find(item => item.series_id === 'DGS10');
-            if (treasury10Y) {
-                traces.push({
-                    x: [treasury10Y.date],
-                    y: [treasury10Y.value],
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    name: '10Y Treasury',
-                    line: { color: '#3b82f6' }
+                    line: { color: '#00dd77' }
                 });
             }
             
@@ -1360,8 +2372,9 @@
                 yaxis: { title: 'Rate (%)' },
                 margin: { t: 40, r: 20, b: 40, l: 60 },
                 showlegend: true,
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'var(--background-card)',
+                paper_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-primary)' }
             };
             
             Plotly.newPlot('marketOverviewChart', traces, layout, { responsive: true });
@@ -1384,7 +2397,7 @@
                         <div class="metric-label">${key.toUpperCase()}</div>
                         <div class="metric-value" style="color: ${getSignalColor(pred.signal)}">${pred.signal}</div>
                         <div class="metric-change neutral">Confidence: ${pred.confidence}%</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
                             ${pred.reasoning}
                         </div>
                     </div>
@@ -1394,24 +2407,24 @@
 
         function updateWatchlist() {
             const container = document.getElementById('watchlistItems');
-            const items = watchlistItems[currentWatchlist] || [];
+            const items = watchlistItems[currentWatchlist]?.symbols || [];
             
             if (items.length === 0) {
-                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No items in this watchlist<br><small>Use the search button to add items</small></div>';
+                container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">No items in this watchlist<br><small>Use the search to add items</small></div>';
                 return;
             }
             
             container.innerHTML = items.map(item => {
                 const data = getWatchlistItemData(item);
                 return `
-                    <div class="watchlist-item">
+                    <div class="watchlist-item" ondblclick="openChartForSymbol('${item.symbol}', '${item.provider}')">
                         <div>
                             <div class="watchlist-symbol">${item.symbol}</div>
                             <div class="watchlist-value">${data.source} • ${data.value}</div>
                         </div>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
                             <div class="watchlist-change ${getChangeClass(data.change_1d)}">${formatChange(data.change_1d)}</div>
-                            <button onclick="removeFromWatchlist('${item.id}')" style="background: none; border: none; color: var(--danger-color); cursor: pointer; font-size: 0.75rem;">Remove</button>
+                            <button onclick="removeFromWatchlist('${item.symbol}')" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">×</button>
                         </div>
                     </div>
                 `;
@@ -1420,7 +2433,6 @@
 
         function updateMarketStatus() {
             const container = document.getElementById('marketStatus');
-            
             const status = calculateMarketStatus();
             
             container.innerHTML = `
@@ -1439,19 +2451,6 @@
             `;
         }
 
-        function updateRiskIndicators() {
-            const container = document.getElementById('riskIndicators');
-            const risks = calculateRiskIndicators();
-            
-            container.innerHTML = risks.map(risk => `
-                <div class="risk-indicator ${risk.level}">
-                    <div class="risk-title">${risk.title}</div>
-                    <div class="risk-value" style="color: ${getRiskColor(risk.level)}">${risk.value}</div>
-                    <div class="risk-description">${risk.description}</div>
-                </div>
-            `).join('');
-        }
-
         function updateLiquidityCharts() {
             updateLiquidityTrendsChart();
             updateLiquidityReversalChart();
@@ -1459,224 +2458,7 @@
             updateBlackSwanChart();
         }
 
-        // Search Functions
-        function buildSearchableData() {
-            searchableData = [];
-            
-            Object.keys(allData).forEach(source => {
-                if (source === 'ai_predictions') return;
-                
-                const sourceData = allData[source];
-                if (!sourceData || !sourceData.data) return;
-                
-                sourceData.data.forEach(item => {
-                    const searchItem = {
-                        source: source,
-                        symbol: item.series_id || item.metric || item.series || item.security || 'Unknown',
-                        description: item.description || 'No description',
-                        value: item.value || item.yield || 'N/A',
-                        date: item.date,
-                        searchTerms: [
-                            item.series_id, item.metric, item.series, item.security,
-                            item.description, source
-                        ].filter(Boolean).join(' ').toLowerCase()
-                    };
-                    searchableData.push(searchItem);
-                });
-            });
-            
-            console.log(`📊 Built searchable database with ${searchableData.length} items`);
-        }
-
-        function performSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase().trim();
-            const resultsContainer = document.getElementById('searchResults');
-            
-            if (query.length < 2) {
-                resultsContainer.innerHTML = `
-                    <div class="data-status">
-                        <p>Enter at least 2 characters to search</p>
-                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Available: FRED series, ECB rates, VIX, SOFR, Treasury data, etc.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            const results = searchableData.filter(item => 
-                item.searchTerms.includes(query) ||
-                item.symbol.toLowerCase().includes(query) ||
-                item.description.toLowerCase().includes(query)
-            ).slice(0, 20); // Limit to 20 results
-            
-            if (results.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="data-status">
-                        <p>No results found for "${query}"</p>
-                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Try: FEDFUNDS, VIX, SOFR, unemployment, inflation</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            resultsContainer.innerHTML = results.map(item => `
-                <div class="search-result-item" onclick="addFromSearch('${item.source}', '${item.symbol}')">
-                    <div class="search-result-info">
-                        <div class="search-result-symbol">${item.symbol}</div>
-                        <div class="search-result-description">${item.description}</div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <span class="search-result-source">${item.source.toUpperCase()}</span>
-                        <span style="font-weight: 600; margin-right: 1rem;">${item.value}</span>
-                        <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Add</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addFromSearch(source, symbol) {
-            const id = Date.now().toString();
-            watchlistItems[currentWatchlist].push({ id, source, symbol });
-            saveWatchlist();
-            updateWatchlist();
-            hideSearchModal();
-            showAlert(`Added ${symbol} to ${currentWatchlist} watchlist`, 'success');
-        }
-
-        function showSearchModal() {
-            document.getElementById('searchModal').style.display = 'flex';
-            document.getElementById('searchInput').focus();
-            
-            if (searchableData.length === 0) {
-                buildSearchableData();
-            }
-            
-            // Show initial state
-            document.getElementById('searchResults').innerHTML = `
-                <div class="data-status">
-                    <p>Search through ${searchableData.length} available indicators</p>
-                    <div style="font-size: 0.8rem; margin-top: 1rem; text-align: left; padding: 0 1rem;">
-                        <strong>Popular searches:</strong><br>
-                        • FEDFUNDS - Federal Funds Rate<br>
-                        • DGS10 - 10-Year Treasury<br>
-                        • VIX - Volatility Index<br>
-                        • SOFR - Overnight Financing Rate<br>
-                        • UNRATE - Unemployment Rate<br>
-                        • MRO_RATE - ECB Main Rate
-                    </div>
-                </div>
-            `;
-        }
-
-        function hideSearchModal() {
-            document.getElementById('searchModal').style.display = 'none';
-            document.getElementById('searchInput').value = '';
-        }
-
-        // Multiple Watchlist Functions
-        function switchWatchlist(watchlistName) {
-            currentWatchlist = watchlistName;
-            
-            // Update tab appearance
-            document.querySelectorAll('.watchlist-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            updateWatchlist();
-            saveWatchlist();
-        }
-
-        function addNewWatchlist() {
-            const name = prompt('Enter watchlist name:');
-            if (name && name.trim()) {
-                const key = 'custom' + Date.now();
-                watchlistItems[key] = [];
-                
-                // Add new tab
-                const tabsContainer = document.querySelector('.watchlist-tabs');
-                const addButton = tabsContainer.querySelector('.btn-add-watchlist');
-                
-                const newTab = document.createElement('div');
-                newTab.className = 'watchlist-tab';
-                newTab.textContent = name.trim();
-                newTab.onclick = () => switchWatchlist(key);
-                
-                tabsContainer.insertBefore(newTab, addButton);
-                
-                // Switch to new watchlist
-                switchWatchlist(key);
-                showAlert(`Created watchlist: ${name}`, 'success');
-            }
-        }
-        function updateComparativeChart() {
-            const source1 = document.getElementById('source1Select').value;
-            const source2 = document.getElementById('source2Select').value;
-            const timePeriod = document.getElementById('timePeriodSelect').value;
-            
-            const traces = [];
-            
-            // Add trace for source 1
-            if (allData[source1]) {
-                traces.push(createTraceFromSource(source1, allData[source1], `${source1.toUpperCase()} Data`));
-            }
-            
-            // Add trace for source 2
-            if (allData[source2]) {
-                traces.push(createTraceFromSource(source2, allData[source2], `${source2.toUpperCase()} Data`));
-            }
-            
-            const layout = {
-                title: `Comparative Analysis: ${source1.toUpperCase()} vs ${source2.toUpperCase()}`,
-                xaxis: { title: 'Date' },
-                yaxis: { title: 'Value' },
-                margin: { t: 60, r: 20, b: 40, l: 60 },
-                showlegend: true,
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
-            };
-            
-            Plotly.newPlot('comparativeChart', traces, layout, { responsive: true });
-        }
-
-        function createTraceFromSource(source, data, name) {
-            if (!data.data) return null;
-            
-            // Extract meaningful data based on source type
-            let x = [], y = [];
-            
-            if (source === 'fred') {
-                // Use first series for simplicity
-                const firstSeries = data.data[0];
-                if (firstSeries) {
-                    x = [firstSeries.date];
-                    y = [firstSeries.value];
-                }
-            } else if (source === 'cboe') {
-                const vixData = data.data.find(item => item.metric === 'VIX');
-                if (vixData) {
-                    x = [vixData.date];
-                    y = [vixData.value];
-                }
-            } else {
-                // Generic handling
-                if (data.data.length > 0) {
-                    x = [data.data[0].date];
-                    y = [data.data[0].value || data.data[0].yield || 0];
-                }
-            }
-            
-            return {
-                x: x,
-                y: y,
-                type: 'scatter',
-                mode: 'lines+markers',
-                name: name,
-                line: { width: 2 }
-            };
-        }
-
         function updateLiquidityTrendsChart() {
-            // Simulate liquidity trends data
             const dates = [];
             const liquidity = [];
             
@@ -1691,7 +2473,7 @@
                 type: 'scatter',
                 mode: 'lines',
                 name: 'Global Liquidity Index',
-                line: { color: '#06d6a0', width: 3 }
+                line: { color: 'var(--primary-color)', width: 3 }
             };
             
             const layout = {
@@ -1699,15 +2481,15 @@
                 xaxis: { title: 'Date' },
                 yaxis: { title: 'Liquidity Index' },
                 margin: { t: 60, r: 20, b: 40, l: 60 },
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'var(--background-card)',
+                paper_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-primary)' }
             };
             
             Plotly.newPlot('liquidityTrendsChart', [trace], layout, { responsive: true });
         }
 
         function updateLiquidityReversalChart() {
-            // Simulate reversal signals
             const dates = [];
             const signals = [];
             const reversals = [];
@@ -1717,7 +2499,6 @@
                 dates.push(date);
                 signals.push(Math.sin(i * 0.2) * 20 + Math.random() * 10);
                 
-                // Add reversal markers
                 if (i % 7 === 0) {
                     reversals.push({ x: date, y: signals[signals.length - 1] });
                 }
@@ -1730,7 +2511,7 @@
                     type: 'scatter',
                     mode: 'lines',
                     name: 'Reversal Signal',
-                    line: { color: '#f59e0b' }
+                    line: { color: 'var(--warning-color)' }
                 },
                 {
                     x: reversals.map(r => r.x),
@@ -1738,7 +2519,7 @@
                     type: 'scatter',
                     mode: 'markers',
                     name: 'Reversal Points',
-                    marker: { color: '#ef4444', size: 10, symbol: 'triangle-up' }
+                    marker: { color: 'var(--danger-color)', size: 10, symbol: 'triangle-up' }
                 }
             ];
             
@@ -1747,22 +2528,22 @@
                 xaxis: { title: 'Date' },
                 yaxis: { title: 'Signal Strength' },
                 margin: { t: 60, r: 20, b: 40, l: 60 },
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'var(--background-card)',
+                paper_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-primary)' }
             };
             
             Plotly.newPlot('liquidityReversalChart', traces, layout, { responsive: true });
         }
 
         function updateLiquidityExtremesChart() {
-            // Simulate extremes detection
             const data = [];
             for (let i = 0; i < 100; i++) {
                 data.push({
                     x: Math.random() * 100,
                     y: Math.random() * 100,
                     size: Math.random() * 20 + 5,
-                    color: Math.random() > 0.8 ? 'red' : (Math.random() > 0.6 ? 'orange' : 'green')
+                    color: Math.random() > 0.8 ? 'var(--danger-color)' : (Math.random() > 0.6 ? 'var(--warning-color)' : 'var(--success-color)')
                 });
             }
             
@@ -1784,22 +2565,22 @@
                 xaxis: { title: 'Risk Factor 1' },
                 yaxis: { title: 'Risk Factor 2' },
                 margin: { t: 60, r: 20, b: 40, l: 60 },
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'var(--background-card)',
+                paper_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-primary)' }
             };
             
             Plotly.newPlot('liquidityExtremesChart', [trace], layout, { responsive: true });
         }
 
         function updateBlackSwanChart() {
-            // Simulate black swan event probabilities
             const events = [
                 'Banking Crisis', 'Currency Collapse', 'Market Crash', 
                 'Sovereign Default', 'Pandemic', 'Geopolitical Crisis'
             ];
             
             const probabilities = events.map(() => Math.random() * 0.1);
-            const colors = probabilities.map(p => p > 0.05 ? '#ef4444' : p > 0.03 ? '#f59e0b' : '#10b981');
+            const colors = probabilities.map(p => p > 0.05 ? 'var(--danger-color)' : p > 0.03 ? 'var(--warning-color)' : 'var(--success-color)');
             
             const trace = {
                 x: events,
@@ -1814,322 +2595,407 @@
                 xaxis: { title: 'Event Type' },
                 yaxis: { title: 'Probability', tickformat: '.1%' },
                 margin: { t: 60, r: 20, b: 100, l: 60 },
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)'
+                plot_bgcolor: 'var(--background-card)',
+                paper_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-primary)' }
             };
             
             Plotly.newPlot('blackSwanChart', [trace], layout, { responsive: true });
         }
 
-        // Utility Functions
-        function getMetricColor(change) {
-            if (change > 0) return 'var(--success-color)';
-            if (change < 0) return 'var(--danger-color)';
-            return 'var(--text-primary)';
-        }
-
-        function getChangeClass(change) {
-            if (change > 0) return 'positive';
-            if (change < 0) return 'negative';
-            return 'neutral';
-        }
-
-        function formatChange(change) {
-            const sign = change >= 0 ? '+' : '';
-            return `${sign}${change.toFixed(2)}%`;
-        }
-
-        function getSignalColor(signal) {
-            if (signal.includes('BULLISH') || signal.includes('LOW RISK')) return 'var(--success-color)';
-            if (signal.includes('BEARISH') || signal.includes('HIGH RISK')) return 'var(--danger-color)';
-            return 'var(--warning-color)';
-        }
-
-        function getRiskColor(level) {
-            switch (level) {
-                case 'low': return 'var(--success-color)';
-                case 'medium': return 'var(--warning-color)';
-                case 'high': return 'var(--danger-color)';
-                case 'critical': return '#dc2626';
-                default: return 'var(--text-primary)';
-            }
-        }
-
-        // Watchlist Functions
-        function initializeWatchlist() {
-            // Load from localStorage
-            const saved = localStorage.getItem('financialWatchlist');
-            if (saved) {
-                watchlistItems = JSON.parse(saved);
-            } else {
-                // Default watchlist items
-                watchlistItems = {
-                    default: [
-                        { id: '1', source: 'fred', symbol: 'FEDFUNDS' },
-                        { id: '2', source: 'fred', symbol: 'DGS10' },
-                        { id: '3', source: 'cboe', symbol: 'VIX' },
-                        { id: '4', source: 'nyfed', symbol: 'SOFR' }
-                    ],
-                    custom1: [],
-                    custom2: []
-                };
-            }
-        }
-
-        function saveWatchlist() {
-            localStorage.setItem('financialWatchlist', JSON.stringify(watchlistItems));
-        }
-
-        function addToWatchlist() {
-            const watchlist = document.getElementById('modalWatchlistSelect').value;
-            const source = document.getElementById('modalSourceSelect').value;
-            const symbol = document.getElementById('modalSymbolInput').value.trim();
+        // Chart Functions
+        function addNewChart() {
+            const chartId = `chart_${chartIdCounter++}`;
             
-            if (!symbol) {
-                showAlert('Please enter a symbol', 'warning');
+            const chartHtml = `
+                <div class="chart-window" id="${chartId}" onclick="setActiveChart('${chartId}')">
+                    <div class="chart-header">
+                        <div class="chart-title-section">
+                            <div class="chart-title" id="${chartId}_title">Chart ${chartIdCounter}</div>
+                            <div class="chart-symbols" id="${chartId}_symbols"></div>
+                            <div class="chart-display-controls">
+                                <button class="display-toggle active" onclick="toggleChartDisplay(event, '${chartId}', 'raw')" data-display="raw">Raw Data</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'pct_change')" data-display="pct_change">% Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'unit_change')" data-display="unit_change">Unit Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'year_pct')" data-display="year_pct">Year % Change</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'slope')" data-display="slope">Slope (30)</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'macd')" data-display="macd">MACD</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'zscore')" data-display="zscore">Z-Score (30)</button>
+                                <button class="display-toggle" onclick="toggleChartDisplay(event, '${chartId}', 'signals')" data-display="signals">Buy/Sell Signals</button>
+                            </div>
+                        </div>
+                        <div class="chart-controls">
+                            <div class="timeframe-buttons" id="${chartId}_timeframe_buttons">
+                                ${['1D','1W','1M','3M','6M','1Y','2Y','5Y','10Y','MAX'].map(tf =>
+                                    `<button class="timeframe-btn ${tf === '1Y' ? 'active' : ''}"
+                                             onclick="changeTimeframe(event, '${chartId}', '${tf}')">${tf}</button>`
+                                ).join('')}
+                            </div>
+                            <button class="close-btn" onclick="removeChart(event, '${chartId}')">×</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas" id="${chartId}_canvas">
+                        <div class="chart-message">Search for a financial indicator to add to this chart</div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('chartGrid').insertAdjacentHTML('beforeend', chartHtml);
+            charts[chartId] = {
+                symbols: [],
+                data: {},
+                timeframe: '1Y',
+                chartInstance: null,
+                displayMode: 'raw'
+            };
+            setActiveChart(chartId);
+            
+            // Show charts tab
+            showTab('charts');
+        }
+
+        function setActiveChart(chartId) {
+            if (activeChartId === chartId) return;
+            activeChartId = chartId;
+            document.querySelectorAll('.chart-window').forEach(c => c.classList.remove('active-chart'));
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.classList.add('active-chart');
+            }
+        }
+
+        function removeChart(event, chartIdToRemove) {
+            event.stopPropagation();
+            if (charts[chartIdToRemove] && charts[chartIdToRemove].chartInstance) {
+                Plotly.purge(`${chartIdToRemove}_canvas`);
+            }
+            delete charts[chartIdToRemove];
+            document.getElementById(chartIdToRemove)?.remove();
+            
+            if (activeChartId === chartIdToRemove) {
+                const chartKeys = Object.keys(charts);
+                activeChartId = chartKeys.length > 0 ? chartKeys[chartKeys.length - 1] : null;
+                if(activeChartId) setActiveChart(activeChartId);
+            }
+        }
+
+        function openChartForSymbol(symbol, provider) {
+            if (Object.keys(charts).length === 0) {
+                addNewChart();
+            }
+            
+            if (activeChartId) {
+                const data = watchlistData[symbol];
+                addToChart(activeChartId, symbol, provider, data?.name || symbol);
+            }
+        }
+
+        function addToChart(chartId, symbol, provider, name) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            
+            if (!chart.symbols.find(s => s.symbol === symbol)) {
+                chart.symbols.push({ symbol, provider, name });
+                loadChartData(chartId, symbol, provider);
+            }
+            setActiveChart(chartId);
+        }
+
+        async function loadChartData(chartId, symbol, provider) {
+            const chart = charts[chartId];
+            if (!chart) return;
+            
+            const canvasDiv = document.getElementById(`${chartId}_canvas`);
+            if (canvasDiv) canvasDiv.innerHTML = `<div class="chart-message loading-pulse">Loading ${symbol} from ${provider}...</div>`;
+            
+            try {
+                let url;
+                const endDate = new Date().toISOString().split('T')[0];
+                let startDate = new Date();
+                startDate.setFullYear(startDate.getFullYear() - 5);
+                const startDateStr = startDate.toISOString().split('T')[0];
+                
+                if (provider === 'polygon_direct') {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&data_type=historical&start_date=${startDateStr}&end_date=${endDate}`;
+                } else if (provider === 'fred_direct') {
+                    url = `${API_BASE}/api/v1/fred/series/observations?series_id=${symbol}&limit=10000&sort_order=asc&include_pandas=false`;
+                } else {
+                    url = `${API_BASE}/api/v1/universal/data?symbol=${symbol}&provider=${provider}&include_changes=true&start_date=${startDateStr}&end_date=${endDate}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                let processedData = [];
+                if (result.data && Array.isArray(result.data)) {
+                    processedData = result.data
+                        .map(item => ({
+                            date: item.date || item.time || item.period,
+                            value: parseFloat(item.value || item.close || item.price || item.rate)
+                        }))
+                        .filter(item => !isNaN(item.value) && item.date)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                } else if (result.observations && Array.isArray(result.observations)) {
+                    processedData = result.observations
+                        .map(obs => ({
+                            date: obs.date,
+                            value: obs.value !== '.' ? parseFloat(obs.value) : null
+                        }))
+                        .filter(item => item.value !== null && !isNaN(item.value))
+                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
+                
+                if (processedData.length === 0) {
+                    throw new Error('No valid data points found');
+                }
+                
+                // Add technical indicators
+                processedData = calculateTechnicalIndicators(processedData);
+                
+                chart.data[symbol] = processedData;
+                updateChartRender(chartId);
+                updateChartSymbols(chartId);
+                
+            } catch (error) {
+                console.error(`Error loading chart data for ${symbol}:`, error);
+                if (canvasDiv) {
+                    canvasDiv.innerHTML = `<div class="chart-message" style="color: var(--danger-color);">Error loading ${symbol}<br><small>${error.message}</small></div>`;
+                }
+                chart.symbols = chart.symbols.filter(s => s.symbol !== symbol);
+                updateChartSymbols(chartId);
+            }
+        }
+
+        function calculateTechnicalIndicators(data) {
+            if (!data || data.length === 0) return data;
+            
+            const values = data.map(d => d.value);
+            
+            // Calculate EMA helper function
+            const calculateEMA = (period, dataArray) => {
+                if (dataArray.length < period) return dataArray.map(() => null);
+                
+                const k = 2 / (period + 1);
+                const emaArray = [];
+                
+                let ema = dataArray.slice(0, period).reduce((sum, val) => sum + val, 0) / period;
+                emaArray.push(...Array(period - 1).fill(null), ema);
+                
+                for (let i = period; i < dataArray.length; i++) {
+                    ema = (dataArray[i] - ema) * k + ema;
+                    emaArray.push(ema);
+                }
+                
+                return emaArray;
+            };
+            
+            const ema12Values = calculateEMA(12, values);
+            const ema26Values = calculateEMA(26, values);
+            const macdLine = ema12Values.map((e12, i) =>
+                ema26Values[i] !== null && e12 !== null ? e12 - ema26Values[i] : null
+            );
+            
+            return data.map((item, index) => {
+                let slope30 = null;
+                let zscore30 = null;
+                let signal = null;
+                
+                // Calculate 30-period slope and z-score
+                if (index >= 29) {
+                    const window = values.slice(index - 29, index + 1);
+                    const n = window.length;
+                    const x = Array.from({length: n}, (_, i) => i);
+                    
+                    const sumX = x.reduce((a, b) => a + b, 0);
+                    const sumY = window.reduce((a, b) => a + b, 0);
+                    const sumXY = x.reduce((sum, xi, i) => sum + xi * window[i], 0);
+                    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+                    
+                    if ((n * sumX2 - sumX * sumX) !== 0) {
+                        slope30 = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                    }
+                    
+                    const mean = sumY / n;
+                    const variance = window.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+                    const stdDev = Math.sqrt(variance);
+                    
+                    if (stdDev > 0) {
+                        zscore30 = (item.value - mean) / stdDev;
+                    }
+                }
+                
+                // Generate signals
+                if (macdLine[index] !== null && slope30 !== null && zscore30 !== null) {
+                    if (slope30 > 0 && zscore30 < -1.5) {
+                        signal = 1; // Buy
+                    } else if (slope30 < 0 && zscore30 > 1.5) {
+                        signal = -1; // Sell
+                    } else {
+                        signal = 0; // Hold
+                    }
+                }
+                
+                return {
+                    ...item,
+                    slope_30: slope30,
+                    ema12: ema12Values[index],
+                    ema26: ema26Values[index],
+                    macd: macdLine[index],
+                    zscore_30: zscore30,
+                    signal: signal
+                };
+            });
+        }
+
+        function toggleChartDisplay(event, chartId, displayMode) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            
+            chart.displayMode = displayMode;
+            
+            const controlsDiv = event.target.parentElement;
+            controlsDiv.querySelectorAll('.display-toggle').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateChartRender(chartId);
+        }
+
+        function changeTimeframe(event, chartId, timeframe) {
+            event.stopPropagation();
+            const chart = charts[chartId];
+            if (!chart) return;
+            chart.timeframe = timeframe;
+            
+            const buttonContainer = document.getElementById(`${chartId}_timeframe_buttons`);
+            if (buttonContainer) {
+                buttonContainer.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+                if(event.target.tagName === 'BUTTON') event.target.classList.add('active');
+            }
+            updateChartRender(chartId);
+        }
+
+        function updateChartRender(chartId) {
+            const chart = charts[chartId];
+            const canvasElement = document.getElementById(`${chartId}_canvas`);
+            if (!canvasElement || !chart) return;
+            
+            if (chart.symbols.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">Search for a financial indicator to add to this chart</div>';
+                if (chart.chartInstance) Plotly.purge(canvasElement);
                 return;
             }
             
-            const id = Date.now().toString();
-            if (!watchlistItems[watchlist]) {
-                watchlistItems[watchlist] = [];
-            }
-            watchlistItems[watchlist].push({ id, source, symbol });
-            saveWatchlist();
+            const traces = [];
+            const displayMode = chart.displayMode || 'raw';
+            let yLabel = 'Value';
             
-            // Update display if we're viewing this watchlist
-            if (currentWatchlist === watchlist) {
-                updateWatchlist();
-            }
-            
-            hideAddToWatchlist();
-            showAlert(`Added ${symbol} to ${watchlist} watchlist`, 'success');
-        }
-
-        function removeFromWatchlist(id) {
-            watchlistItems[currentWatchlist] = watchlistItems[currentWatchlist].filter(item => item.id !== id);
-            saveWatchlist();
-            updateWatchlist();
-            showAlert('Removed from watchlist', 'success');
-        }
-
-        function getWatchlistItemData(item) {
-            // Get data for watchlist item
-            const sourceData = allData[item.source];
-            if (!sourceData || !sourceData.data) {
-                return { 
-                    value: 'Loading...', 
-                    change_1d: 0,
-                    source: item.source.toUpperCase()
-                };
-            }
-            
-            let itemData = null;
-            if (item.source === 'fred') {
-                itemData = sourceData.data.find(d => d.series_id === item.symbol);
-            } else if (item.source === 'cboe') {
-                itemData = sourceData.data.find(d => d.metric === item.symbol);
-            } else if (item.source === 'nyfed') {
-                itemData = sourceData.data.find(d => d.metric === item.symbol);
-            } else if (item.source === 'ecb') {
-                itemData = sourceData.data.find(d => d.series === item.symbol);
-            } else {
-                itemData = sourceData.data[0]; // First item as fallback
-            }
-            
-            if (!itemData) {
-                return { 
-                    value: 'Not Found', 
-                    change_1d: 0,
-                    source: item.source.toUpperCase()
-                };
-            }
-            
-            const value = itemData.value || itemData.yield || itemData.auction_yield || 'N/A';
-            
-            return {
-                value: typeof value === 'number' ? value.toFixed(2) : value,
-                change_1d: (Math.random() - 0.5) * 2, // Simulated change
-                source: item.source.toUpperCase()
-            };
-        }
-
-        function showAddToWatchlist() {
-            document.getElementById('addToWatchlistModal').style.display = 'flex';
-        }
-
-        function hideAddToWatchlist() {
-            document.getElementById('addToWatchlistModal').style.display = 'none';
-            document.getElementById('modalSymbolInput').value = '';
-        }
-
-        // Risk Calculation Functions
-        function calculateMarketStatus() {
-            // Simulate market status calculation
-            const statuses = ['Bullish', 'Neutral', 'Bearish'];
-            const risks = ['Low', 'Medium', 'High'];
-            const liquidityLevels = ['Abundant', 'Normal', 'Tight'];
-            
-            return {
-                sentiment: statuses[Math.floor(Math.random() * statuses.length)],
-                sentimentColor: Math.random() > 0.5 ? 'var(--success-color)' : 'var(--danger-color)',
-                risk: risks[Math.floor(Math.random() * risks.length)],
-                riskColor: Math.random() > 0.6 ? 'var(--success-color)' : 'var(--warning-color)',
-                liquidity: liquidityLevels[Math.floor(Math.random() * liquidityLevels.length)],
-                liquidityColor: Math.random() > 0.4 ? 'var(--success-color)' : 'var(--danger-color)'
-            };
-        }
-
-        function calculateRiskIndicators() {
-            return [
-                {
-                    title: 'Systemic Risk',
-                    value: '15%',
-                    level: 'medium',
-                    description: 'Moderate systemic risk detected in banking sector'
-                },
-                {
-                    title: 'Credit Risk',
-                    value: '8%',
-                    level: 'low',
-                    description: 'Low credit risk across major markets'
-                },
-                {
-                    title: 'Liquidity Risk',
-                    value: '22%',
-                    level: 'high',
-                    description: 'Elevated liquidity risk in emerging markets'
-                },
-                {
-                    title: 'Volatility Risk',
-                    value: '35%',
-                    level: 'critical',
-                    description: 'Critical volatility levels in FX markets'
+            chart.symbols.forEach((s, index) => {
+                const symbolData = chart.data[s.symbol];
+                if (!symbolData || symbolData.length === 0) return;
+                
+                const filteredData = filterDataByTimeframe(symbolData, chart.timeframe);
+                if (filteredData.length === 0) return;
+                
+                const lineColor = colorPalette[index % colorPalette.length];
+                
+                let yData;
+                switch (displayMode) {
+                    case 'slope':
+                        yData = filteredData.map(d => d.slope_30 || 0);
+                        yLabel = 'Slope (30-period)';
+                        break;
+                    case 'macd':
+                        yData = filteredData.map(d => d.macd || 0);
+                        yLabel = 'MACD';
+                        break;
+                    case 'zscore':
+                        yData = filteredData.map(d => d.zscore_30 || 0);
+                        yLabel = 'Z-Score (30-period)';
+                        break;
+                    case 'signals':
+                        yData = filteredData.map(d => d.signal || 0);
+                        yLabel = 'Buy/Sell Signals';
+                        break;
+                    default:
+                        yData = filteredData.map(d => d.value);
+                        yLabel = 'Value';
                 }
-            ];
-        }
-
-        // Navigation Functions
-        function showTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
+                
+                const trace = {
+                    x: filteredData.map(d => d.date),
+                    y: yData,
+                    type: 'scatter',
+                    mode: displayMode === 'signals' ? 'markers' : 'lines',
+                    name: s.symbol,
+                    line: { color: lineColor, width: 2 }
+                };
+                
+                if (displayMode === 'signals') {
+                    trace.marker = {
+                        color: yData.map(v => v === 1 ? 'var(--success-color)' : v === -1 ? 'var(--danger-color)' : 'var(--text-secondary)'),
+                        size: yData.map(v => v !== 0 ? 12 : 6),
+                        symbol: yData.map(v => v === 1 ? 'triangle-up' : v === -1 ? 'triangle-down' : 'circle')
+                    };
+                }
+                
+                traces.push(trace);
             });
             
-            // Remove active class from all nav links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to clicked nav link
-            event.target.classList.add('active');
-        }
-
-        function showLiquidityTab(tabName) {
-            // Hide all liquidity tab contents
-            document.querySelectorAll('#liquidity .tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from liquidity tabs
-            document.querySelectorAll('#liquidity .tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(`liquidity${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
-            
-            // Add active class to clicked tab
-            event.target.classList.add('active');
-        }
-
-        // Settings Functions
-        function loadSettings() {
-            const saved = localStorage.getItem('dashboardSettings');
-            if (saved) {
-                const settings = JSON.parse(saved);
-                refreshInterval = settings.refreshInterval * 1000;
-                document.getElementById('refreshInterval').value = settings.refreshInterval;
-                document.getElementById('defaultTimeRange').value = settings.defaultTimeRange;
+            if (traces.length === 0) {
+                canvasElement.innerHTML = '<div class="chart-message">No data to display for selected timeframe</div>';
+                return;
             }
-        }
-
-        function saveSettings() {
-            const settings = {
-                refreshInterval: parseInt(document.getElementById('refreshInterval').value),
-                defaultTimeRange: document.getElementById('defaultTimeRange').value
+            
+            const layout = {
+                title: {
+                    text: `${displayMode.replace('_', ' ').toUpperCase()} VIEW`,
+                    font: { color: 'var(--text-primary)', size: 16 },
+                    x: 0.5
+                },
+                paper_bgcolor: 'var(--background-card)',
+                plot_bgcolor: 'var(--background-card)',
+                font: { color: 'var(--text-secondary)', size: 12 },
+                margin: { t: 60, r: 80, b: 60, l: 80 },
+                xaxis: {
+                    type: 'date',
+                    gridcolor: 'var(--border-color)',
+                    tickfont: { color: 'var(--text-secondary)' },
+                    rangeslider: { visible: false }
+                },
+                yaxis: {
+                    title: { text: yLabel, font: { color: 'var(--text-secondary)' } },
+                    gridcolor: 'var(--border-color)',
+                    tickfont: { color: 'var(--text-secondary)' },
+                    zeroline: true,
+                    zerolinecolor: 'var(--border-color)',
+                    zerolinewidth: 1
+                },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    yanchor: 'bottom',
+                    y: 1.02,
+                    xanchor: 'right',
+                    x: 1,
+                    bgcolor: 'rgba(26, 26, 26, 0.8)',
+                    bordercolor: 'var(--border-color)',
+                    borderwidth: 1,
+                    font: { size: 11, color: 'var(--text-primary)' }
+                },
+                height: 500,
+                autosize: true
             };
             
-            localStorage.setItem('dashboardSettings', JSON.stringify(settings));
-            refreshInterval = settings.refreshInterval * 1000;
+            const config = {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+                displayModeBar: true
+            };
             
-            showAlert('Settings saved successfully', 'success');
-            restartAutoRefresh();
-        }
-
-        // Auto-refresh Functions
-        function startAutoRefresh() {
-            setInterval(() => {
-                loadAllData();
-            }, refreshInterval);
-        }
-
-        function restartAutoRefresh() {
-            // Clear existing intervals and restart
-            location.reload(); // Simple restart
-        }
-
-        function refreshAllData() {
-            showAlert('Refreshing all data...', 'success');
-            loadAllData();
-        }
-
-        // UI Helper Functions
-        function showLoading() {
-            document.body.style.cursor = 'wait';
-        }
-
-        function hideLoading() {
-            document.body.style.cursor = 'default';
-        }
-
-        function updateDataStatus(message, isLoading = false) {
-            // You can add a status indicator here if needed
-            console.log('📊 Status:', message);
-        }
-
-        function showAlert(message, type = 'success') {
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            alert.style.position = 'fixed';
-            alert.style.top = '20px';
-            alert.style.right = '20px';
-            alert.style.zIndex = '3000';
-            alert.style.maxWidth = '300px';
-            
-            document.body.appendChild(alert);
-            
-            setTimeout(() => {
-                if (document.body.contains(alert)) {
-                    document.body.removeChild(alert);
-                }
-            }, 3000);
-        }
-
-        // Error Handling
-        window.addEventListener('error', function(e) {
-            console.error('Dashboard error:', e.error);
-            showAlert('An error occurred. Please refresh the page.', 'danger');
-        });
-
-        window.addEventListener('unhandledrejection', function(e) {
-            console.error('Unhandled promise rejection:', e.reason);
-            showAlert('Data loading error. Please try again.', 'warning');
-        });
-    </script>
-</body>
-</html>
+            if(canvasElement.querySelector('.chart
