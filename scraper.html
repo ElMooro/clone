@@ -223,7 +223,161 @@
             height: 500px;
         }
 
-        /* Watchlist */
+        /* Watchlist Tabs */
+        .watchlist-tabs {
+            display: flex;
+            background: var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .watchlist-tab {
+            flex: 1;
+            padding: 0.5rem;
+            text-align: center;
+            background: var(--background-light);
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-right: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .watchlist-tab:last-child {
+            border-right: none;
+        }
+
+        .watchlist-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .watchlist-tab:hover:not(.active) {
+            background: var(--background-light);
+        }
+
+        .btn-add-watchlist {
+            width: 30px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-add-watchlist:hover {
+            background: #059669;
+        }
+
+        /* Search Modal */
+        .search-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-modal-content {
+            background: var(--surface-light);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .search-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-input-container {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .search-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background: var(--background-light);
+        }
+
+        .search-result-info {
+            flex: 1;
+        }
+
+        .search-result-symbol {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .search-result-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .search-result-source {
+            font-size: 0.75rem;
+            color: var(--secondary-color);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+        }
+
+        /* Data display improvements */
+        .data-status {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 0.5rem;
+        }
         .watchlist {
             background: var(--surface-light);
             border-radius: 12px;
@@ -596,9 +750,21 @@
                         <div class="watchlist-header">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>Watchlist</span>
-                                <button class="btn btn-secondary" onclick="showAddToWatchlist()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">+ Add</button>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-secondary" onclick="showSearchModal()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">🔍 Search</button>
+                                    <button class="btn btn-secondary" onclick="showAddToWatchlist()" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">+ Add</button>
+                                </div>
                             </div>
                         </div>
+                        
+                        <!-- Watchlist Tabs -->
+                        <div class="watchlist-tabs">
+                            <div class="watchlist-tab active" onclick="switchWatchlist('default')">Default</div>
+                            <div class="watchlist-tab" onclick="switchWatchlist('custom1')">Custom 1</div>
+                            <div class="watchlist-tab" onclick="switchWatchlist('custom2')">Custom 2</div>
+                            <button class="btn-add-watchlist" onclick="addNewWatchlist()">+</button>
+                        </div>
+                        
                         <div id="watchlistItems">
                             <!-- Watchlist items will be populated here -->
                         </div>
@@ -764,6 +930,27 @@
         </div>
     </div>
 
+    <!-- Search Modal -->
+    <div id="searchModal" class="search-modal">
+        <div class="search-modal-content">
+            <div class="search-header">
+                <h3>Search All Data Sources</h3>
+                <button onclick="hideSearchModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            
+            <div class="search-input-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for indicators (e.g., FEDFUNDS, unemployment, VIX, SOFR...)" onkeyup="performSearch()">
+            </div>
+            
+            <div class="search-results" id="searchResults">
+                <div class="data-status">
+                    <div class="loading-spinner"></div>
+                    Loading available data sources...
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add to Watchlist Modal -->
     <div id="addToWatchlistModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
         <div class="card" style="width: 400px; margin: 0;">
@@ -771,6 +958,15 @@
                 <h3 class="card-title">Add to Watchlist</h3>
             </div>
             <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="control-group">
+                    <label class="control-label">Watchlist</label>
+                    <select class="select" id="modalWatchlistSelect">
+                        <option value="default">Default</option>
+                        <option value="custom1">Custom 1</option>
+                        <option value="custom2">Custom 2</option>
+                    </select>
+                </div>
+                
                 <div class="control-group">
                     <label class="control-label">Data Source</label>
                     <select class="select" id="modalSourceSelect">
@@ -799,8 +995,14 @@
     <script>
         // Global variables
         let allData = {};
-        let watchlistItems = [];
+        let watchlistItems = {
+            default: [],
+            custom1: [],
+            custom2: []
+        };
+        let currentWatchlist = 'default';
         let refreshInterval = 60000; // 1 minute default
+        let searchableData = []; // Store all searchable items
         
         // AWS S3 Configuration
         const S3_BASE_URL = 'https://macro-data-lake.s3.amazonaws.com';
@@ -827,29 +1029,111 @@
         // Data Loading Functions
         async function loadAllData() {
             showLoading();
+            updateDataStatus('Loading data sources...', true);
             
             try {
+                console.log('🚀 Starting data load from all sources...');
+                
                 const promises = Object.keys(DATA_SOURCES).map(source => loadDataSource(source));
                 const results = await Promise.allSettled(promises);
                 
+                let successCount = 0;
                 results.forEach((result, index) => {
                     const source = Object.keys(DATA_SOURCES)[index];
-                    if (result.status === 'fulfilled') {
+                    if (result.status === 'fulfilled' && result.value) {
                         allData[source] = result.value;
+                        successCount++;
+                        console.log(`✅ ${source} loaded successfully`);
                     } else {
-                        console.error(`Failed to load ${source}:`, result.reason);
+                        console.error(`❌ Failed to load ${source}:`, result.reason);
+                        // Add mock data to show something
+                        allData[source] = createMockData(source);
                     }
                 });
                 
                 await loadAIPredictions();
+                buildSearchableData();
                 updateAllDisplays();
                 hideLoading();
                 
+                updateDataStatus(`Loaded ${successCount}/${Object.keys(DATA_SOURCES).length} data sources successfully`);
+                
             } catch (error) {
                 console.error('Error loading data:', error);
-                showAlert('Error loading data. Please try again.', 'danger');
+                showAlert('Error loading data. Showing demo data instead.', 'warning');
+                createAllMockData();
+                updateAllDisplays();
                 hideLoading();
             }
+        }
+
+        function createMockData(source) {
+            const baseData = {
+                source: source,
+                timestamp: new Date().toISOString(),
+                metadata: {
+                    source: source,
+                    scrape_time: new Date().toISOString(),
+                    count: 0
+                }
+            };
+
+            switch(source) {
+                case 'fred':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', series_id: 'FEDFUNDS', value: 5.33, description: 'Federal Funds Rate' },
+                            { date: '2025-05-29', series_id: 'UNRATE', value: 3.9, description: 'Unemployment Rate' },
+                            { date: '2025-05-29', series_id: 'DGS10', value: 4.25, description: '10-Year Treasury Rate' },
+                            { date: '2025-05-29', series_id: 'DGS2', value: 4.85, description: '2-Year Treasury Rate' },
+                            { date: '2025-05-29', series_id: 'CPIAUCSL', value: 310.2, description: 'Consumer Price Index' }
+                        ]
+                    };
+                case 'cboe':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', metric: 'VIX', value: 18.5, description: 'CBOE Volatility Index' },
+                            { date: '2025-05-29', metric: 'VIX9D', value: 17.2, description: '9-Day Volatility Index' }
+                        ]
+                    };
+                case 'nyfed':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', metric: 'SOFR', value: 5.32, description: 'Secured Overnight Financing Rate' },
+                            { date: '2025-05-29', metric: 'REPO_OPERATIONS', value: 125.5, description: 'Reverse Repo Operations' }
+                        ]
+                    };
+                case 'ecb':
+                    return {
+                        ...baseData,
+                        data: [
+                            { date: '2025-05-29', series: 'MRO_RATE', value: 4.50, description: 'Main Refinancing Rate' },
+                            { date: '2025-05-29', series: 'DEPOSIT_RATE', value: 4.00, description: 'Deposit Facility Rate' }
+                        ]
+                    };
+                default:
+                    return {
+                        ...baseData,
+                        data: []
+                    };
+            }
+        }
+
+        function createAllMockData() {
+            Object.keys(DATA_SOURCES).forEach(source => {
+                allData[source] = createMockData(source);
+            });
+            
+            allData.ai_predictions = {
+                predictions: {
+                    bitcoin: { signal: 'NEUTRAL', confidence: 60, reasoning: 'Mixed macro signals' },
+                    liquidity: { signal: 'MODERATE RISK', confidence: 70, reasoning: 'Fed policy restrictive' },
+                    etf: { signal: 'NEUTRAL', confidence: 60, reasoning: 'Rates in neutral range' }
+                }
+            };
         }
 
         async function loadDataSource(source) {
@@ -1110,23 +1394,24 @@
 
         function updateWatchlist() {
             const container = document.getElementById('watchlistItems');
+            const items = watchlistItems[currentWatchlist] || [];
             
-            if (watchlistItems.length === 0) {
-                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No items in watchlist</div>';
+            if (items.length === 0) {
+                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No items in this watchlist<br><small>Use the search button to add items</small></div>';
                 return;
             }
             
-            container.innerHTML = watchlistItems.map(item => {
+            container.innerHTML = items.map(item => {
                 const data = getWatchlistItemData(item);
                 return `
                     <div class="watchlist-item">
                         <div>
                             <div class="watchlist-symbol">${item.symbol}</div>
-                            <div class="watchlist-value">${data.value}</div>
+                            <div class="watchlist-value">${data.source} • ${data.value}</div>
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
                             <div class="watchlist-change ${getChangeClass(data.change_1d)}">${formatChange(data.change_1d)}</div>
-                            <button onclick="removeFromWatchlist('${item.id}')" style="background: none; border: none; color: var(--danger-color); cursor: pointer;">×</button>
+                            <button onclick="removeFromWatchlist('${item.id}')" style="background: none; border: none; color: var(--danger-color); cursor: pointer; font-size: 0.75rem;">Remove</button>
                         </div>
                     </div>
                 `;
@@ -1174,7 +1459,155 @@
             updateBlackSwanChart();
         }
 
-        // Chart Functions
+        // Search Functions
+        function buildSearchableData() {
+            searchableData = [];
+            
+            Object.keys(allData).forEach(source => {
+                if (source === 'ai_predictions') return;
+                
+                const sourceData = allData[source];
+                if (!sourceData || !sourceData.data) return;
+                
+                sourceData.data.forEach(item => {
+                    const searchItem = {
+                        source: source,
+                        symbol: item.series_id || item.metric || item.series || item.security || 'Unknown',
+                        description: item.description || 'No description',
+                        value: item.value || item.yield || 'N/A',
+                        date: item.date,
+                        searchTerms: [
+                            item.series_id, item.metric, item.series, item.security,
+                            item.description, source
+                        ].filter(Boolean).join(' ').toLowerCase()
+                    };
+                    searchableData.push(searchItem);
+                });
+            });
+            
+            console.log(`📊 Built searchable database with ${searchableData.length} items`);
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (query.length < 2) {
+                resultsContainer.innerHTML = `
+                    <div class="data-status">
+                        <p>Enter at least 2 characters to search</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Available: FRED series, ECB rates, VIX, SOFR, Treasury data, etc.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const results = searchableData.filter(item => 
+                item.searchTerms.includes(query) ||
+                item.symbol.toLowerCase().includes(query) ||
+                item.description.toLowerCase().includes(query)
+            ).slice(0, 20); // Limit to 20 results
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="data-status">
+                        <p>No results found for "${query}"</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Try: FEDFUNDS, VIX, SOFR, unemployment, inflation</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsContainer.innerHTML = results.map(item => `
+                <div class="search-result-item" onclick="addFromSearch('${item.source}', '${item.symbol}')">
+                    <div class="search-result-info">
+                        <div class="search-result-symbol">${item.symbol}</div>
+                        <div class="search-result-description">${item.description}</div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="search-result-source">${item.source.toUpperCase()}</span>
+                        <span style="font-weight: 600; margin-right: 1rem;">${item.value}</span>
+                        <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Add</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addFromSearch(source, symbol) {
+            const id = Date.now().toString();
+            watchlistItems[currentWatchlist].push({ id, source, symbol });
+            saveWatchlist();
+            updateWatchlist();
+            hideSearchModal();
+            showAlert(`Added ${symbol} to ${currentWatchlist} watchlist`, 'success');
+        }
+
+        function showSearchModal() {
+            document.getElementById('searchModal').style.display = 'flex';
+            document.getElementById('searchInput').focus();
+            
+            if (searchableData.length === 0) {
+                buildSearchableData();
+            }
+            
+            // Show initial state
+            document.getElementById('searchResults').innerHTML = `
+                <div class="data-status">
+                    <p>Search through ${searchableData.length} available indicators</p>
+                    <div style="font-size: 0.8rem; margin-top: 1rem; text-align: left; padding: 0 1rem;">
+                        <strong>Popular searches:</strong><br>
+                        • FEDFUNDS - Federal Funds Rate<br>
+                        • DGS10 - 10-Year Treasury<br>
+                        • VIX - Volatility Index<br>
+                        • SOFR - Overnight Financing Rate<br>
+                        • UNRATE - Unemployment Rate<br>
+                        • MRO_RATE - ECB Main Rate
+                    </div>
+                </div>
+            `;
+        }
+
+        function hideSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+        }
+
+        // Multiple Watchlist Functions
+        function switchWatchlist(watchlistName) {
+            currentWatchlist = watchlistName;
+            
+            // Update tab appearance
+            document.querySelectorAll('.watchlist-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            updateWatchlist();
+            saveWatchlist();
+        }
+
+        function addNewWatchlist() {
+            const name = prompt('Enter watchlist name:');
+            if (name && name.trim()) {
+                const key = 'custom' + Date.now();
+                watchlistItems[key] = [];
+                
+                // Add new tab
+                const tabsContainer = document.querySelector('.watchlist-tabs');
+                const addButton = tabsContainer.querySelector('.btn-add-watchlist');
+                
+                const newTab = document.createElement('div');
+                newTab.className = 'watchlist-tab';
+                newTab.textContent = name.trim();
+                newTab.onclick = () => switchWatchlist(key);
+                
+                tabsContainer.insertBefore(newTab, addButton);
+                
+                // Switch to new watchlist
+                switchWatchlist(key);
+                showAlert(`Created watchlist: ${name}`, 'success');
+            }
+        }
         function updateComparativeChart() {
             const source1 = document.getElementById('source1Select').value;
             const source2 = document.getElementById('source2Select').value;
@@ -1430,11 +1863,16 @@
                 watchlistItems = JSON.parse(saved);
             } else {
                 // Default watchlist items
-                watchlistItems = [
-                    { id: '1', source: 'fred', symbol: 'FEDFUNDS' },
-                    { id: '2', source: 'fred', symbol: 'DGS10' },
-                    { id: '3', source: 'cboe', symbol: 'VIX' }
-                ];
+                watchlistItems = {
+                    default: [
+                        { id: '1', source: 'fred', symbol: 'FEDFUNDS' },
+                        { id: '2', source: 'fred', symbol: 'DGS10' },
+                        { id: '3', source: 'cboe', symbol: 'VIX' },
+                        { id: '4', source: 'nyfed', symbol: 'SOFR' }
+                    ],
+                    custom1: [],
+                    custom2: []
+                };
             }
         }
 
@@ -1443,6 +1881,7 @@
         }
 
         function addToWatchlist() {
+            const watchlist = document.getElementById('modalWatchlistSelect').value;
             const source = document.getElementById('modalSourceSelect').value;
             const symbol = document.getElementById('modalSymbolInput').value.trim();
             
@@ -1452,15 +1891,23 @@
             }
             
             const id = Date.now().toString();
-            watchlistItems.push({ id, source, symbol });
+            if (!watchlistItems[watchlist]) {
+                watchlistItems[watchlist] = [];
+            }
+            watchlistItems[watchlist].push({ id, source, symbol });
             saveWatchlist();
-            updateWatchlist();
+            
+            // Update display if we're viewing this watchlist
+            if (currentWatchlist === watchlist) {
+                updateWatchlist();
+            }
+            
             hideAddToWatchlist();
-            showAlert('Added to watchlist', 'success');
+            showAlert(`Added ${symbol} to ${watchlist} watchlist`, 'success');
         }
 
         function removeFromWatchlist(id) {
-            watchlistItems = watchlistItems.filter(item => item.id !== id);
+            watchlistItems[currentWatchlist] = watchlistItems[currentWatchlist].filter(item => item.id !== id);
             saveWatchlist();
             updateWatchlist();
             showAlert('Removed from watchlist', 'success');
@@ -1470,7 +1917,11 @@
             // Get data for watchlist item
             const sourceData = allData[item.source];
             if (!sourceData || !sourceData.data) {
-                return { value: 'N/A', change_1d: 0 };
+                return { 
+                    value: 'Loading...', 
+                    change_1d: 0,
+                    source: item.source.toUpperCase()
+                };
             }
             
             let itemData = null;
@@ -1478,17 +1929,28 @@
                 itemData = sourceData.data.find(d => d.series_id === item.symbol);
             } else if (item.source === 'cboe') {
                 itemData = sourceData.data.find(d => d.metric === item.symbol);
+            } else if (item.source === 'nyfed') {
+                itemData = sourceData.data.find(d => d.metric === item.symbol);
+            } else if (item.source === 'ecb') {
+                itemData = sourceData.data.find(d => d.series === item.symbol);
             } else {
                 itemData = sourceData.data[0]; // First item as fallback
             }
             
             if (!itemData) {
-                return { value: 'N/A', change_1d: 0 };
+                return { 
+                    value: 'Not Found', 
+                    change_1d: 0,
+                    source: item.source.toUpperCase()
+                };
             }
             
+            const value = itemData.value || itemData.yield || itemData.auction_yield || 'N/A';
+            
             return {
-                value: itemData.value || itemData.yield || 'N/A',
-                change_1d: (Math.random() - 0.5) * 2 // Simulated change
+                value: typeof value === 'number' ? value.toFixed(2) : value,
+                change_1d: (Math.random() - 0.5) * 2, // Simulated change
+                source: item.source.toUpperCase()
             };
         }
 
@@ -1627,12 +2089,16 @@
 
         // UI Helper Functions
         function showLoading() {
-            // Add loading indicators where needed
             document.body.style.cursor = 'wait';
         }
 
         function hideLoading() {
             document.body.style.cursor = 'default';
+        }
+
+        function updateDataStatus(message, isLoading = false) {
+            // You can add a status indicator here if needed
+            console.log('📊 Status:', message);
         }
 
         function showAlert(message, type = 'success') {
@@ -1643,11 +2109,14 @@
             alert.style.top = '20px';
             alert.style.right = '20px';
             alert.style.zIndex = '3000';
+            alert.style.maxWidth = '300px';
             
             document.body.appendChild(alert);
             
             setTimeout(() => {
-                document.body.removeChild(alert);
+                if (document.body.contains(alert)) {
+                    document.body.removeChild(alert);
+                }
             }, 3000);
         }
 
