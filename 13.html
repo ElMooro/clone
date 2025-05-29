@@ -1162,6 +1162,7 @@
                         <button class="control-btn" onclick="showChartView()" id="chartViewBtn" style="display: none;">📊 Chart View</button>
                         <button class="add-watchlist" onclick="document.getElementById('searchBox').focus()">+ Add Symbol</button>
                         <button class="control-btn" onclick="toggleRiskDashboard()" id="riskDashboardBtn">📊 Risk Dashboard</button>
+                        <button class="control-btn" onclick="restoreDefaultWatchlists()" title="Restore default symbols">↻ Reset</button>
                     </div>
                 </div>
                 <table class="watchlist-table">
@@ -1527,18 +1528,53 @@
         let riskDashboardData = {};
         let riskAlerts = {};
        
+        // Restore default watchlists
+        function restoreDefaultWatchlists() {
+            // Clear saved data
+            localStorage.removeItem('openbbWatchlists');
+            
+            // Reset to default watchlists
+            watchlists['MAIN'].symbols = [
+                { symbol: 'AAPL', provider: 'polygon_direct' },
+                { symbol: 'MSFT', provider: 'polygon_direct' },
+                { symbol: 'SPY', provider: 'polygon_direct' },
+                { symbol: 'FEDFUNDS', provider: 'fred_direct' },
+                { symbol: 'DGS10', provider: 'fred_direct' },
+                { symbol: 'VIXCLS', provider: 'fred_direct' }
+            ];
+            
+            // Reload current watchlist
+            switchWatchlist(currentWatchlist);
+            showTemporaryMessage('Restored default watchlist symbols', 'info');
+        }
+        
         // Initialize the dashboard
         async function init() {
+            console.log('Initializing dashboard...');
             updateClock();
             setInterval(updateClock, 1000);
            
+            // Check if this is first run (no saved watchlists)
+            const saved = localStorage.getItem('openbbWatchlists');
+            if (!saved) {
+                console.log('First run detected, initializing default watchlist');
+                restoreDefaultWatchlists();
+            }
+            
             loadWatchlists();
             await checkAPIConnections();
             
             // Check WebSocket but don't block if it fails
             checkWebSocketConnection(); // No await, no polling
             
-            loadWatchlistData();
+            // Load watchlist data after ensuring symbols are loaded
+            if (watchlistSymbols && watchlistSymbols.length > 0) {
+                loadWatchlistData();
+            } else {
+                console.error('No watchlist symbols found during init');
+                restoreDefaultWatchlists();
+            }
+            
             setInterval(loadWatchlistData, 60000);
            
             // Load liquidity dashboard
@@ -2025,7 +2061,8 @@
                             const queryLower = query.toLowerCase();
                             
                             // Add matching scraped data to results
-                            for (const [searchTerm, config of Object.entries(scrapedSearchTerms)) {
+                            for (const searchTerm in scrapedSearchTerms) {
+                                const config = scrapedSearchTerms[searchTerm];
                                 if (searchTerm.includes(queryLower) || queryLower.includes(searchTerm.split(' ')[0])) {
                                     allResults.push({
                                         symbol: config.symbol,
@@ -2939,10 +2976,12 @@
        
         // Load watchlists from storage
         function loadWatchlists() {
+            console.log('Loading watchlists...');
             const saved = localStorage.getItem('openbbWatchlists');
             if (saved) {
                 try {
                     const savedData = JSON.parse(saved);
+                    console.log('Found saved watchlists:', savedData);
                     Object.keys(savedData).forEach(name => {
                         if (watchlists[name]) {
                             watchlists[name].symbols = savedData[name].symbols || watchlists[name].symbols;
@@ -2953,7 +2992,14 @@
                 }
             }
            
-            watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+            // Ensure we have the current watchlist symbols loaded
+            if (watchlists[currentWatchlist] && watchlists[currentWatchlist].symbols) {
+                watchlistSymbols = [...watchlists[currentWatchlist].symbols];
+                console.log('Loaded symbols for', currentWatchlist, ':', watchlistSymbols);
+            } else {
+                console.error('No symbols found for watchlist:', currentWatchlist);
+                watchlistSymbols = [];
+            }
         }
        
         // Save watchlists to storage
@@ -2975,14 +3021,24 @@
        
         // Load watchlist data
         async function loadWatchlistData() {
+            console.log('Loading watchlist data for symbols:', watchlistSymbols);
             const tbody = document.getElementById('watchlistBody');
            
-            if (watchlistSymbols.length === 0) {
+            if (!tbody) {
+                console.error('Watchlist table body not found!');
+                return;
+            }
+           
+            if (!watchlistSymbols || watchlistSymbols.length === 0) {
+                console.log('No symbols in watchlist');
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #888;">No symbols in watchlist. Use search to add symbols.</td></tr>';
                 return;
             }
            
             tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
+           
+            // Reset watchlist data
+            watchlistData = {};
            
             // Load all symbols in parallel with batching
             const batchSize = 5;
@@ -2991,10 +3047,13 @@
                 const promises = batch.map(symbolObj => {
                     const symbol = symbolObj.symbol || symbolObj;
                     const provider = symbolObj.provider || 'fred_direct';
+                    console.log(`Loading ${symbol} from ${provider}`);
                     return loadSingleWatchlistItem(symbol, provider);
                 });
                 await Promise.allSettled(promises);
             }
+            
+            console.log('Finished loading all watchlist items');
         }
        
         // Update clock
