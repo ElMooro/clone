@@ -1140,7 +1140,26 @@
 
         // Load single watchlist item data
         async function loadSingleWatchlistItem(name, source) {
+            if (!name || !source) {
+                console.error('Invalid name or source for watchlist item:', name, source);
+                return;
+            }
+
             try {
+                console.log(`Loading ${name} from ${source}`);
+                
+                // Initialize the watchlist data entry if it doesn't exist
+                if (!watchlistData[name]) {
+                    watchlistData[name] = {
+                        name: name,
+                        description: name,
+                        source: source,
+                        value: 0,
+                        changes: { '1d': 0, '1w': 0, '1m': 0, '1y': 0 },
+                        hasData: false
+                    };
+                }
+
                 // Simulate loading individual indicator data
                 // In your actual implementation, this would load from the specific indicator's data
                 const mockData = {
@@ -1154,6 +1173,7 @@
                     lastUpdated: new Date().toISOString().split('T')[0]
                 };
 
+                // Update the existing data
                 watchlistData[name] = {
                     ...watchlistData[name],
                     value: mockData.value,
@@ -1165,11 +1185,26 @@
                 renderWatchlist();
             } catch (error) {
                 console.error(`Error loading ${name}:`, error);
-                watchlistData[name] = {
-                    ...watchlistData[name],
-                    hasData: false,
-                    error: error.message
-                };
+                
+                // Ensure we have a valid data structure even on error
+                if (!watchlistData[name]) {
+                    watchlistData[name] = {
+                        name: name,
+                        description: name,
+                        source: source,
+                        value: 0,
+                        changes: { '1d': 0, '1w': 0, '1m': 0, '1y': 0 },
+                        hasData: false,
+                        error: error.message
+                    };
+                } else {
+                    watchlistData[name] = {
+                        ...watchlistData[name],
+                        hasData: false,
+                        error: error.message
+                    };
+                }
+                
                 renderWatchlist();
             }
         }
@@ -1228,7 +1263,7 @@
         async function loadWatchlistData() {
             const tbody = document.getElementById('watchlistBody');
 
-            if (watchlistSymbols.length === 0) {
+            if (!watchlistSymbols || watchlistSymbols.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">No indicators in watchlist. Use search to add indicators.</td></tr>';
                 return;
             }
@@ -1236,9 +1271,15 @@
             tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;"><div class="loading-pulse">Loading watchlist...</div></td></tr>';
 
             for (const symbolObj of watchlistSymbols) {
-                const name = symbolObj.name;
-                const source = symbolObj.source;
-                await loadSingleWatchlistItem(name, source);
+                // Handle both old and new format
+                const name = symbolObj.name || symbolObj.symbol || symbolObj;
+                const source = symbolObj.source || 'fred';
+                
+                if (name && source) {
+                    await loadSingleWatchlistItem(name, source);
+                } else {
+                    console.warn('Invalid symbol object in watchlist:', symbolObj);
+                }
             }
         }
 
@@ -1246,19 +1287,30 @@
         function renderWatchlist() {
             const tbody = document.getElementById('watchlistBody');
 
-            if (watchlistSymbols.length === 0) {
+            if (!watchlistSymbols || watchlistSymbols.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No indicators in this watchlist. Use search to add indicators.</td></tr>';
                 return;
             }
 
             let symbolsToRender = watchlistSymbols.map(symbolObj => {
-                const name = symbolObj.name;
+                // Handle both old and new format
+                const name = symbolObj.name || symbolObj.symbol || symbolObj;
+                const source = symbolObj.source || 'fred';
+                
+                if (!name) {
+                    console.warn('Invalid symbol object:', symbolObj);
+                    return null;
+                }
+
                 const data = watchlistData[name];
-                if (!data) return null;
+                if (!data) {
+                    console.warn(`No data found for ${name}`);
+                    return null;
+                }
 
                 let maxChange = 0;
-                if (data.changes) {
-                    const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v));
+                if (data.changes && typeof data.changes === 'object') {
+                    const changes = Object.values(data.changes).filter(v => v !== null && !isNaN(v) && v !== undefined);
                     if (changes.length > 0) {
                         maxChange = changes.reduce((max, change) => {
                             return Math.abs(change) > Math.abs(max) ? change : max;
@@ -1276,8 +1328,8 @@
             // Sort based on current sort order
             if (columnSort.column && columnSort.direction) {
                 symbolsToRender.sort((a, b) => {
-                    const aValue = a.data.changes[columnSort.column];
-                    const bValue = b.data.changes[columnSort.column];
+                    const aValue = a.data.changes ? a.data.changes[columnSort.column] : 0;
+                    const bValue = b.data.changes ? b.data.changes[columnSort.column] : 0;
 
                     if (aValue === null || aValue === undefined) return 1;
                     if (bValue === null || bValue === undefined) return -1;
@@ -1291,7 +1343,7 @@
             }
 
             const formatValue = (value) => {
-                if (value === 0) return 'Loading...';
+                if (value === 0 || value === null || value === undefined) return 'Loading...';
                 if (Math.abs(value) >= 1000) return value.toFixed(0);
                 if (Math.abs(value) >= 1) return value.toFixed(2);
                 return value.toFixed(4);
@@ -1309,8 +1361,16 @@
             };
 
             const html = symbolsToRender.map(({ name, data }) => {
-                const displayName = data.customName || name;
-                const sourceLabel = data.source?.toUpperCase() || 'API';
+                // Ensure we have valid data structure
+                const displayName = data.customName || data.name || name;
+                const sourceLabel = (data.source || 'unknown').toUpperCase();
+                const description = data.description || data.name || name;
+                const changes = data.changes || { '1d': 0, '1w': 0, '1m': 0, '1y': 0 };
+                const value = data.value || 0;
+                const lastUpdated = data.lastUpdated || '—';
+
+                // Safe charAt access
+                const firstChar = (name && name.length > 0) ? name.charAt(0).toUpperCase() : '?';
 
                 return `
                     <tr ondblclick="openChartForIndicator('${name}', '${data.source || 'fred'}')"
@@ -1318,19 +1378,19 @@
                         title="Double-click to view chart">
                         <td>
                             <div class="symbol-cell">
-                                <div class="symbol-icon">${name.charAt(0)}</div>
+                                <div class="symbol-icon">${firstChar}</div>
                                 <div class="symbol-info">
                                     <div class="symbol-name">${displayName}</div>
-                                    <div class="symbol-fullname">${data.description || data.name} (${sourceLabel})</div>
+                                    <div class="symbol-fullname">${description} (${sourceLabel})</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="price-cell">${formatValue(data.value)}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1d'])}">${formatChange(data.changes['1d'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1w'])}">${formatChange(data.changes['1w'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1m'])}">${formatChange(data.changes['1m'])}</td>
-                        <td class="change-cell ${getChangeClass(data.changes['1y'])}">${formatChange(data.changes['1y'])}</td>
-                        <td style="color: #888; font-size: 11px;">${data.lastUpdated || '—'}</td>
+                        <td class="price-cell">${formatValue(value)}</td>
+                        <td class="change-cell ${getChangeClass(changes['1d'])}">${formatChange(changes['1d'])}</td>
+                        <td class="change-cell ${getChangeClass(changes['1w'])}">${formatChange(changes['1w'])}</td>
+                        <td class="change-cell ${getChangeClass(changes['1m'])}">${formatChange(changes['1m'])}</td>
+                        <td class="change-cell ${getChangeClass(changes['1y'])}">${formatChange(changes['1y'])}</td>
+                        <td style="color: #888; font-size: 11px;">${lastUpdated}</td>
                         <td style="padding: 5px;">
                             <button class="control-btn" style="padding: 4px 8px; font-size: 11px; background: #f5f5f5; color: #333; border: 1px solid #ddd;"
                                     onclick="removeFromWatchlist(event, '${name}')">×</button>
